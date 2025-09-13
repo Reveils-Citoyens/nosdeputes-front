@@ -5,13 +5,10 @@ import Stack from "@mui/material/Stack";
 import { FilterContainer } from "@/components/FilterContainer";
 
 import { Filter } from "@/components/folderHomePage/Filter";
+
 import DossierList from "@/components/folderHomePage/DossierList";
 
-export default async function Dossiers(props: {
-  searchParams: Promise<{ theme?: string; search?: string }>;
-}) {
-  const { theme, search } = await props.searchParams;
-
+export default async function Dossiers() {
   return (
     <Container
       sx={{
@@ -26,11 +23,11 @@ export default async function Dossiers(props: {
     >
       <Stack spacing={3} useFlexGap flex={2}>
         <FilterContainer>
-          <Filter theme={theme ?? ""} search={search ?? ""} />
+          <Filter />
         </FilterContainer>
       </Stack>
       <Stack spacing={3} flex={5} sx={{ minWidth: 0 }}>
-        <DossierList theme={theme ?? ""} search={search ?? ""} />
+        <DossierList />
       </Stack>
     </Container>
   );

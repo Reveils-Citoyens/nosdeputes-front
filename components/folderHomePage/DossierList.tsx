@@ -8,6 +8,7 @@ import LabelChip from "../LabelChip";
 import { Dossier } from "@prisma/client";
 import { LoadingButton } from "@mui/lab";
 import { searchDossier } from "@/data/searchDossier";
+import { useQueryState } from "nuqs";
 
 type DossierListProps = {
   theme: string;
@@ -16,8 +17,11 @@ type DossierListProps = {
 
 const PAGE_SIZE = 10;
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export default function DossierList(props: DossierListProps) {
-  const { theme, search } = props;
+  const [theme] = useQueryState("theme");
+  const [search] = useQueryState("search");
 
   const [dossiers, setDossiers] = React.useState<Dossier[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -43,6 +47,12 @@ export default function DossierList(props: DossierListProps) {
     setDossiers([]);
 
     async function fetchInitialDossier() {
+      await sleep(500); // debounce
+
+      if (!isValid) {
+        return;
+      }
+
       const data = await searchDossier({
         page: 1,
         search: search ?? "",

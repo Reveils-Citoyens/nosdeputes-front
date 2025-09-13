@@ -6,6 +6,7 @@ import { NavBar, NavigationItem } from "@/components/NavBar";
 import theme from "./theme";
 import { ThemeProvider } from "@mui/material/styles";
 import { CssBaseline } from "@mui/material";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import Providers from "./providers";
 
 const raleway = Raleway({
@@ -60,15 +61,17 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className={raleway.variable}>
-        <AppRouterCacheProvider>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <main className="flex min-h-screen flex-col">
-              <NavBar navigation={navigation} />
-              <Providers>{children}</Providers>
-            </main>
-          </ThemeProvider>
-        </AppRouterCacheProvider>
+        <NuqsAdapter>
+          <AppRouterCacheProvider>
+            <ThemeProvider theme={theme}>
+              <CssBaseline />
+              <main className="flex min-h-screen flex-col">
+                <NavBar navigation={navigation} />
+                <Providers>{children}</Providers>
+              </main>
+            </ThemeProvider>
+          </AppRouterCacheProvider>
+        </NuqsAdapter>
       </body>
     </html>
   );

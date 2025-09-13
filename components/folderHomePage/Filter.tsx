@@ -3,17 +3,11 @@
 import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
 import { THEMES } from "../const";
-import { useFilterState } from "./useFilter";
+import { useQueryState } from "nuqs";
 
-type FilterProps = {
-  search: string;
-  theme: string;
-};
-
-export const Filter = (props: FilterProps) => {
-  const { theme, search } = props;
-
-  const { handleThemes, handleSearch } = useFilterState();
+export const Filter = () => {
+  const [theme, setTheme] = useQueryState("theme");
+  const [search, setSearch] = useQueryState("search");
 
   return (
     <>
@@ -23,7 +17,7 @@ export const Filter = (props: FilterProps) => {
         label="Thème"
         value={theme}
         onChange={(event) => {
-          handleThemes(event.target.value);
+          setTheme(event.target.value);
         }}
         variant="outlined"
       >
@@ -40,7 +34,7 @@ export const Filter = (props: FilterProps) => {
         label="Search"
         value={search}
         onChange={(event) => {
-          handleSearch(event.target.value);
+          setSearch(event.target.value);
         }}
         variant="outlined"
       />
