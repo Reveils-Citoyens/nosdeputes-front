@@ -29,6 +29,9 @@ export default function AmendementsList(props: {
     queryKey: ["amendements", status, documentUid, deputeUid, search, page],
 
     queryFn: async () => {
+      if (!documentUid) {
+        return [];
+      }
       const data = await searchAmendement({
         page,
         perPage: 20,
@@ -45,6 +48,9 @@ export default function AmendementsList(props: {
     queryKey: ["amendements", status, documentUid, deputeUid, search, page + 1],
 
     queryFn: async () => {
+      if (!documentUid) {
+        return [];
+      }
       const data = await searchAmendement({
         page: page + 1,
         perPage: 20,
@@ -57,6 +63,7 @@ export default function AmendementsList(props: {
     },
   });
 
+  const showList = !isPending && documentUid;
   return (
     <Stack>
       {/* {searchActivated && (
@@ -64,14 +71,15 @@ export default function AmendementsList(props: {
         //   {filteredAmendements.length} correspondent à votre recherche
         // </Typography>
         )} */}
-      {isPending && <p>Loading ...</p>}
-      {(amendements ?? []).map((amendement) => (
-        <AmendementCard
-          amendement={amendement}
-          acteurUid={amendement.acteurRefUid}
-          key={amendement.uid}
-        />
-      ))}
+      {!showList && <p>Loading ...</p>}
+      {showList &&
+        (amendements ?? []).map((amendement) => (
+          <AmendementCard
+            amendement={amendement}
+            acteurUid={amendement.acteurRefUid}
+            key={amendement.uid}
+          />
+        ))}
 
       <Button
         disabled={!nextIsPending && nextAmendements?.length === 0}

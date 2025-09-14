@@ -2,6 +2,10 @@ import { Amendement } from "@prisma/client";
 
 interface SearchAmendementParams {
   /**
+   * L'uid of the document sur le quel porte l'amendment.
+   */
+  documentRefUid: string;
+  /**
    * @default 10
    */
   perPage?: number;
@@ -15,10 +19,6 @@ interface SearchAmendementParams {
   sort?: string;
 
   search?: string;
-  /**
-   * L'uid of the document sur lequel porte l'amendment.
-   */
-  documentRefUid?: string;
   /**
    * L'uid of l'auteur de l'amendment.
    */

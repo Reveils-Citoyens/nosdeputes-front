@@ -43,6 +43,12 @@ export const Filter = (props: FilterProps) => {
     },
   });
 
+  if (!selectedDocument && documents) {
+    setSelectedDocument(
+      documents.filter((document) => document !== null)[0]?.uid ?? ""
+    );
+  }
+
   // const deputes = React.useMemo(() => {
   //   const seenIds = new Set();
   //   return documents
