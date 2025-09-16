@@ -10,16 +10,11 @@ import { LoadingButton } from "@mui/lab";
 import { searchDossier } from "@/data/searchDossier";
 import { useQueryState } from "nuqs";
 
-type DossierListProps = {
-  theme: string;
-  search: string;
-};
-
 const PAGE_SIZE = 10;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export default function DossierList(props: DossierListProps) {
+export default function DossierList() {
   const [theme] = useQueryState("theme");
   const [search] = useQueryState("search");
 

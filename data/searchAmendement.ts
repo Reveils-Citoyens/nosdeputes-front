@@ -1,10 +1,6 @@
 import { Amendement } from "@prisma/client";
 
-interface SearchAmendementParams {
-  /**
-   * L'uid of the document sur le quel porte l'amendment.
-   */
-  documentRefUid: string;
+type SearchAmendementParams = {
   /**
    * @default 10
    */
@@ -17,14 +13,29 @@ interface SearchAmendementParams {
    * @default "numeroOrdreDepot.asc"
    */
   sort?: string;
-
   search?: string;
+  sortAmendement?: string;
+} & ({
+
+  /**
+   * L'uid of the document sur le quel porte l'amendment.
+   */
+  documentRefUid: string;
   /**
    * L'uid of l'auteur de l'amendment.
    */
   acteurRefUid?: string;
-  sortAmendement?: string;
-}
+
+} | {
+  /**
+   * L'uid of the document sur le quel porte l'amendment.
+   */
+  documentRefUid?: string;
+  /**
+   * L'uid of l'auteur de l'amendment.
+   */
+  acteurRefUid: string;
+})
 
 export const sortAmendementPossible = [
   "A discuter",

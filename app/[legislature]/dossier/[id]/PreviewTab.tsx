@@ -46,7 +46,7 @@ export const PreviewTab = ({ dossier }: PreviewTabProps) => {
         />
         <AdditionalInfoCard
           documentIds={documentIds}
-          legislature={dossier!.legislature}
+          legislature={dossier!.legislature!.toString()}
           dossierUid={dossier!.uid}
         />
         <LegislativeDocumentsCard documentIds={documentIds} />
@@ -66,7 +66,7 @@ export const PreviewTab = ({ dossier }: PreviewTabProps) => {
           actesLegislatifs={actesLegislatifs}
           // documents={documents}
           dossierUid={dossier!.uid}
-          legislature={dossier!.legislature}
+          legislature={dossier!.legislature!.toString()}
         />
         {/* <TextStructureCard /> */}
       </div>

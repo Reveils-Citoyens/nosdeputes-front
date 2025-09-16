@@ -22,12 +22,16 @@ export default async function Dossiers() {
       }}
     >
       <Stack spacing={3} useFlexGap flex={2}>
-        <FilterContainer>
-          <Filter />
-        </FilterContainer>
+        <React.Suspense>
+          <FilterContainer>
+            <Filter />
+          </FilterContainer>
+        </React.Suspense>
       </Stack>
       <Stack spacing={3} flex={5} sx={{ minWidth: 0 }}>
-        <DossierList />
+        <React.Suspense>
+          <DossierList />
+        </React.Suspense>
       </Stack>
     </Container>
   );
