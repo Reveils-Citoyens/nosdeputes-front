@@ -60,27 +60,73 @@ export default async function Contacts({ acteurUid }: { acteurUid: string }) {
   const postalAdresses = adressesPostales.filter(({ typeLibelle }) =>
     typeLibelle.startsWith("Adresse ")
   );
+
+  const internetAdresses = Object.keys(internetPlatformsIcons).flatMap(
+    (platform) =>
+      adressesElectroniques
+        .filter(({ typeLibelle }) => typeLibelle === platform)
+        .filter(
+          ({ valElec }) =>
+            valElec &&
+            getHref[platform as keyof typeof internetPlatformsIcons](valElec)
+        )
+  );
+
   return (
     <Paper sx={{ p: 2, bgcolor: "grey.50", width: 300 }} elevation={0}>
       <Stack direction="column" spacing={1}>
         <Typography variant="subtitle1">Contacts</Typography>
 
         {/* Adresses physique */}
-        <Box>
-          <Typography variant="body2" fontWeight="light">
-            Courier
-          </Typography>
-          <List>
-            {postalAdresses.map(
-              ({
-                uid,
-                intitule,
-                numeroRue,
-                nomRue,
-                complementAdresse,
-                codePostal,
-                ville,
-              }) => (
+        {postalAdresses.length > 0 && (
+          <Box>
+            <Typography variant="body2" fontWeight="light">
+              Courier
+            </Typography>
+            <List>
+              {postalAdresses.map(
+                ({
+                  uid,
+                  intitule,
+                  numeroRue,
+                  nomRue,
+                  complementAdresse,
+                  codePostal,
+                  ville,
+                }) => (
+                  <ListItem
+                    key={uid}
+                    disablePadding
+                    sx={{
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      mb: 1,
+                    }}
+                  >
+                    <Typography variant="body2" fontWeight="light">
+                      {intitule}
+                    </Typography>
+                    <Typography variant="caption">
+                      {numeroRue} {nomRue}
+                      <br />
+                      {complementAdresse}
+                      {complementAdresse && <br />}
+                      {codePostal} {ville}
+                    </Typography>
+                  </ListItem>
+                )
+              )}
+            </List>
+          </Box>
+        )}
+
+        {mailAdresses.length > 0 && (
+          <Box>
+            <Typography variant="body2" fontWeight="light">
+              Email
+            </Typography>
+            <List>
+              {mailAdresses.map(({ uid, valElec }) => (
                 <ListItem
                   key={uid}
                   disablePadding
@@ -90,116 +136,86 @@ export default async function Contacts({ acteurUid }: { acteurUid: string }) {
                     mb: 1,
                   }}
                 >
-                  <Typography variant="body2" fontWeight="light">
-                    {intitule}
-                  </Typography>
-                  <Typography variant="caption">
-                    {numeroRue} {nomRue}
-                    <br />
-                    {complementAdresse}
-                    {complementAdresse && <br />}
-                    {codePostal} {ville}
+                  <Typography variant="caption" fontWeight="light">
+                    {valElec}
                   </Typography>
                 </ListItem>
-              )
-            )}
-          </List>
-        </Box>
+              ))}
+            </List>
+          </Box>
+        )}
 
-        <Box>
-          <Typography variant="body2" fontWeight="light">
-            Email
-          </Typography>
-          <List>
-            {mailAdresses.map(({ uid, valElec }) => (
-              <ListItem
-                key={uid}
-                disablePadding
-                sx={{
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  mb: 1,
-                }}
-              >
-                <Typography variant="caption" fontWeight="light">
-                  {valElec}
-                </Typography>
-              </ListItem>
-            ))}
-          </List>
-        </Box>
+        {phoneAdresses.length > 0 && (
+          <Box>
+            <Typography variant="body2" fontWeight="light">
+              Téléphone
+            </Typography>
+            <List>
+              {phoneAdresses.map(({ uid, valElec }) => (
+                <ListItem
+                  key={uid}
+                  disablePadding
+                  sx={{
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    mb: 1,
+                  }}
+                >
+                  <Typography variant="caption" fontWeight="light">
+                    {valElec}
+                  </Typography>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        )}
 
-        <Box>
-          <Typography variant="body2" fontWeight="light">
-            Téléphone
-          </Typography>
-          <List>
-            {phoneAdresses.map(({ uid, valElec }) => (
-              <ListItem
-                key={uid}
-                disablePadding
-                sx={{
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  mb: 1,
-                }}
-              >
-                <Typography variant="caption" fontWeight="light">
-                  {valElec}
-                </Typography>
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-
-        <Box>
-          <Typography variant="body2" fontWeight="light">
-            Internet
-          </Typography>
-          <List>
-            {Object.keys(internetPlatformsIcons).flatMap((platform) =>
-              adressesElectroniques
-                .filter(({ typeLibelle }) => typeLibelle === platform)
-                .map(({ uid, valElec }) => {
-                  const Icon =
-                    internetPlatformsIcons[
-                      platform as keyof typeof internetPlatformsIcons
-                    ];
-                  const href =
-                    valElec &&
-                    getHref[platform as keyof typeof internetPlatformsIcons](
-                      valElec
-                    );
-                  if (!href) {
-                    return null;
-                  }
-                  return (
-                    <ListItem
-                      key={uid}
-                      disablePadding
-                      sx={{
-                        mb: 1,
-                      }}
-                    >
-                      <ListItemIcon sx={{ mr: 1, minWidth: 0 }}>
-                        {<Icon fontSize="small" />}
-                      </ListItemIcon>
-
-                      <Typography
-                        variant="caption"
-                        fontWeight="light"
-                        component="a"
-                        target="_blank"
-                        href={href}
-                      >
-                        {valElec}
-                      </Typography>
-                    </ListItem>
+        {internetAdresses.length > 0 && (
+          <Box>
+            <Typography variant="body2" fontWeight="light">
+              Internet
+            </Typography>
+            <List>
+              {internetAdresses.map(({ uid, valElec, typeLibelle }) => {
+                const Icon =
+                  internetPlatformsIcons[
+                    typeLibelle as keyof typeof internetPlatformsIcons
+                  ];
+                const href =
+                  valElec &&
+                  getHref[typeLibelle as keyof typeof internetPlatformsIcons](
+                    valElec
                   );
-                })
-            )}
-          </List>
-        </Box>
+                if (!href) {
+                  return null;
+                }
+                return (
+                  <ListItem
+                    key={uid}
+                    disablePadding
+                    sx={{
+                      mb: 1,
+                    }}
+                  >
+                    <ListItemIcon sx={{ mr: 1, minWidth: 0 }}>
+                      {<Icon fontSize="small" />}
+                    </ListItemIcon>
+
+                    <Typography
+                      variant="caption"
+                      fontWeight="light"
+                      component="a"
+                      target="_blank"
+                      href={href}
+                    >
+                      {valElec}
+                    </Typography>
+                  </ListItem>
+                );
+              })}
+            </List>
+          </Box>
+        )}
       </Stack>
     </Paper>
   );
