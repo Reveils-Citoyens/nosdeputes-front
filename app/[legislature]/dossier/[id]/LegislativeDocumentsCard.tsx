@@ -50,8 +50,11 @@ export const LegislativeDocumentsCard = async (
                   component={document.pdfUrl ? Link : "p"}
                   target="_blank"
                 >
-                  {document.titrePrincipalCourt}{" "}
-                  {document.pdfUrl && <LinkIcon sx={{ fontSize: "14px" }} />}
+                  {document.titrePrincipalCourt}
+                  {document.chambre ? ` (${document.chambre})` : "  "}
+                  {document.pdfUrl && (
+                    <LinkIcon sx={{ ml: 1, fontSize: "14px" }} />
+                  )}
                 </Typography>
               </Stack>
             );
