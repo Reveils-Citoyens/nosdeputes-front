@@ -118,6 +118,7 @@ export default function Travaux() {
                 variant="body2"
                 component={docs.pdfUrl ? "a" : "p"}
                 href={docs.pdfUrl ?? undefined}
+                target="_blank"
               >
                 {docs.titrePrincipalCourt}
               </Typography>
@@ -149,6 +150,7 @@ export default function Travaux() {
                 variant="body2"
                 component={docs.pdfUrl ? "a" : "p"}
                 href={docs.pdfUrl ?? undefined}
+                target="_blank"
               >
                 {docs.titrePrincipalCourt}
               </Typography>
