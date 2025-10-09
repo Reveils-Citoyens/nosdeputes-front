@@ -22,7 +22,12 @@ function getWordsPerActeur(paragraphes: Paragraphe[]) {
   paragraphes.forEach((paragraphe) => {
     const { codeGrammaire, acteurRefUid, texte } = paragraphe;
 
-    if (codeGrammaire !== "PAROLE_GENERIQUE" || !acteurRefUid || !texte) {
+    if (
+      !codeGrammaire ||
+      !["INTERRUPTION_1_10", "PAROLE_GENERIQUE"].includes(codeGrammaire) ||
+      !acteurRefUid ||
+      !texte
+    ) {
       return;
     }
 
@@ -61,7 +66,9 @@ export const DebateTranscript = (props: DebateTranscriptProps) => {
     Object.keys(wordsPerActeur).forEach((acteurUid) => {
       if (!acteurRequested.current[acteurUid]) {
         acteurRequested.current[acteurUid] = true;
-        fetch(`${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/acteurs/${acteurUid}`)
+        fetch(
+          `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/acteurs/${acteurUid}`
+        )
           .then((rep) => rep.json())
           .then(({ data }: { data: Acteur }) => {
             setActeurs((p) => ({ ...p, [acteurUid]: data }));
