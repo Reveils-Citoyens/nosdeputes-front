@@ -99,7 +99,7 @@ export const Filter = (props: FilterProps) => {
           .filter((document) => document !== null)
           .map((document) => (
             <MenuItem key={document.uid} value={document.uid}>
-              {document.depotLibelle}
+              {document.depotLibelle} ({document.chambre})
               {/*} ({(document as any)._count.amendements})*/}
             </MenuItem>
           ))}
