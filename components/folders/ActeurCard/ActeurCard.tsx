@@ -137,11 +137,11 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
                     }}
                   >
                     {acteur.groupeParlementaire.libelleAbrev}{" "}
-                    {acteur.groupeParlementaire.libelleAbrev &&
+                    {/* {acteur.groupeParlementaire.libelleAbrev &&
                       acteur.groupeParlementaire.libelle &&
-                      ":"}
+                      ":"} */}
                   </span>
-                  <span
+                  {/* <span
                     style={{
                       textOverflow: "ellipsis",
                       overflow: "hidden",
@@ -151,7 +151,7 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
                     }}
                   >
                     {acteur.groupeParlementaire.libelle}
-                  </span>
+                  </span> */}
                 </Typography>
               </Box>
             </Tooltip>
