@@ -9,9 +9,15 @@ type CircleDivProps = {
   size?: number;
   style?: React.CSSProperties;
 };
-export default function CircleDiv({ color, size = 16, style }: CircleDivProps) {
+export default function CircleDiv({
+  color,
+  size = 16,
+  style,
+  ...other
+}: CircleDivProps) {
   return (
     <div
+      {...other}
       style={{
         backgroundColor: color,
         width: size,

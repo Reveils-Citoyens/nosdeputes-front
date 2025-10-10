@@ -4,6 +4,7 @@ import { Paper, Stack, Typography } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { Acteur } from "@prisma/client";
 import { getActeurMandats } from "@/data/getActeurMandats";
+import { isNull } from "lodash";
 
 export default async function InfoPersonelles({
   acteurUid,
@@ -60,26 +61,27 @@ export default async function InfoPersonelles({
                 {new Date(dernierMandatDepute?.dateDebut).toLocaleDateString(
                   "fr-FR",
                   { day: "numeric", month: "long", year: "numeric" }
-                )}
+                )}{" "}
+                {dernierMandatDepute?.dateFin === null ? "(en cours)" : null}
               </Typography>
             </div>
 
-            <div>
-              <Typography variant="body2" fontWeight="light">
-                Fin de mandat <InfoOutlinedIcon fontSize="inherit" />
-              </Typography>
-              <Typography variant="body2">
-                {dernierMandatDepute?.dateFin !== null
-                  ? `Le ${new Date(
-                      dernierMandatDepute?.dateFin
-                    ).toLocaleDateString("fr-FR", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}`
-                  : "en cours"}
-              </Typography>
-            </div>
+            {dernierMandatDepute?.dateFin !== null ? (
+              <div>
+                <Typography variant="body2" fontWeight="light">
+                  Fin de mandat <InfoOutlinedIcon fontSize="inherit" />
+                </Typography>
+                <Typography variant="body2">
+                  {`Le ${new Date(
+                    dernierMandatDepute?.dateFin
+                  ).toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}`}
+                </Typography>
+              </div>
+            ) : null}
           </React.Fragment>
         )}
 

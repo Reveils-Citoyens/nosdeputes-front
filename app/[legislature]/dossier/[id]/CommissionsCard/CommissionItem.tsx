@@ -1,10 +1,12 @@
 import * as React from "react";
-import Typography from "@mui/material/Typography";
+import Typography, { TypographyProps } from "@mui/material/Typography";
 import { Organe } from "@prisma/client";
 
 async function getCommissionUnCached(uid: string): Promise<Organe | null> {
   try {
-    const rep = await fetch(`${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/organes/${uid}`);
+    const rep = await fetch(
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/organes/${uid}`
+    );
 
     const { data } = await rep.json();
 
@@ -17,7 +19,10 @@ async function getCommissionUnCached(uid: string): Promise<Organe | null> {
 
 export const getCommission = React.cache(getCommissionUnCached);
 
-export default async function CommissionItem({ id }: { id: string }) {
+export default async function CommissionItem({
+  id,
+  ...other
+}: { id: string } & TypographyProps) {
   const commission = await getCommission(id);
 
   if (commission == null) {
@@ -25,8 +30,13 @@ export default async function CommissionItem({ id }: { id: string }) {
   }
 
   return (
-    <Typography key={commission.uid} variant="body2" fontWeight="bold" pb={2}>
-      {commission.libelleAbrege || commission.libelle}
+    <Typography
+      key={commission.uid}
+      variant="body2"
+      fontWeight="bold"
+      {...other}
+    >
+      {commission.libelleAbrege || commission.libelle} ({commission.chambre})
     </Typography>
   );
 }

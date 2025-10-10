@@ -20,6 +20,7 @@ export const LegislativeDocumentsCard = async (
   const documents = await Promise.all(
     props.documentIds.map((documentUid) => getDocument(documentUid))
   );
+
   return (
     <Accordion elevation={0} disableGutters defaultExpanded color="secondary">
       <AccordionSummary
@@ -47,9 +48,13 @@ export const LegislativeDocumentsCard = async (
                   fontWeight="bold"
                   href={document.pdfUrl ?? undefined}
                   component={document.pdfUrl ? Link : "p"}
+                  target="_blank"
                 >
-                  {document.titrePrincipalCourt}{" "}
-                  {document.pdfUrl && <LinkIcon sx={{ fontSize: "14px" }} />}
+                  {document.titrePrincipalCourt}
+                  {document.chambre ? ` (${document.chambre})` : "  "}
+                  {document.pdfUrl && (
+                    <LinkIcon sx={{ ml: 1, fontSize: "14px" }} />
+                  )}
                 </Typography>
               </Stack>
             );

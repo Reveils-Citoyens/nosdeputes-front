@@ -1,6 +1,9 @@
 import { Dossier } from "@prisma/client";
 
-export function parseDossier(dossier: Dossier) {
+export function parseDossier(dossier: Dossier | undefined) {
+  if (!dossier) {
+    return dossier;
+  }
   if ("dateMaj" in dossier && dossier.dateMaj !== null) {
     dossier.dateMaj = new Date(dossier.dateMaj);
   }

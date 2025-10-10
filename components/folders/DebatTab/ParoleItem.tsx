@@ -8,8 +8,10 @@ import TimelineContent from "@mui/lab/TimelineContent";
 import Stack from "@mui/material/Stack";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
+import Tooltip from "@mui/material/Tooltip";
 import CircleDiv from "@/icons/CircleDiv";
 import { Acteur, Organe } from "@prisma/client";
+import Link from "next/link";
 
 interface ParoleItemProps {
   acteur: Acteur | null | undefined;
@@ -52,28 +54,32 @@ export default function ParoleItem(props: ParoleItemProps) {
       </TimelineSeparator>
       <TimelineContent>
         <Stack direction="column" spacing={1}>
-          <div>
-            <Typography variant="body1" fontWeight="bold">
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography
+              variant="body1"
+              fontWeight="bold"
+              {...(acteur?.mandatPrincipalUid !== null
+                ? {
+                    component: Link,
+                    href: `/depute/${acteur?.slug}`,
+                    target: "_blank",
+                  }
+                : {})}
+            >
               {acteur?.prenom ?? ""} {acteur?.nom ?? ""}
             </Typography>
-            {groupeParlementaire?.libelle && (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                {groupeParlementaire?.couleurAssociee && (
+            {groupeParlementaire?.libelle &&
+              groupeParlementaire?.couleurAssociee && (
+                <Tooltip
+                  placement="top"
+                  title={`${groupeParlementaire?.libelle} (${groupeParlementaire?.libelleAbrev})`}
+                >
                   <CircleDiv color={groupeParlementaire?.couleurAssociee} />
-                )}{" "}
-                <Typography sx={{ ml: 1 }} variant="body2" fontWeight="light">
-                  {groupeParlementaire?.libelle} (
-                  {groupeParlementaire?.libelleAbrev})
-                </Typography>
-              </Box>
-            )}
+                </Tooltip>
+              )}
             {roleDebat && <Typography>{roleDebat}</Typography>}
-          </div>
+          </Stack>
+
           <Typography
             variant="caption"
             dangerouslySetInnerHTML={{ __html: texte || "TEXT_NOT_FOUND" }}

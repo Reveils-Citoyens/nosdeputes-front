@@ -81,12 +81,22 @@ export default function AmendementsList(props: {
           />
         ))}
 
-      <Button
-        disabled={!nextIsPending && nextAmendements?.length === 0}
-        onClick={() => setPage((p) => p + 1)}
+      <Stack
+        justifyContent="space-between"
+        direction="row"
+        alignItems="center"
+        my={2}
       >
-        Voir plus
-      </Button>
+        <Button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+          &lt; page précédente
+        </Button>
+        <Button
+          disabled={!nextIsPending && nextAmendements?.length === 0}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          page suivante &gt;
+        </Button>
+      </Stack>
     </Stack>
   );
 }
