@@ -36,7 +36,7 @@ export default async function CommissionItem({
       fontWeight="bold"
       {...other}
     >
-      {commission.libelleAbrege || commission.libelle}
+      {commission.libelleAbrege || commission.libelle} ({commission.chambre})
     </Typography>
   );
 }
