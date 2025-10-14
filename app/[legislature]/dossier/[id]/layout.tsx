@@ -15,7 +15,7 @@ export default async function Dossier({
   const { legislature, id } = await params;
   const dossier = await getDossier(id);
 
-  if (dossier === null) {
+  if (dossier == null) {
     return <p>Dossier not found</p>;
   }
   const { libelleProcedure, titre, theme, actesLegislatifs } = dossier;
