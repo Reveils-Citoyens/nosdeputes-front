@@ -16,7 +16,13 @@ export const AdditionalInfoCard = async (props: {
   documentIds: string[];
   legislature: string;
   dossierUid: string;
+  showAmendements?: boolean;
+  showCoSignataires?: boolean;
 }) => {
+  if (!props.showAmendements && !props.showCoSignataires) {
+    return null;
+  }
+
   const documents = await Promise.all(
     props.documentIds.map((documentUid) => getDocument(documentUid))
   );
@@ -35,7 +41,7 @@ export const AdditionalInfoCard = async (props: {
       </AccordionSummary>
       <AccordionDetails>
         <Stack direction="column" spacing={2}>
-          {validDocuments.length > 0 && (
+          {props.showAmendements && validDocuments.length > 0 && (
             <React.Fragment>
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <Typography variant="body2" fontWeight="light">
@@ -63,21 +69,23 @@ export const AdditionalInfoCard = async (props: {
             </React.Fragment>
           )}
 
-          <Signataires
-            signataireUids={unique(
-              validDocuments
-                .flatMap((document) => [
-                  // Not sure if document autors should be included.
-                  // ...(document.auteurs?.map((auteur) => auteur.acteurRefUid) ??
-                  //   []),
-                  ...(document.coSignataires?.map(
-                    (coSignataire) => coSignataire.acteurRefUid
-                  ) ?? []),
-                ])
-                .filter((acteur) => acteur !== null)
-            )}
-            limite={3}
-          />
+          {props.showCoSignataires && (
+            <Signataires
+              signataireUids={unique(
+                validDocuments
+                  .flatMap((document) => [
+                    // Not sure if document autors should be included.
+                    // ...(document.auteurs?.map((auteur) => auteur.acteurRefUid) ??
+                    //   []),
+                    ...(document.coSignataires?.map(
+                      (coSignataire) => coSignataire.acteurRefUid
+                    ) ?? []),
+                  ])
+                  .filter((acteur) => acteur !== null)
+              )}
+              limite={3}
+            />
+          )}
 
           {/* <Stack direction="column" spacing={1}>
             <Stack direction="row" spacing={0.5} alignItems="center">

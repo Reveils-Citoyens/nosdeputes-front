@@ -5,6 +5,7 @@ import Tabs from "./Tabs";
 
 import { getCurrentStatus } from "./dataFunctions";
 import { getDossier } from "@/data/getDossier";
+import { dossierSettings } from "./dossierSettings";
 
 export default async function Dossier({
   children,
@@ -18,8 +19,14 @@ export default async function Dossier({
   if (dossier == null) {
     return <p>Dossier not found</p>;
   }
-  const { libelleProcedure, titre, theme, actesLegislatifs } = dossier;
+  const { libelleProcedure, titre, theme, actesLegislatifs, codeProcedure } =
+    dossier;
 
+  const {
+    tableDebats = true,
+    tableAmendements = true,
+    tableVotes = true,
+  } = dossierSettings[codeProcedure] ?? {};
   const status = getCurrentStatus(actesLegislatifs);
 
   return (
@@ -30,7 +37,11 @@ export default async function Dossier({
         theme={theme}
         status={status}
       />
-      <Tabs legislature={legislature} dossierUid={id} />
+      <Tabs legislature={legislature} dossierUid={id} 
+      showDebats={tableDebats}
+      showAmendements={tableAmendements}
+      showVotes={tableVotes}
+      />
       {children}
     </>
   );

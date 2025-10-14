@@ -9,13 +9,21 @@ import { TimelineCard } from "@/components/folders/TimelineCard";
 
 import { getCommissionUids } from "@/app/[legislature]/dossier/[id]/dataFunctions";
 import { getDossier } from "@/data/getDossier";
+import { dossierSettings } from "./dossierSettings";
 
 type PreviewTabProps = {
   dossier?: Awaited<ReturnType<typeof getDossier>>;
 };
 
 export const PreviewTab = ({ dossier }: PreviewTabProps) => {
-  const { actesLegislatifs, rapporteurs } = dossier!;
+  const { actesLegislatifs, rapporteurs, codeProcedure } = dossier!;
+
+  const {
+    carteRapporteurs = true,
+    carteAmendements = true,
+    carteCoSignataires = true,
+    carteDocuments = true,
+  } = dossierSettings[codeProcedure] ?? {};
 
   const commissionFondIds = getCommissionUids(actesLegislatifs, "FOND");
   const commissionAvisIds = getCommissionUids(actesLegislatifs, "AVIS");
@@ -66,17 +74,23 @@ export const PreviewTab = ({ dossier }: PreviewTabProps) => {
           flex: 2,
         }}
       >
-        <CommissionsCard
-          commissionFondIds={commissionFondIds}
-          commissionAvisIds={commissionAvisIds}
-          rapporteursPerCommission={rapporteursPerCommission}
-        />
+        {carteRapporteurs && (
+          <CommissionsCard
+            commissionFondIds={commissionFondIds}
+            commissionAvisIds={commissionAvisIds}
+            rapporteursPerCommission={rapporteursPerCommission}
+          />
+        )}
         <AdditionalInfoCard
           documentIds={documentIds}
           legislature={dossier!.legislature!.toString()}
           dossierUid={dossier!.uid}
+          showAmendements={carteAmendements}
+          showCoSignataires={carteCoSignataires}
         />
-        <LegislativeDocumentsCard documentIds={documentIds} />
+        {carteDocuments && (
+          <LegislativeDocumentsCard documentIds={documentIds} />
+        )}
       </div>
       <div
         style={{
