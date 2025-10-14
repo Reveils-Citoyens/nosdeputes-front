@@ -60,7 +60,7 @@ export const CommissionsCard = async ({
                 <InfoIcon sx={{ fontSize: "14px" }} />
               </Stack>
               {commissionFondIds.map((commissionId) => (
-                <div key={commissionId}>
+                <div key={commissionId} style={{ paddingLeft: 4 }}>
                   <React.Suspense
                     key={commissionId}
                     fallback={
@@ -92,7 +92,7 @@ export const CommissionsCard = async ({
               </Stack>
               <Stack direction="column" spacing={1} alignItems="start">
                 {commissionAvisIds.map((commissionId) => (
-                  <div key={commissionId}>
+                  <div key={commissionId} style={{ paddingLeft: 4 }}>
                     <React.Suspense
                       fallback={
                         <Skeleton variant="text" sx={{ fontSize: "1rem" }} />
