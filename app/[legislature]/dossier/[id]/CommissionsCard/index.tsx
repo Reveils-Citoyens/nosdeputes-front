@@ -46,7 +46,7 @@ export const CommissionsCard = async ({
         aria-controls="commission-content"
         id="commission-header"
       >
-        <Typography>Commissions</Typography>
+        <Typography>Rapporteurs et Rapporteuses</Typography>
       </AccordionSummary>
       <AccordionDetails>
         <Stack direction="column" spacing={2}>
@@ -54,7 +54,8 @@ export const CommissionsCard = async ({
             <div>
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <Typography variant="body2" fontWeight="light">
-                  Commission saisie au fond
+                  Commission{commissionFondIds.length > 1 ? "s" : ""} saisie au
+                  fond
                 </Typography>
                 <InfoIcon sx={{ fontSize: "14px" }} />
               </Stack>
@@ -84,7 +85,8 @@ export const CommissionsCard = async ({
             <div>
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <Typography variant="body2" fontWeight="light">
-                  Commission saisie pour avis
+                  Commission{commissionAvisIds.length > 1 ? "s" : ""} saisie
+                  pour avis
                 </Typography>
                 <InfoIcon sx={{ fontSize: "14px" }} />
               </Stack>

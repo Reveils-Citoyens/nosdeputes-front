@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useSelectedLayoutSegment } from "next/navigation";
+import { useSelectedLayoutSegment } from "next/navigation";
 
 import Box from "@mui/material/Box";
 import Tab from "@mui/material/Tab";
