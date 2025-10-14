@@ -19,6 +19,7 @@ interface SearchDossierParams {
    */
   search?: string;
   include?: string;
+  codeProcedure?: string;
   acteurPrincipalRefUid?: string;
 }
 
@@ -30,6 +31,7 @@ export async function searchDossier(
     page = 0,
     sort = "dateDernierActe.desc",
     search = "",
+    codeProcedure = "",
     include,
     acteurPrincipalRefUid
   } = params;
@@ -46,6 +48,7 @@ export async function searchDossier(
     search,
     include,
     acteurPrincipalRefUid,
+    codeProcedure
   }).forEach(([key, value]) => {
     if (value) {
       searchParams.set(key, value);

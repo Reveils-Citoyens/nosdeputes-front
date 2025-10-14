@@ -46,7 +46,7 @@ export const CommissionsCard = async ({
         aria-controls="commission-content"
         id="commission-header"
       >
-        <Typography>Commissions</Typography>
+        <Typography>Rapporteurs et Rapporteuses</Typography>
       </AccordionSummary>
       <AccordionDetails>
         <Stack direction="column" spacing={2}>
@@ -54,12 +54,13 @@ export const CommissionsCard = async ({
             <div>
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <Typography variant="body2" fontWeight="light">
-                  Commission saisie au fond
+                  Commission{commissionFondIds.length > 1 ? "s" : ""} saisie au
+                  fond
                 </Typography>
                 <InfoIcon sx={{ fontSize: "14px" }} />
               </Stack>
               {commissionFondIds.map((commissionId) => (
-                <div key={commissionId}>
+                <div key={commissionId} style={{ paddingLeft: 4 }}>
                   <React.Suspense
                     key={commissionId}
                     fallback={
@@ -84,13 +85,14 @@ export const CommissionsCard = async ({
             <div>
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <Typography variant="body2" fontWeight="light">
-                  Commission saisie pour avis
+                  Commission{commissionAvisIds.length > 1 ? "s" : ""} saisie
+                  pour avis
                 </Typography>
                 <InfoIcon sx={{ fontSize: "14px" }} />
               </Stack>
               <Stack direction="column" spacing={1} alignItems="start">
                 {commissionAvisIds.map((commissionId) => (
-                  <div key={commissionId}>
+                  <div key={commissionId} style={{ paddingLeft: 4 }}>
                     <React.Suspense
                       fallback={
                         <Skeleton variant="text" sx={{ fontSize: "1rem" }} />

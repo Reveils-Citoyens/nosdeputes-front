@@ -17,6 +17,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export default function DossierList() {
   const [theme] = useQueryState("theme");
   const [search] = useQueryState("search");
+  const [codeProcedure] = useQueryState("codeProcedure");
 
   const [dossiers, setDossiers] = React.useState<Dossier[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -27,6 +28,7 @@ export default function DossierList() {
     const data = await searchDossier({
       page: currentPage,
       search: search ?? "",
+      codeProcedure: codeProcedure ?? "",
     });
 
     setIsLoading(false);
@@ -51,6 +53,7 @@ export default function DossierList() {
       const data = await searchDossier({
         page: 1,
         search: search ?? "",
+        codeProcedure: codeProcedure ?? "",
       });
 
       if (isValid) {
@@ -64,7 +67,7 @@ export default function DossierList() {
     return () => {
       isValid = false;
     };
-  }, [search, theme]);
+  }, [search, theme, codeProcedure]);
 
   return (
     <div>
