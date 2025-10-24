@@ -12,6 +12,7 @@ import CommissionItem from "./CommissionItem";
 
 import { Rapporteur } from "@prisma/client";
 import ActeurCard from "@/components/folders/ActeurCard";
+import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
 
 interface CommissionsCardProps {
   /**
@@ -57,7 +58,11 @@ export const CommissionsCard = async ({
                   Commission{commissionFondIds.length > 1 ? "s" : ""} saisie au
                   fond
                 </Typography>
-                <InfoIcon sx={{ fontSize: "14px" }} />
+                <InfoDialogIcon
+                  sx={{ fontSize: "14px" }}
+                  category="test"
+                  item="test2"
+                />
               </Stack>
               {commissionFondIds.map((commissionId) => (
                 <div key={commissionId} style={{ paddingLeft: 4 }}>
