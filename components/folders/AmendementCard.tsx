@@ -67,7 +67,12 @@ export default function AmendementCard(props: AmendementCardProps) {
           sx={{ width: "100%", mr: 2 }}
         >
           {acteurUid && (
-            <ActeurCard id={acteurUid} smallGroupColor sx={{ flexGrow: 1 }} />
+            <ActeurCard
+              id={acteurUid}
+              smallGroupColor
+              sx={{ flexGrow: 1 }}
+              link="name"
+            />
           )}
           {titre && <Typography>{titre}</Typography>}
 

@@ -98,6 +98,7 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
               underline="hover"
               component={Link}
               href={`/depute/${acteur.slug}`}
+              onClick={(event) => event.stopPropagation()}
             >
               {acteur.prenom} {acteur.nom}
             </MuiLink>
