@@ -1,10 +1,9 @@
 import * as React from "react";
 
 import { Paper, Stack, Typography } from "@mui/material";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { Acteur } from "@prisma/client";
 import { getActeurMandats } from "@/data/getActeurMandats";
-import { isNull } from "lodash";
+import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
 
 export default async function InfoPersonelles({
   acteurUid,
@@ -46,7 +45,7 @@ export default async function InfoPersonelles({
         {dernierMandatDepute === undefined ? (
           <div>
             <Typography variant="body2" fontWeight="light">
-              Debut de mandat <InfoOutlinedIcon fontSize="inherit" />
+              Debut de mandat
             </Typography>
             <Typography variant="body2">Pas de mandat de député·e·s</Typography>
           </div>
@@ -54,7 +53,7 @@ export default async function InfoPersonelles({
           <React.Fragment>
             <div>
               <Typography variant="body2" fontWeight="light">
-                Debut de mandat <InfoOutlinedIcon fontSize="inherit" />
+                Debut de mandat
               </Typography>
               <Typography variant="body2">
                 Le{" "}
@@ -69,7 +68,7 @@ export default async function InfoPersonelles({
             {dernierMandatDepute?.dateFin !== null ? (
               <div>
                 <Typography variant="body2" fontWeight="light">
-                  Fin de mandat <InfoOutlinedIcon fontSize="inherit" />
+                  Fin de mandat
                 </Typography>
                 <Typography variant="body2">
                   {`Le ${new Date(
@@ -87,7 +86,7 @@ export default async function InfoPersonelles({
 
         <div>
           <Typography variant="body2" fontWeight="light">
-            Group politique <InfoOutlinedIcon fontSize="inherit" />
+            Group politique <InfoDialogIcon category="organe" item="GP" />
           </Typography>
           <Typography variant="body2">
             {derniergroupeParlementaire &&
@@ -99,7 +98,7 @@ export default async function InfoPersonelles({
 
         <div>
           <Typography variant="body2" fontWeight="light">
-            Partis politique <InfoOutlinedIcon fontSize="inherit" />
+            Partis politique <InfoDialogIcon category="organe" item="PARPOL" />
           </Typography>
           <Typography variant="body2">
             {dernierPartisPolitique && dernierPartisPolitique.dateFin === null
@@ -110,7 +109,7 @@ export default async function InfoPersonelles({
 
         <div>
           <Typography variant="body2" fontWeight="light">
-            Date de naissance <InfoOutlinedIcon fontSize="inherit" />
+            Date de naissance
           </Typography>
           <Typography variant="body2">
             Le {dateNais && new Date(dateNais).toLocaleDateString("fr-FR")} (
@@ -120,7 +119,7 @@ export default async function InfoPersonelles({
 
         <div>
           <Typography variant="body2" fontWeight="light">
-            Profession <InfoOutlinedIcon fontSize="inherit" />
+            Profession <InfoDialogIcon category="depute" item="profession" />
           </Typography>
           <Typography variant="body2">{profession}</Typography>
         </div>

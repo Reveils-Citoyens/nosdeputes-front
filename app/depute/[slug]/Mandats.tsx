@@ -1,25 +1,19 @@
 import * as React from "react";
 
 import { List, ListItem, Box, Paper, Stack, Typography } from "@mui/material";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { Mandat, Organe } from "@prisma/client";
 import { getActeurMandats } from "@/data/getActeurMandats";
+import { organeTranslations } from "@/components/contents";
+import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
 
 // Mandat de depute, et mandat d'appartenance au group parlementaire
 const ignoredTypeOrgane = ["ASSEMBLEE", "GP", "PARPOL"];
-
-const translations: Record<string, string> = {
-  GE: "Groupes d'études",
-  GA: "Groupe d'amitié",
-  COMPER: "Commission permanente",
-  COMNL: "Missions parlementaires",
-};
 
 const order = ["COMPER", "COMNL", "GE", "GA"];
 
 type MandatsPerType = Record<
   string,
-  (Pick<Organe, "libelle"> &
+  (Pick<Organe, "libelle" | "libelleAbrev"> &
     Pick<Mandat, "libQualiteSex" | "organeRefUid" | "dateFin">)[]
 >;
 
@@ -43,6 +37,7 @@ export default async function Mandats({ acteurUid }: { acteurUid: string }) {
           {
             organeRefUid,
             libelle: organe?.libelle,
+            libelleAbrev: organe?.libelleAbrev,
             libQualiteSex,
             dateFin,
           },
@@ -62,8 +57,8 @@ export default async function Mandats({ acteurUid }: { acteurUid: string }) {
         {types.map((type) => (
           <Box key={type}>
             <Typography variant="body2" fontWeight="light">
-              {translations[type] ?? type}{" "}
-              <InfoOutlinedIcon fontSize="inherit" />
+              {organeTranslations[type] ?? type}{" "}
+              <InfoDialogIcon category="organe" item={type} />
             </Typography>
             <List>
               {mandatsPerType[type]
