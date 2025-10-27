@@ -7,16 +7,16 @@ import AmendementCard from "@/components/folders/AmendementCard";
 import { Button, Typography } from "@mui/material";
 import { searchAmendement } from "@/data/searchAmendement";
 import { useQuery } from "@tanstack/react-query";
+import { useQueryState } from "nuqs";
 
-export default function AmendementsList(props: {
-  numero: string;
-  dossierUid: string;
-  documentUid?: string;
-  deputeUid?: string;
-  status?: string;
-  search: string;
-}) {
-  const { numero, dossierUid, documentUid, deputeUid, status, search } = props;
+export default function AmendementsList(props: { dossierUid: string }) {
+  const { dossierUid } = props;
+
+  const [search] = useQueryState("search");
+  const [numero] = useQueryState("numero");
+  const [documentUid] = useQueryState("document");
+  const [deputeUid] = useQueryState("depute");
+  const [status] = useQueryState("status");
 
   const [page, setPage] = React.useState(1);
 
@@ -27,11 +27,11 @@ export default function AmendementsList(props: {
   const { data: amendements, isPending } = useQuery({
     queryKey: [
       "amendements",
-      status,
       dossierUid,
-      documentUid,
-      deputeUid,
-      search,
+      status ?? "",
+      documentUid ?? "",
+      deputeUid ?? "",
+      search ?? "",
       page,
     ],
 
@@ -40,10 +40,10 @@ export default function AmendementsList(props: {
         page,
         perPage: 20,
         dossierUid,
-        sortAmendement: status,
-        documentRefUid: documentUid,
-        acteurRefUid: deputeUid,
-        search,
+        sortAmendement: status ?? "",
+        documentRefUid: documentUid ?? "",
+        acteurRefUid: deputeUid ?? "",
+        search: search ?? "",
       });
       return data;
     },
@@ -52,11 +52,11 @@ export default function AmendementsList(props: {
   const { data: nextAmendements, isPending: nextIsPending } = useQuery({
     queryKey: [
       "amendements",
-      status,
       dossierUid,
-      documentUid,
-      deputeUid,
-      search,
+      status ?? "",
+      documentUid ?? "",
+      deputeUid ?? "",
+      search ?? "",
       page + 1,
     ],
 
@@ -65,10 +65,10 @@ export default function AmendementsList(props: {
         page: page + 1,
         perPage: 20,
         dossierUid,
-        sortAmendement: status,
-        documentRefUid: documentUid,
-        acteurRefUid: deputeUid,
-        search,
+        sortAmendement: status ?? "",
+        documentRefUid: documentUid ?? "",
+        acteurRefUid: deputeUid ?? "",
+        search: search ?? "",
       });
       return data;
     },

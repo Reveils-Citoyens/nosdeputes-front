@@ -4,31 +4,20 @@ import TextField from "@mui/material/TextField";
 import { sortAmendementPossible } from "@/data/searchAmendement";
 import { useQuery } from "@tanstack/react-query";
 import { searchDocument } from "@/data/searchDocument";
+import { useQueryState } from "nuqs";
 
 type FilterProps = {
   dossierUid: string;
-  numero: string;
-  handleNumero: (numero: string) => void;
-  selectedDocument: string;
-  setSelectedDocument: (id: string) => void;
-  depute: string;
-  handleDepute: (id: string) => void;
-  status: string;
-  handleStatus: (id: string) => void;
 };
 
 export const Filter = (props: FilterProps) => {
-  const {
-    dossierUid,
-    numero,
-    handleNumero,
-    selectedDocument,
-    setSelectedDocument,
-    depute,
-    handleDepute,
-    status,
-    handleStatus,
-  } = props;
+  const { dossierUid } = props;
+
+  const [search] = useQueryState("search");
+  // const [numero, handleNumero] = useQueryState("numero");
+  const [document, handleDocument] = useQueryState("document");
+  // const [depute, handleDepute] = useQueryState("depute");
+  const [status, handleStatus] = useQueryState("status");
 
   const { data: documents, isPending: dossierPending } = useQuery({
     queryKey: ["documents", dossierUid],
@@ -83,9 +72,9 @@ export const Filter = (props: FilterProps) => {
         size="small"
         variant="outlined"
         label="Document"
-        value={selectedDocument}
+        value={document}
         onChange={(event) => {
-          setSelectedDocument(event.target.value);
+          handleDocument(event.target.value);
         }}
       >
         <MenuItem value="">Tout document</MenuItem>
