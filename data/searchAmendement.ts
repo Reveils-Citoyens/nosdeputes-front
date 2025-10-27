@@ -115,9 +115,6 @@ export async function searchAmendement(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/amendements?${searchParams}`
     );
 
-    console.log(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/amendements?${searchParams}`
-    );
     const { data } = await rep.json();
 
     const pagination = extractPaginationMetadata(rep, page);
