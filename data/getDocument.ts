@@ -3,7 +3,7 @@ import { AuteurDocument, CoSignataireDocument, Document } from "@prisma/client";
 
 export type ReturnedDocument = Document & {
   coSignataires?: CoSignataireDocument[];
-  // auteurs?: AuteurDocument[];
+  auteurs?: AuteurDocument[];
   _count: {
     amendements: number;
   };
@@ -13,8 +13,9 @@ async function getDocumentUnCached(
 ): Promise<ReturnedDocument | null> {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/documents/${uid}?include=coSignataires,_count.amendements`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/documents/${uid}?include=auteurs,coSignataires,_count.amendements`
     );
+
 
     const { data } = await rep.json();
 

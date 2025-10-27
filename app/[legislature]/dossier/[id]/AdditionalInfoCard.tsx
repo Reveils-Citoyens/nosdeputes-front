@@ -29,7 +29,13 @@ export const AdditionalInfoCard = async (props: {
 
   const validDocuments = documents
     .filter((document) => document != null)
-    .filter((document) => document._count.amendements > 0);
+    .filter(
+      (document) =>
+        (props.showAmendements && document._count.amendements > 0) ||
+        (props.showCoSignataires &&
+          document.coSignataires &&
+          document.coSignataires.length > 0)
+    );
 
   return (
     <Accordion elevation={0} disableGutters defaultExpanded color="secondary">
@@ -75,8 +81,8 @@ export const AdditionalInfoCard = async (props: {
                 validDocuments
                   .flatMap((document) => [
                     // Not sure if document autors should be included.
-                    // ...(document.auteurs?.map((auteur) => auteur.acteurRefUid) ??
-                    //   []),
+                    ...(document.auteurs?.map((auteur) => auteur.acteurRefUid) ??
+                      []),
                     ...(document.coSignataires?.map(
                       (coSignataire) => coSignataire.acteurRefUid
                     ) ?? []),

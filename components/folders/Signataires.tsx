@@ -28,7 +28,7 @@ export default function Signataires(props: {
         {signataireUids
           ?.slice(0, fullSignataires ? signataireUids.length : limite)
           ?.map((acteurUid) => {
-            return <ActeurCard key={acteurUid} id={acteurUid} />;
+            return <ActeurCard key={acteurUid} id={acteurUid} link="name" />;
           })}
         {!fullSignataires && signataireUids.length > limite && (
           <Button
