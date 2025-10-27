@@ -43,12 +43,6 @@ export const Filter = (props: FilterProps) => {
     },
   });
 
-  if (!selectedDocument && documents) {
-    setSelectedDocument(
-      documents.filter((document) => document !== null)[0]?.uid ?? ""
-    );
-  }
-
   // const deputes = React.useMemo(() => {
   //   const seenIds = new Set();
   //   return documents
@@ -94,7 +88,7 @@ export const Filter = (props: FilterProps) => {
           setSelectedDocument(event.target.value);
         }}
       >
-        {/* <MenuItem value="">Tout document</MenuItem> */}
+        <MenuItem value="">Tout document</MenuItem>
         {(documents ?? [])
           .filter((document) => document !== null)
           .map((document) => (

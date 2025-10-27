@@ -63,6 +63,7 @@ export default function Page() {
           startAdornment={<SearchIcon />}
         />
         <AmendementList
+          dossierUid={dossierUid}
           search={search}
           numero={numero}
           documentUid={document}

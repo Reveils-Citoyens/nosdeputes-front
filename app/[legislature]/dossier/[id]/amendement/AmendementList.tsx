@@ -4,37 +4,42 @@ import React from "react";
 import Stack from "@mui/material/Stack";
 
 import AmendementCard from "@/components/folders/AmendementCard";
-import { Acteur, Amendement, Organe } from "@prisma/client";
 import { Button, Typography } from "@mui/material";
 import { searchAmendement } from "@/data/searchAmendement";
-import { unique } from "@/utils/unique";
 import { useQuery } from "@tanstack/react-query";
 
 export default function AmendementsList(props: {
   numero: string;
-  documentUid: string;
-  deputeUid: string;
-  status: string;
+  dossierUid: string;
+  documentUid?: string;
+  deputeUid?: string;
+  status?: string;
   search: string;
 }) {
-  const { numero, documentUid, deputeUid, status, search } = props;
+  const { numero, dossierUid, documentUid, deputeUid, status, search } = props;
 
   const [page, setPage] = React.useState(1);
 
   React.useEffect(() => {
     setPage(1);
-  }, [status, documentUid, deputeUid, search]);
+  }, [status, dossierUid, documentUid, deputeUid, search]);
 
   const { data: amendements, isPending } = useQuery({
-    queryKey: ["amendements", status, documentUid, deputeUid, search, page],
+    queryKey: [
+      "amendements",
+      status,
+      dossierUid,
+      documentUid,
+      deputeUid,
+      search,
+      page,
+    ],
 
     queryFn: async () => {
-      if (!documentUid) {
-        return [];
-      }
       const data = await searchAmendement({
         page,
         perPage: 20,
+        dossierUid,
         sortAmendement: status,
         documentRefUid: documentUid,
         acteurRefUid: deputeUid,
@@ -45,15 +50,21 @@ export default function AmendementsList(props: {
   });
 
   const { data: nextAmendements, isPending: nextIsPending } = useQuery({
-    queryKey: ["amendements", status, documentUid, deputeUid, search, page + 1],
+    queryKey: [
+      "amendements",
+      status,
+      dossierUid,
+      documentUid,
+      deputeUid,
+      search,
+      page + 1,
+    ],
 
     queryFn: async () => {
-      if (!documentUid) {
-        return [];
-      }
       const data = await searchAmendement({
         page: page + 1,
         perPage: 20,
+        dossierUid,
         sortAmendement: status,
         documentRefUid: documentUid,
         acteurRefUid: deputeUid,
@@ -63,7 +74,6 @@ export default function AmendementsList(props: {
     },
   });
 
-  const showList = !isPending && documentUid;
   return (
     <Stack>
       {/* {searchActivated && (
@@ -71,15 +81,14 @@ export default function AmendementsList(props: {
         //   {filteredAmendements.length} correspondent à votre recherche
         // </Typography>
         )} */}
-      {!showList && <p>Loading ...</p>}
-      {showList &&
-        (amendements ?? []).map((amendement) => (
-          <AmendementCard
-            amendement={amendement}
-            acteurUid={amendement.acteurRefUid}
-            key={amendement.uid}
-          />
-        ))}
+      {isPending && <Typography>Chargement des amendements...</Typography>}
+      {(amendements ?? []).map((amendement) => (
+        <AmendementCard
+          amendement={amendement}
+          acteurUid={amendement.acteurRefUid}
+          key={amendement.uid}
+        />
+      ))}
 
       <Stack
         justifyContent="space-between"
