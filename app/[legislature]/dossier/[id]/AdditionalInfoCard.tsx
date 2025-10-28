@@ -37,6 +37,23 @@ export const AdditionalInfoCard = async (props: {
           document.coSignataires.length > 0)
     );
 
+  const totalAmendements = validDocuments.reduce(
+    (sum, document) => sum + document._count.amendements,
+    0
+  );
+
+  const coSignataires = unique(
+    validDocuments
+      .flatMap((document) => [
+        // Not sure if document autors should be included.
+        ...(document.auteurs?.map((auteur) => auteur.acteurRefUid) ?? []),
+        ...(document.coSignataires?.map(
+          (coSignataire) => coSignataire.acteurRefUid
+        ) ?? []),
+      ])
+      .filter((acteur) => acteur !== null)
+  );
+
   return (
     <Accordion elevation={0} disableGutters defaultExpanded color="secondary">
       <AccordionSummary
@@ -47,7 +64,7 @@ export const AdditionalInfoCard = async (props: {
       </AccordionSummary>
       <AccordionDetails>
         <Stack direction="column" spacing={2}>
-          {props.showAmendements && validDocuments.length > 0 && (
+          {props.showAmendements && (
             <React.Fragment>
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <Typography variant="body2" fontWeight="light">
@@ -56,58 +73,21 @@ export const AdditionalInfoCard = async (props: {
                 <InfoIcon sx={{ fontSize: "14px" }} />
               </Stack>
               <Stack direction="column" spacing={1}>
-                {validDocuments.map(({ uid, titrePrincipalCourt, _count }) => (
-                  <div key={uid}>
-                    <Typography variant="body2" fontWeight="bold">
-                      {_count.amendements} amendements
-                    </Typography>
-                    <MuiLink
-                      variant="body2"
-                      fontWeight="light"
-                      component={Link}
-                      href={`/${props.legislature}/dossier/${props.dossierUid}/amendement?document=${uid}`}
-                    >
-                      {titrePrincipalCourt}
-                    </MuiLink>
-                  </div>
-                ))}
+                <MuiLink
+                  variant="body2"
+                  fontWeight="light"
+                  component={Link}
+                  href={`/${props.legislature}/dossier/${props.dossierUid}/amendement`}
+                >
+                  {totalAmendements} amendements
+                </MuiLink>
               </Stack>
             </React.Fragment>
           )}
 
           {props.showCoSignataires && (
-            <Signataires
-              signataireUids={unique(
-                validDocuments
-                  .flatMap((document) => [
-                    // Not sure if document autors should be included.
-                    ...(document.auteurs?.map((auteur) => auteur.acteurRefUid) ??
-                      []),
-                    ...(document.coSignataires?.map(
-                      (coSignataire) => coSignataire.acteurRefUid
-                    ) ?? []),
-                  ])
-                  .filter((acteur) => acteur !== null)
-              )}
-              limite={3}
-            />
+            <Signataires signataireUids={coSignataires} limite={3} />
           )}
-
-          {/* <Stack direction="column" spacing={1}>
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <Typography variant="body2" fontWeight="light">
-                Orateur (TODO)
-              </Typography>
-              <InfoIcon sx={{ fontSize: "14px" }} />
-            </Stack>
-            <DeputyPreview />
-            <DeputyPreview />
-            <DeputyPreview />
-            <DeputyPreview />
-            <Button fullWidth variant="contained" color="secondary">
-              Tous les orateurs (7)
-            </Button>
-          </Stack>*/}
         </Stack>
       </AccordionDetails>
     </Accordion>
