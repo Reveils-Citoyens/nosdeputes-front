@@ -17,7 +17,9 @@ export default async function Layout({
   const pointsOdj = await getPointsOdj(id);
 
   const odjWithDebat = pointsOdj?.filter(
-    (pt) => pt.agendaRef?.compteRenduDisponible === true
+    (pt) =>
+      pt.agendaRef?.compteRenduDisponible === true &&
+      pt._count.interventions > 0
   );
   if (odjWithDebat == null || odjWithDebat.length === 0) {
     return <p>Aucun débat n&apos;a été trouvé pour ce dossier legislatif.</p>;
