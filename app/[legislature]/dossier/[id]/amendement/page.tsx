@@ -9,16 +9,13 @@ import Container from "@mui/material/Container";
 import { debounce } from "@mui/material/utils";
 import Input from "@mui/material/Input";
 import SearchIcon from "@mui/icons-material/Search";
+import { useQueryState } from "nuqs";
 
 export default function Page() {
   const { id: dossierUid } = useParams<{ id: string }>();
-
-  const [search, handleSearch] = React.useState("");
-  const [numero, handleNumero] = React.useState("");
-  const [document, handleDocument] = React.useState("");
-  const [depute, handleDepute] = React.useState("");
-  const [status, handleStatus] = React.useState("");
-
+  const [search, handleSearch] = useQueryState("search", {
+    limitUrlUpdates: { method: "debounce", timeMs: 500 },
+  });
   const debouncedSetSearch = React.useMemo(
     () =>
       debounce((newSearch) => {
@@ -41,17 +38,7 @@ export default function Page() {
     >
       <Stack spacing={3} useFlexGap flex={2}>
         <FilterContainer>
-          <Filter
-            numero={numero}
-            handleNumero={handleNumero}
-            selectedDocument={document}
-            setSelectedDocument={handleDocument}
-            dossierUid={dossierUid}
-            depute={depute}
-            handleDepute={handleDepute}
-            status={status}
-            handleStatus={handleStatus}
-          />
+          <Filter dossierUid={dossierUid} />
         </FilterContainer>
       </Stack>
       <Stack spacing={3} useFlexGap flex={8} sx={{ minWidth: 0 }}>
@@ -62,13 +49,7 @@ export default function Page() {
           onChange={(event) => debouncedSetSearch(event.target.value)}
           startAdornment={<SearchIcon />}
         />
-        <AmendementList
-          search={search}
-          numero={numero}
-          documentUid={document}
-          deputeUid={depute}
-          status={status}
-        />
+        <AmendementList dossierUid={dossierUid} />
       </Stack>
     </Container>
   );

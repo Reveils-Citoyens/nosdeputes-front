@@ -25,6 +25,10 @@ type SearchAmendementParams = {
    * L'uid of l'auteur de l'amendment.
    */
   acteurRefUid?: string;
+  /**
+   * L'uid du dossier associé à l'amendement.
+   */
+  dossierUid?: string;
 
 } | {
   /**
@@ -35,6 +39,23 @@ type SearchAmendementParams = {
    * L'uid of l'auteur de l'amendment.
    */
   acteurRefUid: string;
+  /**
+   * L'uid du dossier associé à l'amendement.
+   */
+  dossierUid?: string;
+} | {
+  /**
+   * L'uid of the document sur le quel porte l'amendment.
+   */
+  documentRefUid?: string;
+  /**
+   * L'uid of l'auteur de l'amendment.
+   */
+  acteurRefUid?: string;
+  /**
+   * L'uid du dossier associé à l'amendement.
+   */
+  dossierUid: string;
 })
 
 export const sortAmendementPossible = [
@@ -59,6 +80,7 @@ export async function searchAmendement(
     page = 1,
     sort = "numeroOrdreDepot.asc",
     search = "",
+    dossierUid,
     documentRefUid,
     acteurRefUid,
     sortAmendement,
@@ -76,6 +98,9 @@ export async function searchAmendement(
   if (acteurRefUid) {
     searchParams.set("acteurRefUid", acteurRefUid);
   }
+  if (dossierUid) {
+    searchParams.set("dossierRefUid", dossierUid);
+  }
   if (sortAmendement) {
     searchParams.set("sortAmendement", sortAmendement);
   }
@@ -87,6 +112,7 @@ export async function searchAmendement(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/amendements?${searchParams}`
     );
 
+    console.log(`${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/amendements?${searchParams}`)
     const { data } = await rep.json();
 
 

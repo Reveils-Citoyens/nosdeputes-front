@@ -25,19 +25,19 @@ export default function DossiersTabs(props: {
     {
       value: "debat",
       label: "Débats",
-      href: `${rootPathName}/debat`,
+      href: `${rootPathName}debat`,
       visible: showDebats,
     },
     {
       value: "amendement",
       label: "Amendements",
-      href: `${rootPathName}/amendement`,
+      href: `${rootPathName}amendement`,
       visible: showAmendements,
     },
     {
       value: "votes",
       label: "Votes",
-      href: `${rootPathName}/votes`,
+      href: `${rootPathName}votes`,
       visible: showVotes,
     },
   ];

@@ -153,7 +153,9 @@ export function ActeurStatSectionClient({
           valeurDepute: metriquesValues[item.periode][item.mesure] ?? 0,
         };
       });
-    return DEPUTE_STATS_METRICS.map((mesure) => metricToStats[mesure]);
+    return DEPUTE_STATS_METRICS.map((mesure) => metricToStats[mesure]).filter(
+      Boolean
+    );
   }, [deputeStatsData, metriquesValues, periode]);
 
   return (

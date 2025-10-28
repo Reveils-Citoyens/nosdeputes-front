@@ -5,7 +5,6 @@ import {
   Mandat,
   Organe,
 } from "@prisma/client";
-import { getOrgane } from "./getOrgane";
 
 export type MandatWithOrgane = Mandat & {
   organeRef: Organe | null;

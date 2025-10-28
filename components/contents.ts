@@ -263,8 +263,6 @@ Cet indicateur mesure la capacité d’initiative législative d’un parlementa
 } as const
 
 
-
-
 export const organeTranslations = Object.entries(infoDialogContents.organe).reduce((acc, [key, value]) => {
     acc[key] = value.translation || key;
     return acc;

@@ -3,10 +3,10 @@
 import * as React from "react";
 import { Stack } from "@mui/material";
 import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 import Link from "next/link";
 import LabelChip from "../LabelChip";
 import { Dossier } from "@prisma/client";
-import { LoadingButton } from "@mui/lab";
 import { searchDossier } from "@/data/searchDossier";
 import { useQueryState } from "nuqs";
 
@@ -114,7 +114,7 @@ export default function DossierList() {
           ))}
       </Stack>
 
-      <LoadingButton
+      <Button
         loading={isLoading}
         onClick={() => fetchMoreDossiers()}
         disabled={
@@ -122,7 +122,7 @@ export default function DossierList() {
         }
       >
         Dossiers suivant
-      </LoadingButton>
+      </Button>
     </div>
   );
 }
