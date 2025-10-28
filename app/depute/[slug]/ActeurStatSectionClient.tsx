@@ -41,7 +41,7 @@ const baselineTypeToInfo: Record<string, string> = {
   interventions: "presences",
   amendements: "nb_amendements",
   "presence-commission": "presences_commission",
-  "documents-publies": "nb_amendements",
+  "documents-publies": "nb_documents_publie",
 };
 
 const MetriqueCard = (props: Stats & { valeurDepute: number }) => {
@@ -147,14 +147,14 @@ export function ActeurStatSectionClient({
     const metricToStats: Record<string, Stats & { valeurDepute: number }> = {};
     deputeStatsData
       ?.filter((item) => item.periode === periode)
-      .forEach((item) => {
+      ?.forEach((item) => {
         metricToStats[item.mesure] = {
           ...item,
           valeurDepute: metriquesValues[item.periode][item.mesure] ?? 0,
         };
       });
     return DEPUTE_STATS_METRICS.map((mesure) => metricToStats[mesure]).filter(
-      Boolean
+      (value) => value != null
     );
   }, [deputeStatsData, metriquesValues, periode]);
 
