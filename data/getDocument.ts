@@ -9,11 +9,11 @@ export type ReturnedDocument = Document & {
   };
 };
 async function getDocumentUnCached(
-  uid: string
+  uid: string, include?: string[]
 ): Promise<ReturnedDocument | null> {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/documents/${uid}?include=auteurs,coSignataires,_count.amendements`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/documents/${uid}?include=${(include ?? ["auteurs", "coSignataires", "_count.amendements"]).join(",")}`
     );
 
 

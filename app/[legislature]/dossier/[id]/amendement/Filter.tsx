@@ -2,9 +2,10 @@ import * as React from "react";
 import { MenuItem } from "@mui/material";
 import TextField from "@mui/material/TextField";
 import { sortAmendementPossible } from "@/data/searchAmendement";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { searchDocument } from "@/data/searchDocument";
 import { useQueryState } from "nuqs";
+import { getDocument } from "@/data/getDocument";
 
 type FilterProps = {
   dossierUid: string;
@@ -31,6 +32,25 @@ export const Filter = (props: FilterProps) => {
       return data;
     },
   });
+
+  const documentAmendementsCount = useQueries({
+    queries: (documents ?? []).map((document) => {
+      return {
+        queryKey: ["documentAmendements", document.uid],
+        queryFn: () => getDocument(document.uid, ["_count.amendements"]),
+      };
+    }),
+  });
+
+  const countMapping = React.useMemo(() => {
+    const mapping: Record<string, number> = {};
+    documentAmendementsCount.forEach((result) => {
+      if (result.data?._count.amendements != null) {
+        mapping[result.data.uid] = result.data._count.amendements;
+      }
+    });
+    return mapping;
+  }, [documentAmendementsCount]);
 
   // const deputes = React.useMemo(() => {
   //   const seenIds = new Set();
@@ -79,11 +99,16 @@ export const Filter = (props: FilterProps) => {
       >
         <MenuItem value="">Tout document</MenuItem>
         {(documents ?? [])
-          .filter((document) => document !== null)
+          .filter(
+            (document) =>
+              document !== null &&
+              (countMapping[document.uid] == null ||
+                countMapping[document.uid] > 0)
+          )
           .map((document) => (
             <MenuItem key={document.uid} value={document.uid}>
-              {document.depotLibelle} ({document.chambre})
-              {/*} ({(document as any)._count.amendements})*/}
+              {document.chambre}: {document.depotLibelle} (
+              {countMapping[document.uid] ? countMapping[document.uid] : "?"})
             </MenuItem>
           ))}
       </TextField>
