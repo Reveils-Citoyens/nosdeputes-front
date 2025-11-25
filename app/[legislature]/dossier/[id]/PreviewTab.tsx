@@ -23,7 +23,7 @@ export const PreviewTab = ({ dossier }: PreviewTabProps) => {
     carteAmendements = true,
     carteCoSignataires = true,
     carteDocuments = true,
-  } = dossierSettings[codeProcedure] ?? {};
+  } = (codeProcedure ? dossierSettings[codeProcedure] : {}) ?? {};
 
   const commissionFondIds = getCommissionUids(actesLegislatifs, "FOND");
   const commissionAvisIds = getCommissionUids(actesLegislatifs, "AVIS");

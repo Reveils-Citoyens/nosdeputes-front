@@ -21,11 +21,11 @@ export default async function Mandats({ acteurUid }: { acteurUid: string }) {
   const mandats = await getActeurMandats(acteurUid);
 
   const mandatsPerType = mandats
-    .filter((m) => !ignoredTypeOrgane.includes(m.typeOrgane))
+    .filter((m) => m.typeOrgane && !ignoredTypeOrgane.includes(m.typeOrgane))
     .reduce((acc, mandat) => {
       const organe = mandat.organeRef;
 
-      if (!organe) {
+      if (!organe || !mandat.typeOrgane) {
         return acc;
       }
       const { libQualiteSex, typeOrgane, organeRefUid, dateFin } = mandat;

@@ -26,21 +26,23 @@ export default async function Dossier({
     tableDebats = true,
     tableAmendements = true,
     tableVotes = true,
-  } = dossierSettings[codeProcedure] ?? {};
+  } = (codeProcedure ? dossierSettings[codeProcedure] : {}) ?? {};
   const status = getCurrentStatus(actesLegislatifs);
 
   return (
     <>
       <HeroSection
-        libelleProcedure={libelleProcedure}
+        libelleProcedure={libelleProcedure ?? ""}
         titre={titre}
         theme={theme}
         status={status}
       />
-      <Tabs legislature={legislature} dossierUid={id} 
-      showDebats={tableDebats}
-      showAmendements={tableAmendements}
-      showVotes={tableVotes}
+      <Tabs
+        legislature={legislature}
+        dossierUid={id}
+        showDebats={tableDebats}
+        showAmendements={tableAmendements}
+        showVotes={tableVotes}
       />
       {children}
     </>
