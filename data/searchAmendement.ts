@@ -1,4 +1,5 @@
 import { Amendement } from "@prisma/client";
+import { PaginatedResponse, extractPaginationMetadata } from "./pagination";
 
 type SearchAmendementParams = {
   /**
@@ -15,48 +16,50 @@ type SearchAmendementParams = {
   sort?: string;
   search?: string;
   sortAmendement?: string;
-} & ({
-
-  /**
-   * L'uid of the document sur le quel porte l'amendment.
-   */
-  documentRefUid: string;
-  /**
-   * L'uid of l'auteur de l'amendment.
-   */
-  acteurRefUid?: string;
-  /**
-   * L'uid du dossier associé à l'amendement.
-   */
-  dossierUid?: string;
-
-} | {
-  /**
-   * L'uid of the document sur le quel porte l'amendment.
-   */
-  documentRefUid?: string;
-  /**
-   * L'uid of l'auteur de l'amendment.
-   */
-  acteurRefUid: string;
-  /**
-   * L'uid du dossier associé à l'amendement.
-   */
-  dossierUid?: string;
-} | {
-  /**
-   * L'uid of the document sur le quel porte l'amendment.
-   */
-  documentRefUid?: string;
-  /**
-   * L'uid of l'auteur de l'amendment.
-   */
-  acteurRefUid?: string;
-  /**
-   * L'uid du dossier associé à l'amendement.
-   */
-  dossierUid: string;
-})
+} & (
+  | {
+      /**
+       * L'uid of the document sur le quel porte l'amendment.
+       */
+      documentRefUid: string;
+      /**
+       * L'uid of l'auteur de l'amendment.
+       */
+      acteurRefUid?: string;
+      /**
+       * L'uid du dossier associé à l'amendement.
+       */
+      dossierUid?: string;
+    }
+  | {
+      /**
+       * L'uid of the document sur le quel porte l'amendment.
+       */
+      documentRefUid?: string;
+      /**
+       * L'uid of l'auteur de l'amendment.
+       */
+      acteurRefUid: string;
+      /**
+       * L'uid du dossier associé à l'amendement.
+       */
+      dossierUid?: string;
+    }
+  | {
+      /**
+       * L'uid of the document sur le quel porte l'amendment.
+       */
+      documentRefUid?: string;
+      /**
+       * L'uid of l'auteur de l'amendment.
+       */
+      acteurRefUid?: string;
+      /**
+       * L'uid du dossier associé à l'amendement.
+       */
+      dossierUid: string;
+    }
+);
 
 export const sortAmendementPossible = [
   "A discuter",
@@ -74,7 +77,7 @@ export const sortAmendementPossible = [
 
 export async function searchAmendement(
   params: SearchAmendementParams
-): Promise<Amendement[] | null> {
+): Promise<PaginatedResponse<Amendement> | null> {
   const {
     perPage = 10,
     page = 1,
@@ -112,11 +115,17 @@ export async function searchAmendement(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/amendements?${searchParams}`
     );
 
-    console.log(`${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/amendements?${searchParams}`)
+    console.log(
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/amendements?${searchParams}`
+    );
     const { data } = await rep.json();
 
+    const pagination = extractPaginationMetadata(rep, page);
 
-    return data;
+    return {
+      data,
+      pagination,
+    };
   } catch (error) {
     console.error("Error fetching dossier:", error);
     return null;

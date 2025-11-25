@@ -25,15 +25,17 @@ export default function DossierList() {
 
   const fetchMoreDossiers = async () => {
     setIsLoading(true);
-    const data = await searchDossier({
+    const result = await searchDossier({
       page: currentPage,
       search: search ?? "",
       codeProcedure: codeProcedure ?? "",
     });
 
     setIsLoading(false);
-    setDossiers((prev) => [...prev, ...(data ?? [])]);
-    setCurrentPage((prev) => prev + 1);
+    if (result) {
+      setDossiers((prev) => [...prev, ...result.data]);
+      setCurrentPage((prev) => prev + 1);
+    }
   };
 
   React.useEffect(() => {
@@ -50,15 +52,15 @@ export default function DossierList() {
         return;
       }
 
-      const data = await searchDossier({
+      const result = await searchDossier({
         page: 1,
         search: search ?? "",
         codeProcedure: codeProcedure ?? "",
       });
 
-      if (isValid) {
+      if (isValid && result) {
         setIsLoading(false);
-        setDossiers(data ?? []);
+        setDossiers(result.data);
         setCurrentPage(2);
       }
     }
@@ -117,9 +119,7 @@ export default function DossierList() {
       <Button
         loading={isLoading}
         onClick={() => fetchMoreDossiers()}
-        disabled={
-          isLoading || dossiers.length !== (currentPage - 1) * PAGE_SIZE // The last fetch did not returned a full page
-        }
+        disabled={isLoading}
       >
         Dossiers suivant
       </Button>

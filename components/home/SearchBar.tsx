@@ -24,7 +24,7 @@ const fetchActeurs = debounce(
 
 const fetchDossiers = debounce(
   (search: string, callback: (results: null | readonly Dossier[]) => void) =>
-    searchDossier({ search }).then(callback)
+    searchDossier({ search }).then((result) => callback(result?.data ?? null))
 );
 const emptyOptions = [] as const;
 

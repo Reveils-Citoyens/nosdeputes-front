@@ -38,12 +38,12 @@ export default function Amendements() {
   const [sortAmendement, setSortAmendement] = React.useState("");
   const [page, setPage] = React.useState(1);
 
-  const { data, isPending } = useQuery({
+  const { data: result, isPending } = useQuery({
     queryKey: ["amendements", page, acteur?.uid, sortAmendement, search],
 
     queryFn: async () => {
       if (!acteur?.uid) {
-        return [];
+        return null;
       }
       const data = await searchAmendement({
         page,
@@ -54,24 +54,10 @@ export default function Amendements() {
       return data;
     },
   });
-  const { data: nextPageData } = useQuery({
-    queryKey: ["amendements", page + 1, acteur?.uid, sortAmendement, search],
 
-    queryFn: async () => {
-      if (!acteur?.uid) {
-        return [];
-      }
-      const data = await searchAmendement({
-        page: page + 1,
-        acteurRefUid: acteur?.uid,
-        sortAmendement,
-        search,
-      });
-      return data;
-    },
-  });
-
-  const hasNextPage = nextPageData && nextPageData?.length > 0;
+  const data = result?.data ?? [];
+  const pagination = result?.pagination;
+  const hasNextPage = pagination ? page < pagination.totalPage : false;
   const debouncedSetSearch = React.useMemo(
     () =>
       debounce((newSearch) => {
@@ -110,14 +96,14 @@ export default function Amendements() {
         {isPending && <LinearProgress />}
         <Stack direction="row" justifyContent="space-between">
           <Button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-            pev
+            prev
           </Button>
           <Typography>page {page}</Typography>
           <Button disabled={!hasNextPage} onClick={() => setPage((p) => p + 1)}>
             next
           </Button>
         </Stack>
-        {data?.map((amendement) => {
+        {data.map((amendement) => {
           const titre = `Amendement N°${amendement.numeroOrdreDepot}`;
 
           return (

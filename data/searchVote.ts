@@ -1,5 +1,5 @@
 import { Vote } from "@prisma/client";
-
+import { PaginatedResponse, extractPaginationMetadata } from "./pagination";
 
 interface SearchVoteParams {
   /**
@@ -25,7 +25,7 @@ interface SearchVoteParams {
 
 export async function searchVote(
   params: SearchVoteParams
-): Promise<Vote[] | null> {
+): Promise<PaginatedResponse<Vote> | null> {
   const {
     perPage = 10,
     page = 1,
@@ -36,7 +36,7 @@ export async function searchVote(
     codeTypeVote,
     scrutinRefUid,
     causePositionVote,
-    positionVote
+    positionVote,
   } = params;
 
   const searchParams = new URLSearchParams({
@@ -45,7 +45,6 @@ export async function searchVote(
     sort,
   });
 
-
   Object.entries({
     search,
     include,
@@ -53,13 +52,12 @@ export async function searchVote(
     codeTypeVote,
     scrutinRefUid,
     causePositionVote,
-    positionVote
+    positionVote,
   }).forEach(([key, value]) => {
     if (value) {
       searchParams.set(key, value);
     }
-
-  })
+  });
   try {
     const rep = await fetch(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/votes?${searchParams}`
@@ -67,7 +65,12 @@ export async function searchVote(
 
     const { data } = await rep.json();
 
-    return data ?? null;
+    const pagination = extractPaginationMetadata(rep, page);
+
+    return {
+      data: data ?? [],
+      pagination,
+    };
   } catch (error) {
     console.error("Error fetching dossier:", error);
     return null;

@@ -48,42 +48,27 @@ export default function Votes() {
   const [positionVote, setPositionVote] = React.useState("");
   const [page, setPage] = React.useState(1);
 
-  const { data, isPending } = useQuery({
+  const { data: result, isPending } = useQuery({
     queryKey: ["votes", page, acteur?.uid, positionVote, search],
 
     queryFn: async () => {
       if (!acteur?.uid) {
-        return [];
+        return null;
       }
-      const data = (await searchVote({
+      const result = await searchVote({
         page,
         acteurRefUid: acteur?.uid,
         positionVote,
         search,
         include: "scrutinRef",
-      })) as null | (Vote & { scrutinRef: Scrutin })[];
-      return data;
-    },
-  });
-  const { data: nextPageData } = useQuery({
-    queryKey: ["votes", page + 1, acteur?.uid, positionVote, search],
-
-    queryFn: async () => {
-      if (!acteur?.uid) {
-        return [];
-      }
-      const data = (await searchVote({
-        page: page + 1,
-        acteurRefUid: acteur?.uid,
-        positionVote,
-        search,
-        include: "scrutinRef",
-      })) as null | (Vote & { scrutinRef: Scrutin })[];
-      return data;
+      });
+      return result;
     },
   });
 
-  const hasNextPage = nextPageData && nextPageData?.length > 0;
+  const data = (result?.data ?? []) as (Vote & { scrutinRef: Scrutin })[];
+  const pagination = result?.pagination;
+  const hasNextPage = pagination ? page < pagination.totalPage : false;
   const debouncedSetSearch = React.useMemo(
     () =>
       debounce((newSearch) => {
@@ -123,7 +108,7 @@ export default function Votes() {
         {isPending && <LinearProgress />}
         <Stack direction="row" justifyContent="space-between">
           <Button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-            pev
+            prev
           </Button>
           <Typography>page {page}</Typography>
           <Button disabled={!hasNextPage} onClick={() => setPage((p) => p + 1)}>
