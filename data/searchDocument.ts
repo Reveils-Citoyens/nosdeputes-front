@@ -1,5 +1,5 @@
 import { Document } from "@prisma/client";
-
+import { PaginatedResponse, extractPaginationMetadata } from "./pagination";
 
 type ClasseCode =
   | "ALLOCUTION"
@@ -11,7 +11,7 @@ type ClasseCode =
   | "PRJLOI";
 
 export const classesCodePossible = [
-  '',
+  "",
   "ALLOCUTION",
   "AVIS",
   "DECLARATION",
@@ -19,7 +19,7 @@ export const classesCodePossible = [
   "PIONLOI",
   "PIONRES",
   "PRJLOI",
-]
+];
 
 interface SearchDocumentParams {
   /**
@@ -45,7 +45,7 @@ interface SearchDocumentParams {
 
 export async function searchDocument(
   params: SearchDocumentParams
-): Promise<Document[] | null> {
+): Promise<PaginatedResponse<Document> | null> {
   const {
     perPage = 10,
     page = 1,
@@ -65,7 +65,6 @@ export async function searchDocument(
     sort,
   });
 
-
   Object.entries({
     search,
     include,
@@ -78,7 +77,7 @@ export async function searchDocument(
     if (value) {
       searchParams.set(key, value);
     }
-  })
+  });
 
   try {
     const rep = await fetch(
@@ -87,7 +86,20 @@ export async function searchDocument(
 
     const { data } = await rep.json();
 
-    return data.map((item: Document) => ({ ...item, dateCreation: item.dateCreation ? new Date(item.dateCreation) : item.dateCreation })) ?? null
+    const transformedData =
+      data.map((item: Document) => ({
+        ...item,
+        dateCreation: item.dateCreation
+          ? new Date(item.dateCreation)
+          : item.dateCreation,
+      })) ?? null;
+
+    const pagination = extractPaginationMetadata(rep, page);
+
+    return {
+      data: transformedData,
+      pagination,
+    };
   } catch (error) {
     console.error("Error fetching documents:", error);
     return null;

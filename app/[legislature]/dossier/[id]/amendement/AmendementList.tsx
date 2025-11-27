@@ -24,7 +24,7 @@ export default function AmendementsList(props: { dossierUid: string }) {
     setPage(1);
   }, [status, dossierUid, documentUid, deputeUid, search]);
 
-  const { data: amendements, isPending } = useQuery({
+  const { data: result, isPending } = useQuery({
     queryKey: [
       "amendements",
       dossierUid,
@@ -49,30 +49,8 @@ export default function AmendementsList(props: { dossierUid: string }) {
     },
   });
 
-  const { data: nextAmendements, isPending: nextIsPending } = useQuery({
-    queryKey: [
-      "amendements",
-      dossierUid,
-      status ?? "",
-      documentUid ?? "",
-      deputeUid ?? "",
-      search ?? "",
-      page + 1,
-    ],
-
-    queryFn: async () => {
-      const data = await searchAmendement({
-        page: page + 1,
-        perPage: 20,
-        dossierUid,
-        sortAmendement: status ?? "",
-        documentRefUid: documentUid ?? "",
-        acteurRefUid: deputeUid ?? "",
-        search: search ?? "",
-      });
-      return data;
-    },
-  });
+  const amendements = result?.data ?? [];
+  const pagination = result?.pagination;
 
   return (
     <Stack>
@@ -82,7 +60,7 @@ export default function AmendementsList(props: { dossierUid: string }) {
         // </Typography>
         )} */}
       {isPending && <Typography>Chargement des amendements...</Typography>}
-      {(amendements ?? []).map((amendement) => (
+      {amendements.map((amendement) => (
         <AmendementCard
           amendement={amendement}
           acteurUid={amendement.acteurRefUid}
@@ -100,7 +78,7 @@ export default function AmendementsList(props: { dossierUid: string }) {
           &lt; page précédente
         </Button>
         <Button
-          disabled={!nextIsPending && nextAmendements?.length === 0}
+          disabled={!pagination || page >= pagination.totalPage}
           onClick={() => setPage((p) => p + 1)}
         >
           page suivante &gt;

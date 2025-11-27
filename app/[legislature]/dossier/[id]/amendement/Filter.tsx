@@ -20,7 +20,7 @@ export const Filter = (props: FilterProps) => {
   // const [depute, handleDepute] = useQueryState("depute");
   const [status, handleStatus] = useQueryState("status");
 
-  const { data: documents, isPending: dossierPending } = useQuery({
+  const { data: documentsResult, isPending: dossierPending } = useQuery({
     queryKey: ["documents", dossierUid],
 
     queryFn: async () => {
@@ -33,8 +33,10 @@ export const Filter = (props: FilterProps) => {
     },
   });
 
+  const documents = documentsResult?.data ?? [];
+
   const documentAmendementsCount = useQueries({
-    queries: (documents ?? []).map((document) => {
+    queries: documents.map((document) => {
       return {
         queryKey: ["documentAmendements", document.uid],
         queryFn: () => getDocument(document.uid, ["_count.amendements"]),
@@ -98,7 +100,7 @@ export const Filter = (props: FilterProps) => {
         }}
       >
         <MenuItem value="">Tout document</MenuItem>
-        {(documents ?? [])
+        {documents
           .filter(
             (document) =>
               document !== null &&

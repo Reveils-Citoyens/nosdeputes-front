@@ -1,5 +1,6 @@
 import { Dossier } from "@prisma/client";
 import { parseDossier } from "./parsers/parseDossier";
+import { PaginatedResponse, extractPaginationMetadata } from "./pagination";
 
 interface SearchDossierParams {
   /**
@@ -25,7 +26,7 @@ interface SearchDossierParams {
 
 export async function searchDossier(
   params: SearchDossierParams
-): Promise<Dossier[] | null> {
+): Promise<PaginatedResponse<Dossier> | null> {
   const {
     perPage = 10,
     page = 0,
@@ -33,7 +34,7 @@ export async function searchDossier(
     search = "",
     codeProcedure = "",
     include,
-    acteurPrincipalRefUid
+    acteurPrincipalRefUid,
   } = params;
 
   const searchParams = new URLSearchParams({
@@ -43,18 +44,16 @@ export async function searchDossier(
     dataset: "17",
   });
 
-
   Object.entries({
     search,
     include,
     acteurPrincipalRefUid,
-    codeProcedure
+    codeProcedure,
   }).forEach(([key, value]) => {
     if (value) {
       searchParams.set(key, value);
     }
-  })
-
+  });
 
   try {
     const rep = await fetch(
@@ -66,7 +65,12 @@ export async function searchDossier(
     // Transforms all the "yyy-mm-dd" string into Date objects.
     data.forEach(parseDossier);
 
-    return data;
+    const pagination = extractPaginationMetadata(rep, page);
+
+    return {
+      data,
+      pagination,
+    };
   } catch (error) {
     console.error("Error fetching dossier:", error);
     return null;

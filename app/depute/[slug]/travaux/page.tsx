@@ -23,35 +23,39 @@ export default function Travaux() {
     },
   });
 
-  const { data: documents, isPending } = useQuery({
+  const { data: documentsResult, isPending } = useQuery({
     queryKey: ["documents", acteur?.uid],
 
     queryFn: async () => {
       if (!acteur?.uid) {
-        return [];
+        return null;
       }
-      const data = await searchDocument({
+      const result = await searchDocument({
         perPage: 100,
         auteurPrincipalUid: acteur.uid,
       });
-      return data;
+      return result;
     },
   });
 
-  const { data: dossiers, isPending: dossierIsPending } = useQuery({
+  const documents = documentsResult?.data ?? [];
+
+  const { data: dossiersResult, isPending: dossierIsPending } = useQuery({
     queryKey: ["dossiers", acteur?.uid],
 
     queryFn: async () => {
       if (!acteur?.uid) {
-        return [];
+        return null;
       }
-      const data = await searchDossier({
+      const result = await searchDossier({
         perPage: 100,
         acteurPrincipalRefUid: acteur.uid,
       });
-      return data;
+      return result;
     },
   });
+
+  const dossiers = dossiersResult?.data ?? [];
 
   if (acteurIsPending || isPending) {
     return <LinearProgress />;
