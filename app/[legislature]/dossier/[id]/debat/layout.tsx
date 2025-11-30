@@ -1,6 +1,6 @@
 import React from "react";
 import { DebateFilterBar } from "./DebateFilterBar";
-import { getPointsOdj } from "@/data/getPointsOdj";
+import { getDebats } from "@/data/getDebats";
 
 export default async function Layout({
   params,
@@ -14,20 +14,18 @@ export default async function Layout({
 }) {
   const { id } = await params;
 
-  const pointsOdj = await getPointsOdj(id);
+  const debats = await getDebats(id);
 
-  const odjWithDebat = pointsOdj?.filter(
-    (pt) =>
-      pt.agendaRef?.compteRenduDisponible === true &&
-      pt._count.interventions > 0
+  const debatsDisponibles = debats?.filter(
+    (debat) => debat._count.paragraphes > 0
   );
-  if (odjWithDebat == null || odjWithDebat.length === 0) {
+  if (debatsDisponibles == null || debatsDisponibles.length === 0) {
     return <p>Aucun débat n&apos;a été trouvé pour ce dossier legislatif.</p>;
   }
 
   return (
     <>
-      <DebateFilterBar pointsOdj={odjWithDebat} />
+      <DebateFilterBar debats={debatsDisponibles} />
       <div className="container">{children}</div>
     </>
   );

@@ -7,7 +7,7 @@ import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { getPointsOdj } from "@/data/getPointsOdj";
+import { getDebats, ReturnedDebat } from "@/data/getDebats";
 
 export default function DossiersTabs(props: {
   legislature: string;
@@ -20,15 +20,13 @@ export default function DossiersTabs(props: {
     props;
   const segment = useSelectedLayoutSegment();
 
-  const { data: pointsOdj } = useQuery({
-    queryKey: ["pointsOdj", dossierUid],
-    queryFn: async () => await getPointsOdj(dossierUid),
+  const { data: debats } = useQuery({
+    queryKey: ["debats", dossierUid],
+    queryFn: async () => await getDebats(dossierUid),
   });
 
-  const odjWithDebat = pointsOdj?.filter(
-    (pt) =>
-      pt.agendaRef?.compteRenduDisponible === true &&
-      pt._count.interventions > 0
+  const debatsDisponibles = debats?.filter(
+    (compteRendu: ReturnedDebat) => compteRendu._count.paragraphes > 0
   );
 
   const rootPathName = `/${legislature}/dossier/${dossierUid}/`;
@@ -40,7 +38,7 @@ export default function DossiersTabs(props: {
       label: "Débats",
       href: `${rootPathName}debat`,
       visible: showDebats,
-      disabled: odjWithDebat != null && odjWithDebat.length === 0,
+      disabled: debatsDisponibles != null && debatsDisponibles.length === 0,
     },
     {
       value: "amendement",
