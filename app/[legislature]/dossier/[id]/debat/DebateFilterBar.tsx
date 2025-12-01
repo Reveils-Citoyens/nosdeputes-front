@@ -16,25 +16,24 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { Agenda } from "@prisma/client";
 import Link from "next/link";
-import { ReturnedPointsOdj } from "@/data/getPointsOdj";
+import { ReturnedDebat } from "@/data/getDebats";
 
 type DebateFilterBarProps = {
-  pointsOdj: ReturnedPointsOdj[];
-  // setDebateRef: (newRef: string) => void;
-  // debats: Debat[];
+  debats: ReturnedDebat[];
 };
 
 export const DebateFilterBar = (props: DebateFilterBarProps) => {
-  const { pointsOdj } = props;
+  const { debats } = props;
   const sceanceUid = useSelectedLayoutSegment();
 
-  const reunionIndex = pointsOdj.findIndex((odj) => odj.uid === sceanceUid);
-  if (!sceanceUid || reunionIndex < 0) {
-    if (pointsOdj.length > 0) {
+  const debatIndex = debats.findIndex((debat) => debat.uid === sceanceUid);
+  if (!sceanceUid || debatIndex < 0) {
+    if (debats.length > 0) {
+      // Si le debat n'existe pas ou est vide, on redirige vers le premier débat disponible
       if (sceanceUid) {
-        permanentRedirect(`${pointsOdj[0].uid}`);
+        permanentRedirect(`${debats[0].uid}`);
       } else {
-        permanentRedirect(`debat/${pointsOdj[0].uid}`);
+        permanentRedirect(`debat/${debats[0].uid}`);
       }
     }
   }
@@ -65,14 +64,14 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
           sx={{ width: "100%" }}
         >
           <Select value={sceanceUid} displayEmpty sx={{ flex: 1 }}>
-            {pointsOdj.map((odj) => {
+            {debats.map((debat) => {
               return (
                 // @ts-ignore
                 <MenuItem
-                  key={odj.uid}
-                  value={odj.uid}
+                  key={debat.uid}
+                  value={debat.uid}
                   component={Link}
-                  href={odj.uid}
+                  href={debat.uid}
                 >
                   <Typography
                     variant="caption"
@@ -83,18 +82,7 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
                       },
                     }}
                   >
-                    {odj.agendaRef?.libelleCourtLieu ??
-                      odj.agendaRef?.libelleLongLieu ??
-                      ""}
-                    , le{" "}
-                    {odj.agendaRef?.timestampDebut?.toLocaleString("fr-FR", {
-                      month: "long",
-                      day: "numeric",
-                      weekday: "long",
-                      year: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
+                    {debat.dateSeanceJour}
                   </Typography>
                 </MenuItem>
               );
@@ -115,8 +103,8 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
             <IconButton
               size="small"
               component={Link}
-              href={reunionIndex <= 0 ? "" : pointsOdj[reunionIndex - 1].uid!}
-              disabled={reunionIndex <= 0}
+              href={debatIndex <= 0 ? "" : debats[debatIndex - 1].uid!}
+              disabled={debatIndex <= 0}
             >
               <ArrowBackIcon fontSize="small" />
             </IconButton>
@@ -124,11 +112,11 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
               size="small"
               component={Link}
               href={
-                reunionIndex >= pointsOdj.length - 1
+                debatIndex >= debats.length - 1
                   ? ""
-                  : pointsOdj[reunionIndex + 1].uid!
+                  : debats[debatIndex + 1].uid!
               }
-              disabled={reunionIndex >= pointsOdj.length - 1}
+              disabled={debatIndex >= debats.length - 1}
             >
               <ArrowForwardIcon fontSize="small" />
             </IconButton>

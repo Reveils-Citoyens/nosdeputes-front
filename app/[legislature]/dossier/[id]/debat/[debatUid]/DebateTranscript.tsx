@@ -9,7 +9,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
 import { SpeakingTime } from "@/components/folders/SpeakingTime";
-import { DebateTimeline } from "@/app/[legislature]/dossier/[id]/debat/[pointOdjUid]/DebateTimeline";
+import { DebateTimeline } from "@/app/[legislature]/dossier/[id]/debat/[debatUid]/DebateTimeline";
 
 import { ClockMovingIcon } from "@/icons/ClockMovingIcon";
 import { useTheme } from "@mui/material";
