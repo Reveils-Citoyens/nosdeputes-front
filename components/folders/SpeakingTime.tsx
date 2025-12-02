@@ -1,16 +1,16 @@
 import React from "react";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
+import { useQueries } from "@tanstack/react-query";
+import { getActeur } from "@/data/getActeur";
+import { Organe } from "@prisma/client";
+import { Tooltip } from "@mui/material";
 
 type SpeakingTimeCardProps = {
-  wordsPerGroup: Record<
-    string,
-    {
-      count: number;
-      color: string;
-      libelleShort: string;
-    }
-  >;
+  /**
+   * Le nombre de mots prononcés par acteur (leur uid).
+   */
+  wordsPerActeur: Record<string, number>;
 };
 
 // TODO: Define a more robust order of political parties.
@@ -33,7 +33,42 @@ function sortParty(a: string, b: string) {
 }
 
 export const SpeakingTime = (props: SpeakingTimeCardProps) => {
-  const { wordsPerGroup } = props;
+  const { wordsPerActeur } = props;
+
+  const acteurQueries = useQueries({
+    queries: Object.keys(wordsPerActeur).map((acteurUid) => ({
+      queryKey: ["acteur", acteurUid],
+      queryFn: () => getActeur(acteurUid),
+    })),
+  });
+
+  const wordsPerGroup: Record<
+    string,
+    { count: number; groupeParlementaire: Organe }
+  > = {};
+
+  const loaded = acteurQueries.every((acteurQuery) => !acteurQuery.isPending);
+
+  if (!loaded) {
+    return <p>loading...</p>;
+  }
+
+  acteurQueries.forEach((acteurQuery) => {
+    if (acteurQuery.isSuccess && acteurQuery.data) {
+      const acteur = acteurQuery.data;
+      const groupeParlementaire = acteur.groupeParlementaire;
+      if (groupeParlementaire) {
+        if (!wordsPerGroup[groupeParlementaire.uid]) {
+          wordsPerGroup[groupeParlementaire.uid] = {
+            count: 0,
+            groupeParlementaire,
+          };
+        }
+        wordsPerGroup[groupeParlementaire.uid].count +=
+          wordsPerActeur[acteur.uid] || 0;
+      }
+    }
+  });
 
   if (!wordsPerGroup) {
     return null;
@@ -43,25 +78,40 @@ export const SpeakingTime = (props: SpeakingTimeCardProps) => {
     return val.count + acc;
   }, 0);
 
-  const sortedKeys = Object.keys(wordsPerGroup).sort((a, b) =>
-    sortParty(wordsPerGroup[a].libelleShort, wordsPerGroup[b].libelleShort)
+  const sortedKeys = Object.keys(wordsPerGroup).sort(
+    // TODO: trier par parti d'une meilleur manière. POur l'instant je tri du plus important aux moins impliqué dans le debat
+    (a, b) => wordsPerGroup[b].count - wordsPerGroup[a].count
+    // sortParty(
+    //   wordsPerGroup[a].groupeParlementaire.libelleAbrege,
+    //   wordsPerGroup[b].groupeParlementaire.libelleAbrege
+    // )
   );
 
   return (
     <React.Fragment>
-      <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
+      <Stack direction="row" spacing={0.5} sx={{ mb: 2 }}>
         {sortedKeys.map((groupUid) => {
-          const { count, color } = wordsPerGroup[groupUid];
+          const { count, groupeParlementaire } = wordsPerGroup[groupUid];
           return (
-            <div
+            <Tooltip
               key={groupUid}
-              style={{
-                height: 8,
-                backgroundColor: color,
-                borderRadius: 4,
-                flex: count / totalWords,
-              }}
-            />
+              title={`${groupeParlementaire.libelle} : ${(
+                (100 * count) /
+                totalWords
+              )
+                .toFixed(1)
+                .replace(".0", "")}%`}
+            >
+              <div
+                style={{
+                  height: 8,
+                  backgroundColor:
+                    groupeParlementaire.couleurAssociee || "#999",
+                  borderRadius: 4,
+                  flex: count / totalWords,
+                }}
+              />
+            </Tooltip>
           );
         })}
       </Stack>
@@ -72,10 +122,10 @@ export const SpeakingTime = (props: SpeakingTimeCardProps) => {
         justifyContent="center"
       >
         {sortedKeys.map((groupUid) => {
-          const { count, libelleShort } = wordsPerGroup[groupUid];
+          const { count, groupeParlementaire } = wordsPerGroup[groupUid];
           return (
             <Typography key={groupUid} fontWeight="bold" variant="caption">
-              {libelleShort} :{" "}
+              {groupeParlementaire.libelleAbrege} :{" "}
               {((100 * count) / totalWords).toFixed(1).replace(".0", "")}%
             </Typography>
           );

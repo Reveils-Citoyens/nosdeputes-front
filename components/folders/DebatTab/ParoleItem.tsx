@@ -10,17 +10,24 @@ import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
 import CircleDiv from "@/icons/CircleDiv";
-import { Acteur, Organe } from "@prisma/client";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { getActeur } from "@/data/getActeur";
 
 interface ParoleItemProps {
-  acteur: Acteur | null | undefined;
-  groupeParlementaire: Organe | null | undefined;
+  acteurUid: string | null;
   roleDebat: string | null;
   texte: string | null;
 }
 export default function ParoleItem(props: ParoleItemProps) {
-  const { acteur, groupeParlementaire, roleDebat, texte } = props;
+  const { acteurUid, roleDebat, texte } = props;
+
+  const { data: acteur, isPending } = useQuery({
+    queryKey: ["acteur", acteurUid],
+    queryFn: async () =>
+      acteurUid == null ? null : await getActeur(acteurUid),
+    enabled: !!acteurUid,
+  });
 
   return (
     <TimelineItem>
@@ -68,13 +75,15 @@ export default function ParoleItem(props: ParoleItemProps) {
             >
               {acteur?.prenom ?? ""} {acteur?.nom ?? ""}
             </Typography>
-            {groupeParlementaire?.libelle &&
-              groupeParlementaire?.couleurAssociee && (
+            {acteur?.groupeParlementaire?.libelle &&
+              acteur?.groupeParlementaire?.couleurAssociee && (
                 <Tooltip
                   placement="top"
-                  title={`${groupeParlementaire?.libelle} (${groupeParlementaire?.libelleAbrev})`}
+                  title={`${acteur?.groupeParlementaire?.libelle} (${acteur?.groupeParlementaire?.libelleAbrev})`}
                 >
-                  <CircleDiv color={groupeParlementaire?.couleurAssociee} />
+                  <CircleDiv
+                    color={acteur?.groupeParlementaire?.couleurAssociee}
+                  />
                 </Tooltip>
               )}
             {roleDebat && <Typography>{roleDebat}</Typography>}
