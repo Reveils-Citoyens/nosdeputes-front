@@ -24,17 +24,17 @@
     "@types/lodash": "^4.17.4",
     "dotenv": "^16.3.1",
     "lodash": "^4.17.21",
-    "next": "^15.1.0",
+    "next": "^15.1.9",
     "nuqs": "^2.6.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react": "^19.1.2",
+    "react-dom": "^19.1.2"
   },
   "devDependencies": {
     "@tricoteuses/api-parlement": "git+https://git.tricoteuses.fr/logiciels/tricoteuses-api-parlement.git#staging",
     "@types/jest": "^29.5.11",
     "@types/node": "^20.10.4",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
     "@vitest/ui": "^4.0.14",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
