@@ -77,6 +77,8 @@ export const HeroSection = ({
             left: 0,
             zIndex: -1,
             backgroundImage: `url('/Panorama_hemicyle_assemblée_nationale.jpg')`,
+            backgroundPositionX: "center",
+            backgroundPositionY: "top",
             width: "100%",
             height: 240,
             display: "hidden",
