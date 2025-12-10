@@ -76,7 +76,7 @@ export const HeroSection = ({
             top: 104, // navbar + breadcrumb height
             left: 0,
             zIndex: -1,
-            backgroundColor: "#CCCCCC",
+            backgroundImage: `url('/Panorama_hemicyle_assemblée_nationale.jpg')`,
             width: "100%",
             height: 240,
             display: "hidden",
