@@ -1,40 +1,58 @@
 import * as React from "react";
 import { MenuItem } from "@mui/material";
 import TextField from "@mui/material/TextField";
-import { AmendementTabProps } from "./AmendementTab";
+import { sortAmendementPossible } from "@/data/searchAmendement";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { searchDocument } from "@/data/searchDocument";
+import { useQueryState } from "nuqs";
+import { getDocument } from "@/data/getDocument";
 
-const AVAILABLE_STATUS = [
-  "Rejeté",
-  "Irrecevable",
-  "Non soutenu",
-  "Tombé",
-  "Retiré",
-  "Irrecevable 40",
-  "Adopté",
-];
-type FilterProps = AmendementTabProps & {
-  numero: string;
-  handleNumero: (numero: string) => void;
-  selectedDocument: string;
-  setSelectedDocument: (id: string) => void;
-  depute: string;
-  handleDepute: (id: string) => void;
-  status: string;
-  handleStatus: (id: string) => void;
+type FilterProps = {
+  dossierUid: string;
 };
 
 export const Filter = (props: FilterProps) => {
-  const {
-    numero,
-    handleNumero,
-    selectedDocument,
-    setSelectedDocument,
-    documents,
-    depute,
-    handleDepute,
-    status,
-    handleStatus,
-  } = props;
+  const { dossierUid } = props;
+
+  const [search] = useQueryState("search");
+  // const [numero, handleNumero] = useQueryState("numero");
+  const [document, handleDocument] = useQueryState("document");
+  // const [depute, handleDepute] = useQueryState("depute");
+  const [status, handleStatus] = useQueryState("status");
+
+  const { data: documentsResult, isPending: dossierPending } = useQuery({
+    queryKey: ["documents", dossierUid],
+
+    queryFn: async () => {
+      const data = await searchDocument({
+        dossierRefUid: dossierUid,
+        perPage: 50,
+        // include: "_count.amendements", // Does work on single documents but not multiple ones
+      });
+      return data;
+    },
+  });
+
+  const documents = documentsResult?.data ?? [];
+
+  const documentAmendementsCount = useQueries({
+    queries: documents.map((document) => {
+      return {
+        queryKey: ["documentAmendements", document.uid],
+        queryFn: () => getDocument(document.uid, ["_count.amendements"]),
+      };
+    }),
+  });
+
+  const countMapping = React.useMemo(() => {
+    const mapping: Record<string, number> = {};
+    documentAmendementsCount.forEach((result) => {
+      if (result.data?._count.amendements != null) {
+        mapping[result.data.uid] = result.data._count.amendements;
+      }
+    });
+    return mapping;
+  }, [documentAmendementsCount]);
 
   // const deputes = React.useMemo(() => {
   //   const seenIds = new Set();
@@ -76,17 +94,23 @@ export const Filter = (props: FilterProps) => {
         size="small"
         variant="outlined"
         label="Document"
-        value={selectedDocument}
+        value={document}
         onChange={(event) => {
-          setSelectedDocument(event.target.value);
+          handleDocument(event.target.value);
         }}
       >
-        {/* <MenuItem value="">Tout document</MenuItem> */}
+        <MenuItem value="">Tout document</MenuItem>
         {documents
-          .filter((document) => document !== null)
+          .filter(
+            (document) =>
+              document !== null &&
+              (countMapping[document.uid] == null ||
+                countMapping[document.uid] > 0)
+          )
           .map((document) => (
             <MenuItem key={document.uid} value={document.uid}>
-              {document.depotLibelle} ({document._count.amendements})
+              {document.chambre}: {document.depotLibelle} (
+              {countMapping[document.uid] ? countMapping[document.uid] : "?"})
             </MenuItem>
           ))}
       </TextField>
@@ -107,7 +131,7 @@ export const Filter = (props: FilterProps) => {
           </MenuItem>
         ))}
       </TextField> */}
-      {/* <TextField
+      <TextField
         select
         size="small"
         variant="outlined"
@@ -117,13 +141,13 @@ export const Filter = (props: FilterProps) => {
           handleStatus(event.target.value);
         }}
       >
-        <MenuItem value="">Status</MenuItem>
-        {AVAILABLE_STATUS.map((state) => (
+        <MenuItem value="">-</MenuItem>
+        {sortAmendementPossible.map((state) => (
           <MenuItem key={state} value={state}>
             {state}
           </MenuItem>
         ))}
-      </TextField> */}
+      </TextField>
     </React.Fragment>
   );
 };

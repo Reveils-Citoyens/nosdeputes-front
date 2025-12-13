@@ -2,18 +2,13 @@
 
 import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
-import { THEMES } from "../const";
-import { useFilterState } from "./useFilter";
+import { THEMES, TYPES_DE_DOSSIERS } from "../const";
+import { useQueryState } from "nuqs";
 
-type FilterProps = {
-  search: string;
-  theme: string;
-};
-
-export const Filter = (props: FilterProps) => {
-  const { theme, search } = props;
-
-  const { handleThemes, handleSearch } = useFilterState();
+export const Filter = () => {
+  const [theme, setTheme] = useQueryState("theme");
+  const [search, setSearch] = useQueryState("search");
+  const [codeProcedure, setCodeProcedure] = useQueryState("codeProcedure");
 
   return (
     <>
@@ -23,7 +18,7 @@ export const Filter = (props: FilterProps) => {
         label="Thème"
         value={theme}
         onChange={(event) => {
-          handleThemes(event.target.value);
+          setTheme(event.target.value);
         }}
         variant="outlined"
       >
@@ -38,12 +33,30 @@ export const Filter = (props: FilterProps) => {
       <TextField
         size="small"
         label="Search"
-        value={search}
+        value={search ?? ""}
         onChange={(event) => {
-          handleSearch(event.target.value);
+          setSearch(event.target.value);
         }}
         variant="outlined"
       />
+
+      <TextField
+        select
+        size="small"
+        label="Type de dossier"
+        value={codeProcedure ?? ""}
+        onChange={(event) => {
+          setCodeProcedure(event.target.value);
+        }}
+        variant="outlined"
+      >
+        <MenuItem value="">-</MenuItem>
+        {TYPES_DE_DOSSIERS.map((type) => (
+          <MenuItem key={type.code} value={type.code}>
+            {type.label}
+          </MenuItem>
+        ))}
+      </TextField>
     </>
   );
 };

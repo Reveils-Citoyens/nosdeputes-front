@@ -6,13 +6,15 @@ import {
   TextField,
   Typography,
   Box,
-  Button,
+  CircularProgress,
 } from "@mui/material";
 import debounce from "@/utils/debounce";
 import { Dossier } from "@prisma/client";
 import { ReturnedSearchActeur, searchActeur } from "@/data/searchActeur";
 import { searchDossier } from "@/data/searchDossier";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import { ActeurOption } from "./ActeurOption";
 
 const fetchActeurs = debounce(
@@ -24,7 +26,7 @@ const fetchActeurs = debounce(
 
 const fetchDossiers = debounce(
   (search: string, callback: (results: null | readonly Dossier[]) => void) =>
-    searchDossier({ search }).then(callback)
+    searchDossier({ search }).then((result) => callback(result?.data ?? null))
 );
 const emptyOptions = [] as const;
 
@@ -35,6 +37,8 @@ function isActeur(
 }
 
 export default function SearchBar() {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [value, setValue] = React.useState<
     ReturnedSearchActeur | Dossier | null
   >(null);
@@ -89,6 +93,7 @@ export default function SearchBar() {
     () => [...deputesOptions, ...dossierOptions],
     [deputesOptions, dossierOptions]
   );
+
   return (
     <Box sx={{ maxWidth: 709, width: "100%" }}>
       <Autocomplete
@@ -114,9 +119,15 @@ export default function SearchBar() {
         ) => {
           if (newValue && isActeur(newValue)) {
             setDeputesOptions([newValue, ...deputesOptions]);
+            startTransition(() => {
+              router.push(`/depute/${newValue.slug}`);
+            });
           }
           if (newValue && !isActeur(newValue)) {
             setDossierOptions([newValue, ...dossierOptions]);
+            startTransition(() => {
+              router.push(`/17/dossier/${newValue.uid}`);
+            });
           }
           setValue(newValue);
         }}
@@ -142,18 +153,11 @@ export default function SearchBar() {
             }}
             InputProps={{
               ...params.InputProps,
-              endAdornment: null,
-              // (
-              //   <Button
-              //     variant="contained"
-              //     size="large"
-              //     color="primary"
-              //     sx={{ height: 52, borderRadius: 26 }}
-              //     onClick={() => {}}
-              //   >
-              //     CHERCHER
-              //   </Button>
-              // ),
+              endAdornment: isPending ? (
+                <CircularProgress size={20} />
+              ) : (
+                params.InputProps.endAdornment
+              ),
             }}
           />
         )}
@@ -161,7 +165,14 @@ export default function SearchBar() {
           if (isActeur(option)) {
             return (
               <li key={key} {...props}>
-                <Link href={`/depute/${option.slug}`}>
+                <Link
+                  href={`/depute/${option.slug}`}
+                  onClick={(e) => {
+                    // Prevent default navigation since onChange handles it
+                    // This allows right-click/open in new tab to still work via href
+                    e.preventDefault();
+                  }}
+                >
                   <ActeurOption {...option} />
                 </Link>
               </li>
@@ -169,7 +180,16 @@ export default function SearchBar() {
           }
           return (
             <li key={key} {...props}>
-              <Link href={`/17/dossier/${option.uid}`}>{option.titre}</Link>
+              <Link
+                href={`/17/dossier/${option.uid}`}
+                onClick={(e) => {
+                  // Prevent default navigation since onChange handles it
+                  // This allows right-click/open in new tab to still work via href
+                  e.preventDefault();
+                }}
+              >
+                {option.titre}
+              </Link>
             </li>
           );
         }}

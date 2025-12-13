@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typescript": "tsc -p tsconfig.json"
+    "typescript": "tsc -p tsconfig.json",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -17,26 +20,30 @@
     "@mui/material": "^7.1.1",
     "@mui/material-nextjs": "^7.1.1",
     "@mui/x-charts": "^8.3.1",
+    "@tanstack/react-query": "^5.81.5",
     "@types/lodash": "^4.17.4",
     "dotenv": "^16.3.1",
     "lodash": "^4.17.21",
-    "next": "^15.1.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "next": "^15.1.9",
+    "nuqs": "^2.6.0",
+    "react": "^19.1.2",
+    "react-dom": "^19.1.2"
   },
   "devDependencies": {
+    "@tricoteuses/api-parlement": "git+https://git.tricoteuses.fr/logiciels/tricoteuses-api-parlement.git#staging",
     "@types/jest": "^29.5.11",
     "@types/node": "^20.10.4",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitest/ui": "^4.0.14",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.0.1",
+    "postcss": "^8",
     "prisma": "^6.7.0",
     "prisma-openapi": "^1.1.7",
-    "postcss": "^8",
     "tailwindcss": "^3.3.0",
     "typescript": "^5.5.4",
-    "@tricoteuses/api-parlement": "git+https://git.en-root.org/tricoteuses/tricoteuses-api-parlement.git#staging"
+    "vitest": "^4.0.14"
   }
 }

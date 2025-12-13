@@ -44,7 +44,6 @@ export default function AmendementCard(props: AmendementCardProps) {
     ? amendement.signatairesLibelle.split("&#160;").length - 1
     : 1;
 
-  const etatAmendement = amendement.sortAmendement || amendement.etatLibelle;
   const pannelId = `${amendement.uid}-pannel`;
   const headerId = `${amendement.uid}-header`;
   return (
@@ -68,14 +67,19 @@ export default function AmendementCard(props: AmendementCardProps) {
           sx={{ width: "100%", mr: 2 }}
         >
           {acteurUid && (
-            <ActeurCard id={acteurUid} smallGroupColor sx={{ flexGrow: 1 }} />
+            <ActeurCard
+              id={acteurUid}
+              smallGroupColor
+              sx={{ flexGrow: 1 }}
+              link="name"
+            />
           )}
           {titre && <Typography>{titre}</Typography>}
 
           <StatusChip
             size="small"
-            label={etatAmendement}
-            status={getStatus(etatAmendement)}
+            label={amendement.sortAmendement}
+            status={getStatus(amendement.sortAmendement)}
           />
         </Stack>
       </AccordionSummary>

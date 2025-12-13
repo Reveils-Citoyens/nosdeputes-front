@@ -1,20 +1,58 @@
 "use client";
 
-import { usePathname, useSelectedLayoutSegment } from "next/navigation";
+import { useSelectedLayoutSegment } from "next/navigation";
 
 import Box from "@mui/material/Box";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { getDebats, ReturnedDebat } from "@/data/getDebats";
 
 export default function DossiersTabs(props: {
   legislature: string;
   dossierUid: string;
+  showDebats: boolean;
+  showAmendements: boolean;
+  showVotes: boolean;
 }) {
-  const { legislature, dossierUid } = props;
+  const { legislature, dossierUid, showDebats, showAmendements, showVotes } =
+    props;
   const segment = useSelectedLayoutSegment();
 
+  const { data: debats } = useQuery({
+    queryKey: ["debats", dossierUid],
+    queryFn: async () => await getDebats(dossierUid),
+  });
+
+  const debatsDisponibles = debats?.filter(
+    (compteRendu: ReturnedDebat) => compteRendu._count.paragraphes > 0
+  );
+
   const rootPathName = `/${legislature}/dossier/${dossierUid}/`;
+
+  const tabs = [
+    { value: "", label: "Aperçu", href: rootPathName, visible: true },
+    {
+      value: "debat",
+      label: "Débats",
+      href: `${rootPathName}debat`,
+      visible: showDebats,
+      disabled: debatsDisponibles != null && debatsDisponibles.length === 0,
+    },
+    {
+      value: "amendement",
+      label: "Amendements",
+      href: `${rootPathName}amendement`,
+      visible: showAmendements,
+    },
+    {
+      value: "votes",
+      label: "Votes",
+      href: `${rootPathName}votes`,
+      visible: showVotes,
+    },
+  ];
 
   return (
     <Box
@@ -27,31 +65,28 @@ export default function DossiersTabs(props: {
     >
       <Tabs
         value={
-          segment && ["debat", "amendement", "votes"].includes(segment)
+          segment &&
+          tabs
+            .filter((tab) => tab.visible)
+            .map((tab) => tab.value)
+            .includes(segment)
             ? segment
             : ""
         }
         variant="scrollable"
       >
-        <Tab value="" label="Aperçu" component={Link} href={rootPathName} />
-        <Tab
-          value="debat"
-          label="Débats"
-          component={Link}
-          href={`${rootPathName}/debat`}
-        />
-        <Tab
-          value="amendement"
-          label="Amendements"
-          component={Link}
-          href={`${rootPathName}/amendement`}
-        />
-        <Tab
-          value="votes"
-          label="Votes"
-          component={Link}
-          href={`${rootPathName}/votes`}
-        />
+        {tabs.map((tab) =>
+          tab.visible ? (
+            <Tab
+              key={tab.value}
+              value={tab.value}
+              label={tab.label}
+              component={Link}
+              href={tab.href}
+              disabled={tab.disabled}
+            />
+          ) : null
+        )}
       </Tabs>
     </Box>
   );

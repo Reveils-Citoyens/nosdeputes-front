@@ -11,14 +11,8 @@ import { Acteur, Organe, Paragraphe } from "@prisma/client";
 
 type DebateTimelineProps = {
   paragraphes: Paragraphe[];
-  acteurs: Record<string, Acteur | null>;
-  groups: Record<string, Organe | null>;
 };
-export const DebateTimeline = ({
-  paragraphes,
-  acteurs,
-  groups,
-}: DebateTimelineProps) => (
+export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
   <Timeline
     sx={{
       [`& .${timelineItemClasses.root}:before`]: {
@@ -29,20 +23,13 @@ export const DebateTimeline = ({
   >
     {paragraphes.map(
       ({ id, codeGrammaire, acteurRefUid, roleDebat, texte }) => {
-        const acteur = acteurRefUid != null ? acteurs[acteurRefUid] : null;
-        const groupeParlementaire =
-          acteur != null && acteur.groupeParlementaireUid !== null
-            ? groups[acteur.groupeParlementaireUid]
-            : null;
-
         switch (codeGrammaire) {
           case "PAROLE_GENERIQUE":
           case "INTERRUPTION_1_10":
             return (
               <ParoleItem
                 key={id}
-                acteur={acteur}
-                groupeParlementaire={groupeParlementaire}
+                acteurUid={acteurRefUid}
                 roleDebat={roleDebat}
                 texte={texte}
               />

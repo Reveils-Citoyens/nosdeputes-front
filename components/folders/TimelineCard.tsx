@@ -20,6 +20,8 @@ import { groupActs } from "@/repository/Acts";
 import { sortActDate } from "../utils";
 import Image from "next/image";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { getDebats, ReturnedDebat } from "@/data/getDebats";
 import getSortedActGroups from "@/domain/sortActeGroup";
 import { CODE_ACTS_AVEC_DEBAT } from "../const";
 
@@ -182,6 +184,18 @@ export const TimelineCard = ({
 }) => {
   const { actsStructure, actsLookup } = groupActs(actesLegislatifs);
 
+  const { data: debats } = useQuery({
+    queryKey: ["debats", dossierUid],
+    queryFn: async () => await getDebats(dossierUid),
+  });
+
+  const agendatsToDebatMap: Record<string, string> = {};
+  debats?.forEach((debat) => {
+    if (debat.reunionRefUid && debat._count.paragraphes > 0) {
+      agendatsToDebatMap[debat.reunionRefUid] = debat.uid;
+    }
+  });
+
   return (
     <CardLayout title="Chronologie du dossier">
       <Timeline
@@ -232,12 +246,13 @@ export const TimelineCard = ({
                                       const date =
                                         act.dateActe ?? lvl2GroupDate;
 
-                                      const link =
-                                        CODE_ACTS_AVEC_DEBAT.includes(
-                                          act.codeActe
-                                        )
-                                          ? `/${legislature}/dossier/${dossierUid}/debat/${act.pointOdjUid}`
-                                          : undefined;
+                                      const debatUid =
+                                        act.reunionRefUid &&
+                                        agendatsToDebatMap[act.reunionRefUid];
+
+                                      const link = debatUid
+                                        ? `/${legislature}/dossier/${dossierUid}/debat/${debatUid}`
+                                        : undefined;
                                       const title = `${act.nomCanonique}${
                                         date
                                           ? ` du ${date.toLocaleDateString(

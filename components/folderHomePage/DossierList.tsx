@@ -3,21 +3,21 @@
 import * as React from "react";
 import { Stack } from "@mui/material";
 import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 import Link from "next/link";
 import LabelChip from "../LabelChip";
 import { Dossier } from "@prisma/client";
-import { LoadingButton } from "@mui/lab";
 import { searchDossier } from "@/data/searchDossier";
-
-type DossierListProps = {
-  theme: string;
-  search: string;
-};
+import { useQueryState } from "nuqs";
 
 const PAGE_SIZE = 10;
 
-export default function DossierList(props: DossierListProps) {
-  const { theme, search } = props;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export default function DossierList() {
+  const [theme] = useQueryState("theme");
+  const [search] = useQueryState("search");
+  const [codeProcedure] = useQueryState("codeProcedure");
 
   const [dossiers, setDossiers] = React.useState<Dossier[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -25,14 +25,17 @@ export default function DossierList(props: DossierListProps) {
 
   const fetchMoreDossiers = async () => {
     setIsLoading(true);
-    const data = await searchDossier({
+    const result = await searchDossier({
       page: currentPage,
       search: search ?? "",
+      codeProcedure: codeProcedure ?? "",
     });
 
     setIsLoading(false);
-    setDossiers((prev) => [...prev, ...(data ?? [])]);
-    setCurrentPage((prev) => prev + 1);
+    if (result) {
+      setDossiers((prev) => [...prev, ...result.data]);
+      setCurrentPage((prev) => prev + 1);
+    }
   };
 
   React.useEffect(() => {
@@ -43,14 +46,21 @@ export default function DossierList(props: DossierListProps) {
     setDossiers([]);
 
     async function fetchInitialDossier() {
-      const data = await searchDossier({
+      await sleep(500); // debounce
+
+      if (!isValid) {
+        return;
+      }
+
+      const result = await searchDossier({
         page: 1,
         search: search ?? "",
+        codeProcedure: codeProcedure ?? "",
       });
 
-      if (isValid) {
+      if (isValid && result) {
         setIsLoading(false);
-        setDossiers(data ?? []);
+        setDossiers(result.data);
         setCurrentPage(2);
       }
     }
@@ -59,7 +69,7 @@ export default function DossierList(props: DossierListProps) {
     return () => {
       isValid = false;
     };
-  }, [search, theme]);
+  }, [search, theme, codeProcedure]);
 
   return (
     <div>
@@ -106,15 +116,13 @@ export default function DossierList(props: DossierListProps) {
           ))}
       </Stack>
 
-      <LoadingButton
+      <Button
         loading={isLoading}
         onClick={() => fetchMoreDossiers()}
-        disabled={
-          isLoading || dossiers.length !== (currentPage - 1) * PAGE_SIZE // The last fetch did not returned a full page
-        }
+        disabled={isLoading}
       >
         Dossiers suivant
-      </LoadingButton>
+      </Button>
     </div>
   );
 }

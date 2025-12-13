@@ -98,6 +98,7 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
               underline="hover"
               component={Link}
               href={`/depute/${acteur.slug}`}
+              onClick={(event) => event.stopPropagation()}
             >
               {acteur.prenom} {acteur.nom}
             </MuiLink>
@@ -137,11 +138,11 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
                     }}
                   >
                     {acteur.groupeParlementaire.libelleAbrev}{" "}
-                    {acteur.groupeParlementaire.libelleAbrev &&
+                    {/* {acteur.groupeParlementaire.libelleAbrev &&
                       acteur.groupeParlementaire.libelle &&
-                      ":"}
+                      ":"} */}
                   </span>
-                  <span
+                  {/* <span
                     style={{
                       textOverflow: "ellipsis",
                       overflow: "hidden",
@@ -151,7 +152,7 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
                     }}
                   >
                     {acteur.groupeParlementaire.libelle}
-                  </span>
+                  </span> */}
                 </Typography>
               </Box>
             </Tooltip>

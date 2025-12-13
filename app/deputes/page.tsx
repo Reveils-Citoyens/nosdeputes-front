@@ -10,8 +10,11 @@ import { FilterContainer } from "@/components/FilterContainer";
 import { Filter } from "./Filter";
 import DeputesFilter from "./DeputesFilter";
 import { getDeputes } from "@/data/getDeputes";
+// import { connection } from "next/server";
 
 export default async function DeputesList() {
+  // await connection(); // I don't know why dock build precess returns 0 deputes
+
   const data = await getDeputes(17);
 
   if (data === null) {

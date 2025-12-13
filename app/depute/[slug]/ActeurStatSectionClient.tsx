@@ -10,7 +10,17 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
+import { infoDialogContents } from "@/components/contents";
 
+const DEPUTE_STATS_METRICS = [
+  "interventions",
+  "presence-commission",
+  "amendements",
+  "documents-publies",
+  "questions-ecrites",
+  "questions-orales",
+];
 const periodes: StatsPeriode[] = [
   "LEGISLATURE",
   "LAST_YEAR",
@@ -25,13 +35,13 @@ const quantilesSentences = [
   "Dans les 20% plus actifs",
 ];
 
-const baselineTypeToTitle: Record<string, string> = {
-  "questions-ecrites": "Nombre de questions écrites",
-  "questions-orales": "Nombre de questions orales",
-  interventions: "Nombre d'interventions",
-  amendements: "Nombre d'amendements",
-  "presence-commission": "Présence en commission",
-  "documents-publies": "Nombre de documents publié",
+const baselineTypeToInfo: Record<string, string> = {
+  "questions-ecrites": "nb_questions_ecrite",
+  "questions-orales": "nb_questions_orale",
+  interventions: "presences",
+  amendements: "nb_amendements",
+  "presence-commission": "presences_commission",
+  "documents-publies": "nb_documents_publie",
 };
 
 const MetriqueCard = (props: Stats & { valeurDepute: number }) => {
@@ -49,7 +59,12 @@ const MetriqueCard = (props: Stats & { valeurDepute: number }) => {
           {props.valeurDepute}
         </Typography>
         <Typography variant="body1" sx={{ textAlign: "right" }}>
-          {baselineTypeToTitle[props.mesure] ?? props.mesure}
+          {infoDialogContents.depute[baselineTypeToInfo[props.mesure]]
+            ?.translation ?? props.mesure}
+          <InfoDialogIcon
+            category="depute"
+            item={baselineTypeToInfo[props.mesure]}
+          />
         </Typography>
         <Box
           sx={{
@@ -128,16 +143,20 @@ export function ActeurStatSectionClient({
     return rep;
   }, [deputeMetriquesData]);
 
-  const statsWithMetrique = React.useMemo(
-    () =>
-      deputeStatsData
-        ?.filter((item) => item.periode === periode)
-        .map((item) => ({
+  const statsWithMetrique = React.useMemo(() => {
+    const metricToStats: Record<string, Stats & { valeurDepute: number }> = {};
+    deputeStatsData
+      ?.filter((item) => item.periode === periode)
+      ?.forEach((item) => {
+        metricToStats[item.mesure] = {
           ...item,
           valeurDepute: metriquesValues[item.periode][item.mesure] ?? 0,
-        })),
-    [deputeStatsData, metriquesValues, periode]
-  );
+        };
+      });
+    return DEPUTE_STATS_METRICS.map((mesure) => metricToStats[mesure]).filter(
+      (value) => value != null
+    );
+  }, [deputeStatsData, metriquesValues, periode]);
 
   return (
     <div>

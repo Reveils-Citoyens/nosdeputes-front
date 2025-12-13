@@ -1102,7 +1102,7 @@ function addDatesHelper(
 
     childrenMinDate =
       childrenMinDate === undefined ||
-      (date !== undefined && childrenMinDate.getTime() > date.getTime())
+        (date !== undefined && childrenMinDate.getTime() > date.getTime())
         ? date
         : childrenMinDate;
   });
@@ -1122,6 +1122,9 @@ function addDates(
 
 export type ActeLegislatifWithDate = ActeLegislatif & { date: Date };
 
+// On peut peut-être supprimer cette fonctions.
+// Au début elle était utile pour appliquer des regles metiers qui relient les actes entre eux.
+// Maintenant le Backend nous fourni directement `act.parentUid`. Plus besoin de deviner que les actes de type `AN3-COM-FOND-NOMIN` sont les enfants de `AN3-COM-FOND`.
 export function groupActs(acts: ActeLegislatif[]): {
   actsStructure: ActsStructure;
   actsLookup: Record<string, ActeLegislatifWithDate>;

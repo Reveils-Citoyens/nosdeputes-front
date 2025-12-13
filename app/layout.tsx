@@ -6,6 +6,10 @@ import { NavBar, NavigationItem } from "@/components/NavBar";
 import theme from "./theme";
 import { ThemeProvider } from "@mui/material/styles";
 import { CssBaseline } from "@mui/material";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import Providers from "./providers";
+import InfoDialogProvider from "@/components/InfoDialog/InfoDialogProvider";
+import InfoDialog from "@/components/InfoDialog/InfoDialog";
 
 const raleway = Raleway({
   weight: ["400", "600", "700"],
@@ -59,15 +63,20 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className={raleway.variable}>
-        <AppRouterCacheProvider>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <main className="flex min-h-screen flex-col">
-              <NavBar navigation={navigation} />
-              {children}
-            </main>
-          </ThemeProvider>
-        </AppRouterCacheProvider>
+        <NuqsAdapter>
+          <InfoDialogProvider>
+            <AppRouterCacheProvider>
+              <ThemeProvider theme={theme}>
+                <CssBaseline />
+                <main className="flex min-h-screen flex-col">
+                  <NavBar navigation={navigation} />
+                  <Providers>{children}</Providers>
+                  <InfoDialog />
+                </main>
+              </ThemeProvider>
+            </AppRouterCacheProvider>
+          </InfoDialogProvider>
+        </NuqsAdapter>
       </body>
     </html>
   );

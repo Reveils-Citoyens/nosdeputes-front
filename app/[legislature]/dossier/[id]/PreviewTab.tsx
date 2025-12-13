@@ -9,16 +9,50 @@ import { TimelineCard } from "@/components/folders/TimelineCard";
 
 import { getCommissionUids } from "@/app/[legislature]/dossier/[id]/dataFunctions";
 import { getDossier } from "@/data/getDossier";
+import { dossierSettings } from "./dossierSettings";
 
 type PreviewTabProps = {
   dossier?: Awaited<ReturnType<typeof getDossier>>;
 };
 
 export const PreviewTab = ({ dossier }: PreviewTabProps) => {
-  const { actesLegislatifs, rapporteurs } = dossier!;
+  const { actesLegislatifs, rapporteurs, codeProcedure } = dossier!;
+
+  const {
+    carteRapporteurs = true,
+    carteAmendements = true,
+    carteCoSignataires = true,
+    carteDocuments = true,
+  } = (codeProcedure ? dossierSettings[codeProcedure] : {}) ?? {};
 
   const commissionFondIds = getCommissionUids(actesLegislatifs, "FOND");
   const commissionAvisIds = getCommissionUids(actesLegislatifs, "AVIS");
+
+  const rapporteursPerActe: Record<string, typeof rapporteurs> = {};
+
+  for (const rapporteur of rapporteurs) {
+    if (rapporteur.acteLegislatifRefUid) {
+      if (rapporteursPerActe[rapporteur.acteLegislatifRefUid] === undefined) {
+        rapporteursPerActe[rapporteur.acteLegislatifRefUid] = [];
+      }
+      rapporteursPerActe[rapporteur.acteLegislatifRefUid].push(rapporteur);
+    }
+  }
+
+  const rapporteursPerCommission: Record<string, typeof rapporteurs> = {};
+
+  actesLegislatifs.forEach((act) => {
+    if (rapporteursPerActe[act.uid] !== undefined) {
+      if (
+        act.organeRefUid &&
+        (commissionAvisIds.includes(act.organeRefUid) ||
+          commissionFondIds.includes(act.organeRefUid))
+      ) {
+        rapporteursPerCommission[act.organeRefUid] =
+          rapporteursPerActe[act.uid];
+      }
+    }
+  });
 
   const documentIds = Array.from(
     new Set(
@@ -29,6 +63,7 @@ export const PreviewTab = ({ dossier }: PreviewTabProps) => {
       )
     )
   );
+
   return (
     <div className="container">
       <div
@@ -39,17 +74,23 @@ export const PreviewTab = ({ dossier }: PreviewTabProps) => {
           flex: 2,
         }}
       >
-        <CommissionsCard
-          commissionFondIds={commissionFondIds}
-          commissionAvisIds={commissionAvisIds}
-          rapporteurs={rapporteurs}
-        />
+        {carteRapporteurs && (
+          <CommissionsCard
+            commissionFondIds={commissionFondIds}
+            commissionAvisIds={commissionAvisIds}
+            rapporteursPerCommission={rapporteursPerCommission}
+          />
+        )}
         <AdditionalInfoCard
           documentIds={documentIds}
-          legislature={dossier!.legislature}
+          legislature={dossier!.legislature!.toString()}
           dossierUid={dossier!.uid}
+          showAmendements={carteAmendements}
+          showCoSignataires={carteCoSignataires}
         />
-        <LegislativeDocumentsCard documentIds={documentIds} />
+        {carteDocuments && (
+          <LegislativeDocumentsCard documentIds={documentIds} />
+        )}
       </div>
       <div
         style={{
@@ -66,7 +107,7 @@ export const PreviewTab = ({ dossier }: PreviewTabProps) => {
           actesLegislatifs={actesLegislatifs}
           // documents={documents}
           dossierUid={dossier!.uid}
-          legislature={dossier!.legislature}
+          legislature={dossier!.legislature!.toString()}
         />
         {/* <TextStructureCard /> */}
       </div>

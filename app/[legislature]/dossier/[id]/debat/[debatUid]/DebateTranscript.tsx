@@ -9,7 +9,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
 import { SpeakingTime } from "@/components/folders/SpeakingTime";
-import { DebateTimeline } from "@/app/[legislature]/dossier/[id]/debat/[pointOdjUid]/DebateTimeline";
+import { DebateTimeline } from "@/app/[legislature]/dossier/[id]/debat/[debatUid]/DebateTimeline";
 
 import { ClockMovingIcon } from "@/icons/ClockMovingIcon";
 import { useTheme } from "@mui/material";
@@ -22,7 +22,12 @@ function getWordsPerActeur(paragraphes: Paragraphe[]) {
   paragraphes.forEach((paragraphe) => {
     const { codeGrammaire, acteurRefUid, texte } = paragraphe;
 
-    if (codeGrammaire !== "PAROLE_GENERIQUE" || !acteurRefUid || !texte) {
+    if (
+      !codeGrammaire ||
+      !["INTERRUPTION_1_10", "PAROLE_GENERIQUE"].includes(codeGrammaire) ||
+      !acteurRefUid ||
+      !texte
+    ) {
       return;
     }
 
@@ -45,52 +50,10 @@ type DebateTranscriptProps = {
 export const DebateTranscript = (props: DebateTranscriptProps) => {
   const { paragraphes, wordsCounts, title } = props;
 
-  const acteurRequested = React.useRef<Record<string, boolean>>({});
-  const groupRequested = React.useRef<Record<string, boolean>>({});
-  const [acteurs, setActeurs] = React.useState<Record<string, Acteur | null>>(
-    {}
-  );
-  const [groups, setGroups] = React.useState<Record<string, Organe | null>>({});
-
   const wordsPerActeur = React.useMemo(
     () => getWordsPerActeur(paragraphes),
     [paragraphes]
   );
-
-  React.useEffect(() => {
-    Object.keys(wordsPerActeur).forEach((acteurUid) => {
-      if (!acteurRequested.current[acteurUid]) {
-        acteurRequested.current[acteurUid] = true;
-        fetch(`${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/acteurs/${acteurUid}`)
-          .then((rep) => rep.json())
-          .then(({ data }: { data: Acteur }) => {
-            setActeurs((p) => ({ ...p, [acteurUid]: data }));
-
-            const groupeParlementaireUid = data.groupeParlementaireUid;
-            if (
-              groupeParlementaireUid &&
-              !groupRequested.current[groupeParlementaireUid]
-            ) {
-              groupRequested.current[groupeParlementaireUid] = true;
-              getOrgane(groupeParlementaireUid)
-                .then((group) =>
-                  setGroups((p) =>
-                    group === null
-                      ? p
-                      : { ...p, [groupeParlementaireUid]: group }
-                  )
-                )
-                .catch(() => {
-                  setGroups((p) => ({ ...p, [groupeParlementaireUid]: null }));
-                });
-            }
-          })
-          .catch(() => {
-            setGroups((p) => ({ ...p, [acteurUid]: null }));
-          });
-      }
-    });
-  }, [wordsPerActeur]);
 
   const durationEstimation = Math.round(
     Object.values(wordsCounts).reduce((acc, wordCount) => acc + wordCount, 0) /
@@ -127,18 +90,10 @@ export const DebateTranscript = (props: DebateTranscriptProps) => {
           <Typography>Temps de parole par groupe</Typography>
         </AccordionSummary>
         <AccordionDetails>
-          {/* <SpeakingTime
-            wordsPerActeur={wordsPerActeur}
-            acteurs={acteurs}
-            groups={groups}
-          /> */}
+          <SpeakingTime wordsPerActeur={wordsPerActeur} />
         </AccordionDetails>
       </Accordion>
-      <DebateTimeline
-        paragraphes={paragraphes}
-        acteurs={acteurs}
-        groups={groups}
-      />
+      <DebateTimeline paragraphes={paragraphes} />
     </>
   );
 };

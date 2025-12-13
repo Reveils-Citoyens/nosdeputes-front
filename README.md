@@ -8,14 +8,12 @@
 To get the full project locally, you need to clone the following repository:
 
 - This repository: The frontend
-- [tricoteuses-assemblee](https://git.en-root.org/tricoteuses/tricoteuses-assemblee): Fetch the open data, transform them and provide helpers to navigate the data.
-- [tricoteuses-api-parlement](https://git.en-root.org/tricoteuses/tricoteuses-api-parlement): Takes data from `tricoteuses-assemblee` and store them in a PostgreSQL database.
+- [tricoteuses-api parlement](https://git.tricoteuses.fr/logiciels/tricoteuses-api-parlement/): This repository is the backend that manage a DB with all the needed data and provide an API the get them.
+- [tricoteuses-assemblee](https://git.tricoteuses.fr/logiciels/tricoteuses-assemblee): Is a toolbox to download and manipulate data from the assemblée nationale.
 
 ### Get the data
 
-1. Follow [tricoteuses-assemblee](https://git.en-root.org/tricoteuses/tricoteuses-assemblee) instructions. At the end, you should have a folder `assemblee-data/` full of data files. Take care of filtering to get only one legislature (preferably the last one) to reduce download time.
-
-2. Follow [tricoteuses-api-parlement](https://git.en-root.org/tricoteuses/tricoteuses-api-parlement) instructions to move those data into a DB.
+You can follow the instruction from the [tricoteuses-api parlement](https://git.tricoteuses.fr/logiciels/tricoteuses-api-parlement/) repository to get a working API.
 
 If like me you're not that good with DB management, you can install docker, and run the following command:
 
@@ -42,19 +40,7 @@ Run the following command to install the project.
 npm run install
 ```
 
-## Update the Prisma model
-
-The project uses Prisma to type DB interaction.
-It provides an ORM to fetch data from the DB, and types.
-
-In the `.env` file, add two variables:
-
-- `TRICOTEUSES_ASSEMBLEE_API_DB_URL`: The address of the DB. For example `"postgres://postgres:postgres@localhost:5431/assemblee?schema=public"` with the docker proposed.
-- `TRICOTEUSES_ASSEMBLEE_API_REPO`: The relative path to the cloned [tricoteuses-api-parlement](https://git.en-root.org/tricoteuses/tricoteuses-api-parlement) repo.
-
-Then you should be able to run `npm run import-prisma` to copy the prisma config files from the cloned [tricoteuses-api-parlement](https://git.en-root.org/tricoteuses/tricoteuses-api-parlement) to the front one.
-
-From that you can run `npx prisma generate` to update the Prisma TypeScript.
+Replace the `.env.example` by a `.env` with a correct value to your locale version of the API with `NEXT_PUBLIC_TRICOTEUSES_API_URL`
 
 ## Start dev server
 
@@ -67,6 +53,33 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+## Visite guidé de la codebase
+
+### Communiquer avec le backend
+
+L'API utilise [Prisma](https://www.prisma.io/) comme ORM.
+On peut récupérer les types généré par l'ORM dans notre projet grace à `@prisma/client`.
+
+Par example si on veut manipuler des amendements, on peut faire.
+
+```ts
+import { Amendement } from "@prisma/client";
+```
+
+Attention, le typage correspond à la DB. L'API renvoit évidement une version séréalisée. Ils faut donc transformer les chaines de characteres en `Date`.
+
+### Structure des dossiers
+
+- `/app` Le routing system de NextJS
+- `/components` An attempt to have some components shared between multiple pages.
+- `/data` All the functions calling the API to get data and type them using the.
+- `/utils` Des petits bouts de code bien pratique.
+
+Pour info:
+
+- La séparation entre `app` et `component` est pas tres propre pour des raison de mauvaise habitude au début du projet
+- Il y a un mixte entre les server components et client components. Je ne suis pas un expert du sujet. Je fais probablement des choses peu optimale.
 
 ## Learn More
 

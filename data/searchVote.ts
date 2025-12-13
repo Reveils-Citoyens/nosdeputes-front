@@ -1,8 +1,7 @@
-import { Dossier } from "@prisma/client";
-import { parseDossier } from "./parsers/parseDossier";
+import { Vote } from "@prisma/client";
 import { PaginatedResponse, extractPaginationMetadata } from "./pagination";
 
-interface SearchDossierParams {
+interface SearchVoteParams {
   /**
    * @default 10
    */
@@ -12,63 +11,64 @@ interface SearchDossierParams {
    */
   page?: number;
   /**
-   * @default 'dateDernierActe.desc'
+   * @default "numeroOrdreDepot.asc"
    */
   sort?: string;
-  /**
-   * @default ""
-   */
-  search?: string;
   include?: string;
-  codeProcedure?: string;
-  acteurPrincipalRefUid?: string;
+  search?: string;
+  acteurRefUid?: string;
+  codeTypeVote?: string;
+  scrutinRefUid?: string;
+  causePositionVote?: string;
+  positionVote?: string;
 }
 
-export async function searchDossier(
-  params: SearchDossierParams
-): Promise<PaginatedResponse<Dossier> | null> {
+export async function searchVote(
+  params: SearchVoteParams
+): Promise<PaginatedResponse<Vote> | null> {
   const {
     perPage = 10,
-    page = 0,
-    sort = "dateDernierActe.desc",
+    page = 1,
+    sort = "dateVote.asc",
     search = "",
-    codeProcedure = "",
     include,
-    acteurPrincipalRefUid,
+    acteurRefUid,
+    codeTypeVote,
+    scrutinRefUid,
+    causePositionVote,
+    positionVote,
   } = params;
 
   const searchParams = new URLSearchParams({
     perPage: perPage.toString(),
     page: page.toString(),
     sort,
-    dataset: "17",
   });
 
   Object.entries({
     search,
     include,
-    acteurPrincipalRefUid,
-    codeProcedure,
+    acteurRefUid,
+    codeTypeVote,
+    scrutinRefUid,
+    causePositionVote,
+    positionVote,
   }).forEach(([key, value]) => {
     if (value) {
       searchParams.set(key, value);
     }
   });
-
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/?${searchParams}`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/votes?${searchParams}`
     );
 
     const { data } = await rep.json();
 
-    // Transforms all the "yyy-mm-dd" string into Date objects.
-    data.forEach(parseDossier);
-
     const pagination = extractPaginationMetadata(rep, page);
 
     return {
-      data,
+      data: data ?? [],
       pagination,
     };
   } catch (error) {

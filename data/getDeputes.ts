@@ -14,7 +14,7 @@ async function getDeputesUnCached(legislature: number): Promise<{
 } | null> {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/acteurs/?chambre=AN&dataset=${legislature}&perPage=1000&include=mandatPrincipal`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/acteurs/?chambre=AN&perPage=1000&include=mandatPrincipal`
     );
 
     const { data } = (await rep.json()) as {
@@ -36,7 +36,7 @@ async function getDeputesUnCached(legislature: number): Promise<{
 
     return { acteurs, groups };
   } catch (error) {
-    console.error("Error fetching dossier:", error);
+    console.error("Error fetching deputes:", error);
     return null;
   }
 }

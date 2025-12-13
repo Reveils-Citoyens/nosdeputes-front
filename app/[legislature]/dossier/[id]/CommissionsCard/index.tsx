@@ -12,6 +12,7 @@ import CommissionItem from "./CommissionItem";
 
 import { Rapporteur } from "@prisma/client";
 import ActeurCard from "@/components/folders/ActeurCard";
+import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
 
 interface CommissionsCardProps {
   /**
@@ -25,32 +26,20 @@ interface CommissionsCardProps {
   /**
    * List des rapporteurs lié au dossier.
    */
-  rapporteurs: Rapporteur[];
+  rapporteursPerCommission: Record<string, Rapporteur[]>;
 }
 
 export const CommissionsCard = async ({
   commissionFondIds,
   commissionAvisIds,
-  rapporteurs,
+  rapporteursPerCommission,
 }: CommissionsCardProps) => {
   if (
     (!commissionFondIds || commissionFondIds.length === 0) &&
-    (!commissionAvisIds || commissionAvisIds.length === 0) &&
-    (!rapporteurs || rapporteurs.length === 0)
+    (!commissionAvisIds || commissionAvisIds.length === 0)
   ) {
     return null;
   }
-
-  // Utilise l'uid des actes legislatif pour différenciers:
-  // - les rapporteurs de commission saisie pour le fond
-  const rapporteursFond = rapporteurs.filter((rapporteur) =>
-    rapporteur.acteLegislatifRefUid?.includes("COM-FOND-NOMIN")
-  );
-
-  // - les rapporteurs de commission saisie pour avis
-  const rapporteursAvis = rapporteurs.filter((rapporteur) =>
-    rapporteur.acteLegislatifRefUid?.includes("COM-AVIS-NOMIN")
-  );
 
   return (
     <Accordion elevation={0} disableGutters defaultExpanded color="secondary">
@@ -58,7 +47,7 @@ export const CommissionsCard = async ({
         aria-controls="commission-content"
         id="commission-header"
       >
-        <Typography>Commissions</Typography>
+        <Typography>Rapporteurs et Rapporteuses</Typography>
       </AccordionSummary>
       <AccordionDetails>
         <Stack direction="column" spacing={2}>
@@ -66,66 +55,66 @@ export const CommissionsCard = async ({
             <div>
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <Typography variant="body2" fontWeight="light">
-                  Commission saisie au fond
+                  Commission{commissionFondIds.length > 1 ? "s" : ""} saisie au
+                  fond
                 </Typography>
-                <InfoIcon sx={{ fontSize: "14px" }} />
+                <InfoDialogIcon
+                  sx={{ fontSize: "14px" }}
+                  category="test"
+                  item="test2"
+                />
               </Stack>
               {commissionFondIds.map((commissionId) => (
-                <React.Suspense
-                  key={commissionId}
-                  fallback={
-                    <Skeleton variant="text" sx={{ fontSize: "1rem" }} />
-                  }
-                >
-                  <CommissionItem id={commissionId} />
-                </React.Suspense>
+                <div key={commissionId} style={{ paddingLeft: 4 }}>
+                  <React.Suspense
+                    key={commissionId}
+                    fallback={
+                      <Skeleton variant="text" sx={{ fontSize: "1rem" }} />
+                    }
+                  >
+                    <CommissionItem id={commissionId} pt={1} />
+                  </React.Suspense>
+                  {rapporteursPerCommission[commissionId]?.map((acteur) => (
+                    <ActeurCard
+                      key={acteur.acteurRefUid}
+                      id={acteur.acteurRefUid}
+                      link="name"
+                    />
+                  ))}
+                </div>
               ))}
             </div>
           )}
-          {rapporteursFond && rapporteursFond.length > 0 && (
-            <div>
-              <Typography variant="body2" fontWeight="light" pb={1}>
-                Rapporteur
-              </Typography>
-              {rapporteursFond.map((acteur) => (
-                <ActeurCard
-                  key={acteur.acteurRefUid}
-                  id={acteur.acteurRefUid}
-                />
-              ))}
-            </div>
-          )}
+
           {commissionAvisIds && commissionAvisIds.length > 0 && (
             <div>
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <Typography variant="body2" fontWeight="light">
-                  Comission saisie pour avis
+                  Commission{commissionAvisIds.length > 1 ? "s" : ""} saisie
+                  pour avis
                 </Typography>
                 <InfoIcon sx={{ fontSize: "14px" }} />
               </Stack>
-              {commissionAvisIds.map((commissionId) => (
-                <React.Suspense
-                  key={commissionId}
-                  fallback={
-                    <Skeleton variant="text" sx={{ fontSize: "1rem" }} />
-                  }
-                >
-                  <CommissionItem id={commissionId} />
-                </React.Suspense>
-              ))}
-            </div>
-          )}
-          {rapporteursAvis && rapporteursAvis.length > 0 && (
-            <div>
-              <Typography variant="body2" fontWeight="light" pb={1}>
-                Rapporteur
-              </Typography>
-              {rapporteursAvis.map((acteur) => (
-                <ActeurCard
-                  key={acteur.acteurRefUid}
-                  id={acteur.acteurRefUid}
-                />
-              ))}
+              <Stack direction="column" spacing={1} alignItems="start">
+                {commissionAvisIds.map((commissionId) => (
+                  <div key={commissionId} style={{ paddingLeft: 4 }}>
+                    <React.Suspense
+                      fallback={
+                        <Skeleton variant="text" sx={{ fontSize: "1rem" }} />
+                      }
+                    >
+                      <CommissionItem id={commissionId} pt={1} />
+                    </React.Suspense>
+                    {rapporteursPerCommission[commissionId]?.map((acteur) => (
+                      <ActeurCard
+                        key={acteur.acteurRefUid}
+                        id={acteur.acteurRefUid}
+                        link="name"
+                      />
+                    ))}
+                  </div>
+                ))}
+              </Stack>
             </div>
           )}
         </Stack>

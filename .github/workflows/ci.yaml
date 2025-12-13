@@ -1,27 +1,21 @@
-name: Run code quality checks
-
-on: [push, pull_request]
-
+name: Build & Deploy to Scaleway
+on:
+  push:
+    branches:
+      - "staging"
 jobs:
-  # Actual build is done on Clever Cloud
-  build-check:
+  build:
+    environment: staging
     runs-on: ubuntu-latest
-    env:
-      DB_HOST: ${{ secrets.DB_HOST }}
-      DB_PORT: ${{ secrets.DB_PORT }}
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_DATABASE: ${{ secrets.DB_DATABASE }}
-
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - name: Login to Scaleway Container Registry
+        uses: docker/login-action@v3
         with:
-          node-version: '18'
-      - run: npm install
-      - run: npm run lint
-      - name: Type Checking
-        run: npx tsc --noEmit
-      - name: Checking build
-        run: npm run build
+          username: nologin
+          password: ${{ secrets.SCALEWAY_API_KEY }}
+          registry: ${{ secrets.CONTAINER_REGISTRY_ENDPOINT }}
+      - name: Build the Docker image
+        run: docker build . -t ${{ secrets.CONTAINER_REGISTRY_ENDPOINT }}/nos-deputes:staging --build-arg NEXT_PUBLIC_TRICOTEUSES_API_URL=https://app.tricoteuses.fr
+      - name: Push the Docker Image
+        run: docker push ${{ secrets.CONTAINER_REGISTRY_ENDPOINT }}/nos-deputes:staging
