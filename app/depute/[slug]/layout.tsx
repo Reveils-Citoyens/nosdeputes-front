@@ -24,7 +24,7 @@ export default async function Page({
   const circonscription = depute.mandatPrincipal;
 
   return (
-    <Box sx={{ maxWidth: "1024px", mx: "auto", my: 5 }}>
+    <Box sx={{ maxWidth: "1024px", width: "100%", mx: "auto", my: 5 }}>
       <Stack direction="row" justifyContent="space-between">
         <Box sx={{ display: "flex", flexDirection: "row" }}>
           <Avatar
@@ -86,7 +86,7 @@ export default async function Page({
             xs: "column",
             md: "row",
           },
-          gap: 5,
+          gap: 4,
         }}
       >
         <Stack spacing={3} useFlexGap flex={2}>

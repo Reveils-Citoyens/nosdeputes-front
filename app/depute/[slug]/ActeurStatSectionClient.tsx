@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
   MenuItem,
+  Stack,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -58,14 +59,16 @@ const MetriqueCard = (props: Stats & { valeurDepute: number }) => {
         <Typography variant="h1" sx={{ textAlign: "right" }}>
           {props.valeurDepute}
         </Typography>
-        <Typography variant="body1" sx={{ textAlign: "right" }}>
-          {infoDialogContents.depute[baselineTypeToInfo[props.mesure]]
-            ?.translation ?? props.mesure}
+        <Stack direction="row">
           <InfoDialogIcon
             category="depute"
             item={baselineTypeToInfo[props.mesure]}
           />
-        </Typography>
+          <Typography variant="body1" sx={{ textAlign: "right", flexGrow: 1 }}>
+            {infoDialogContents.depute[baselineTypeToInfo[props.mesure]]
+              ?.translation ?? props.mesure}
+          </Typography>
+        </Stack>
         <Box
           sx={{
             width: "100%",
@@ -169,11 +172,18 @@ export function ActeurStatSectionClient({
         <MenuItem value="LAST_SIX_MONTHS">Six mois</MenuItem>
       </Select>
 
-      <div>
+      <Box
+        sx={{
+          display: "grid",
+          gap: 1,
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          mt: 2,
+        }}
+      >
         {statsWithMetrique.map((item) => (
           <MetriqueCard key={item.id} {...item} />
         ))}
-      </div>
+      </Box>
     </div>
   );
 }
