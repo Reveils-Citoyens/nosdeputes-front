@@ -21,9 +21,7 @@ import { sortActDate } from "../utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { getDebats, ReturnedDebat } from "@/data/getDebats";
-import getSortedActGroups from "@/domain/sortActeGroup";
-import { CODE_ACTS_AVEC_DEBAT } from "../const";
+import { getDebats } from "@/data/getDebats";
 
 function getLogoPathFromCode(code: string) {
   if (code.startsWith("AN")) {

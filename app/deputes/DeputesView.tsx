@@ -216,7 +216,8 @@ export default function DeputesView({
                     .toLowerCase()
                     .includes(search.toLowerCase())) &&
                 (numeroDepartement === null ||
-                  mandatPrincipal?.numDepartement === numeroDepartement)
+                  mandatPrincipal?.numDepartement ===
+                    Number.parseInt(numeroDepartement, 10))
               );
             });
 
