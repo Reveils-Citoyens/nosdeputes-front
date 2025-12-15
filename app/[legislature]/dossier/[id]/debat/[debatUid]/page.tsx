@@ -25,9 +25,9 @@ export default async function Page({
 
   const wordsCounts: Record<string, number> = interventions.reduce(
     (acc, paragraphe) => {
-      const { codeGrammaire, texte } = paragraphe;
+      const { codeGrammaire, texte,  } = paragraphe;
 
-      if (SUMMARY_CODES.includes(codeGrammaire!)) {
+      if ( SUMMARY_CODES.has(codeGrammaire!)) {
         lastId = paragraphe.id.toString();
         return { ...acc, [lastId]: 0 };
       }
@@ -58,8 +58,9 @@ export default async function Page({
       >
         <DebateSummary
           // wordsCounts={wordsCounts}
-          sections={interventions.filter((p) =>
-            SUMMARY_CODES.includes(p.codeGrammaire!)
+          sections={interventions.filter(
+            (p) =>
+              SUMMARY_CODES.has(p.codeGrammaire!) 
           )}
         />
       </div>

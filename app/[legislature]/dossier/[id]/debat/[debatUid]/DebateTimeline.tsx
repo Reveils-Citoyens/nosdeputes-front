@@ -7,7 +7,8 @@ import { timelineItemClasses } from "@mui/lab/TimelineItem";
 import SubSectionItem from "@/components/folders/DebatTab/SubSectionItem";
 import { Typography } from "@mui/material";
 import { cleanText } from "@/components/folders/DebatTab/cleanText";
-import { Acteur, Organe, Paragraphe } from "@prisma/client";
+import { Paragraphe } from "@prisma/client";
+import { SUMMARY_CODES } from "@/components/const";
 
 type DebateTimelineProps = {
   paragraphes: Paragraphe[];
@@ -34,12 +35,6 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
                 texte={texte}
               />
             );
-
-          case "PRESENTATION_1_0":
-          case "DISC_GENERALE_1":
-          case "MOTION_RP_1_1":
-          case "DISC_ARTICLES_2_4":
-            return <SectionItem key={id} id={id.toString()} title={texte} />;
 
           case "TITRE_TEXTE_DISCUSSION":
             return (
@@ -72,6 +67,9 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
               />
             );
           default:
+            if (SUMMARY_CODES.has(codeGrammaire!)) {
+              return <SectionItem key={id} id={id.toString()} title={texte} />;
+            }
             return texte ? (
               <SubSectionItem
                 key={id}

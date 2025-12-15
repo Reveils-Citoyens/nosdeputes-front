@@ -153,12 +153,13 @@ export const CODE_ACTS_AVEC_DEBAT = [
 
 export const WORDS_PER_MINUTES = 200;
 
-export const SUMMARY_CODES = [
+export const SUMMARY_CODES = new Set([
   "PRESENTATION_1_0",
   "DISC_GENERALE_1",
   "MOTION_RP_1_1",
   "DISC_ARTICLES_2_4",
-];
+  "QG_1_1"
+]);
 
 
 
