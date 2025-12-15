@@ -182,7 +182,7 @@ export const TimelineCard = ({
   dossierUid: string;
   legislature: string;
 }) => {
-  const { actsStructure, actsLookup } = groupActs(actesLegislatifs);
+  const { rootIds, actsLookup } = groupActs(actesLegislatifs);
 
   const { data: debats } = useQuery({
     queryKey: ["debats", dossierUid],
@@ -205,140 +205,84 @@ export const TimelineCard = ({
           },
         }}
       >
-        {getSortedActGroups(actsStructure, actsLookup).flatMap(
-          ({
-            acts: lvl0Acts,
-            groupDate: lvl0GroupDate,
-            children: lvl1Group,
-          }) => {
-            return lvl0Acts?.map((act) => {
-              return (
-                <TimelineItemLvl0
-                  key={act.uid}
-                  act={act}
-                  groupDate={lvl0GroupDate}
-                >
-                  {lvl1Group &&
-                    getSortedActGroups(lvl1Group, actsLookup).flatMap(
-                      ({
-                        acts: lvl1Acts,
-                        groupDate: lvl1GroupDate,
-                        children: lvl2Group,
-                      }) => {
-                        return lvl1Acts?.map((act) => {
-                          return (
-                            <TimelineItemLvl1
-                              key={act.uid}
-                              act={act}
-                              groupDate={lvl1GroupDate}
-                            >
-                              {lvl2Group &&
-                                getSortedActGroups(
-                                  lvl2Group,
-                                  actsLookup
-                                ).flatMap(
-                                  ({
-                                    acts: lvl2Acts,
-                                    groupDate: lvl2GroupDate,
-                                    children: lvl3Group,
-                                  }) => {
-                                    return lvl2Acts?.map((act) => {
-                                      const date =
-                                        act.dateActe ?? lvl2GroupDate;
+        {rootIds?.map((rootId) => {
+          const act = actsLookup[rootId];
+          return (
+            <TimelineItemLvl0 key={act.uid} act={act} groupDate={act.date}>
+              {act.children.map((lvl1Uid) => {
+                const lvl1Act = actsLookup[lvl1Uid];
+                return (
+                  <TimelineItemLvl1
+                    key={lvl1Act.uid}
+                    act={lvl1Act}
+                    groupDate={lvl1Act.date}
+                  >
+                    {lvl1Act.children.map((lvl2Uid) => {
+                      const lvl2Act = actsLookup[lvl2Uid];
 
-                                      const debatUid =
-                                        act.reunionRefUid &&
-                                        agendatsToDebatMap[act.reunionRefUid];
+                      const debatUid =
+                        lvl2Act.reunionRefUid &&
+                        agendatsToDebatMap[lvl2Act.reunionRefUid];
 
-                                      const link = debatUid
-                                        ? `/${legislature}/dossier/${dossierUid}/debat/${debatUid}`
-                                        : undefined;
-                                      const title = `${act.nomCanonique}${
-                                        date
-                                          ? ` du ${date.toLocaleDateString(
-                                              "fr-FR",
-                                              {
-                                                year: "numeric",
-                                                month: "short",
-                                                day: "numeric",
-                                              }
-                                            )}`
-                                          : ""
-                                      }`;
+                      const link = debatUid
+                        ? `/${legislature}/dossier/${dossierUid}/debat/${debatUid}`
+                        : undefined;
+                      const title = `${lvl2Act.nomCanonique}${
+                        lvl2Act.date
+                          ? ` du ${lvl2Act.date.toLocaleDateString("fr-FR", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}`
+                          : ""
+                      }`;
 
-                                      return (
-                                        <div key={act.uid}>
-                                          <Typography
-                                            variant="caption"
-                                            component={link ? Link : "p"}
-                                            fontWeight="light"
-                                            href={link}
-                                            sx={{ my: 1.5 }}
-                                          >
-                                            {title}
-                                          </Typography>
-                                          {lvl3Group &&
-                                            getSortedActGroups(
-                                              lvl3Group,
-                                              actsLookup
-                                            )
-                                              .flatMap(({ acts: lvl3Acts }) => {
-                                                return lvl3Acts;
-                                              })
-                                              // Certain dossier saisissent plusieurs commissions. Ils faut donc ne garder que les elements de niveau 3 qui sone en lien avec le même organe.
-                                              .filter(
-                                                (
-                                                  childrenAct
-                                                ): childrenAct is ActeLegislatif =>
-                                                  childrenAct !== undefined &&
-                                                  act.organeRefUid ===
-                                                    childrenAct.organeRefUid
-                                              )
-                                              ?.sort(sortActDate)
-                                              ?.map((act) => {
-                                                const date = act.dateActe;
-                                                const title = `${
-                                                  act.nomCanonique
-                                                }${
-                                                  date
-                                                    ? ` du ${date.toLocaleDateString(
-                                                        "fr-FR",
-                                                        {
-                                                          year: "numeric",
-                                                          month: "short",
-                                                          day: "numeric",
-                                                        }
-                                                      )}`
-                                                    : ""
-                                                }`;
+                      return (
+                        <div key={lvl2Act.uid}>
+                          <Typography
+                            variant="caption"
+                            component={link ? Link : "p"}
+                            fontWeight="light"
+                            href={link}
+                            sx={{ my: 1.5 }}
+                          >
+                            {title}
+                          </Typography>
 
-                                                return (
-                                                  <Typography
-                                                    variant="caption"
-                                                    component="p"
-                                                    fontWeight="light"
-                                                    key={act.uid}
-                                                    sx={{ my: 0, ml: 4 }}
-                                                  >
-                                                    {title}
-                                                  </Typography>
-                                                );
-                                              })}
-                                        </div>
-                                      );
-                                    });
-                                  }
-                                )}
-                            </TimelineItemLvl1>
-                          );
-                        });
-                      }
-                    )}
-                </TimelineItemLvl0>
-              );
-            });
-          }
-        )}
+                          {lvl2Act.children.map((lvl3Uid) => {
+                            const lvl3Act = actsLookup[lvl3Uid];
+                            const date = lvl3Act.dateActe;
+                            const title = `${lvl3Act.nomCanonique}${
+                              date
+                                ? ` du ${date.toLocaleDateString("fr-FR", {
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                  })}`
+                                : ""
+                            }`;
+
+                            return (
+                              <Typography
+                                variant="caption"
+                                component="p"
+                                fontWeight="light"
+                                key={lvl3Act.uid}
+                                sx={{ my: 0, ml: 4 }}
+                              >
+                                {title}
+                              </Typography>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </TimelineItemLvl1>
+                );
+              })}
+            </TimelineItemLvl0>
+          );
+        })}
       </Timeline>
     </CardLayout>
   );
