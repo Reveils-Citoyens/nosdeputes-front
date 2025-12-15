@@ -5,13 +5,15 @@ import {
   ChartsAxis,
   ChartsAxisHighlight,
   LinePlot,
-  ChartContainer,
   useDrawingArea,
   useXScale,
   LineSeriesType,
   BarSeriesType,
-  useAxisTooltip,
   ChartsTooltipContainer,
+  ChartDataProvider,
+  ChartsSurface,
+  ChartsLegend,
+  useAxesTooltip,
 } from "@mui/x-charts";
 import { useAgregateWeeklyStats } from "./useAgregateWeeklyStats";
 import Box from "@mui/material/Box";
@@ -32,7 +34,7 @@ const seriesConfig: Record<
       stack: "mediane",
       color: "red",
       curve: "step",
-      label: "mediane réunion commissions",
+      label: "Médiane des députés",
     },
     {
       id: "commission-depute",
@@ -40,7 +42,7 @@ const seriesConfig: Record<
       type: "bar",
       stack: "depute",
       color: "orange",
-      label: "réunion commissions",
+      label: "Présences en commissions",
     },
   ],
   hemicicle: [
@@ -50,7 +52,7 @@ const seriesConfig: Record<
       type: "bar",
       stack: "depute",
       color: "blue",
-      label: "présence hémicicle",
+      label: "Présence détectée en hémicicle",
     },
     {
       id: "hemicicle-stats",
@@ -59,7 +61,7 @@ const seriesConfig: Record<
       stack: "mediane",
       color: "darkblue",
       curve: "step",
-      label: "mediane présence hémicicle",
+      label: "Mediane des députés",
     },
   ],
 };
@@ -75,7 +77,7 @@ export default function WeeklyActivityChart(props: {
 }) {
   const { presenceDetecteeDataset, vacances } = useAgregateWeeklyStats(props);
   return (
-    <ChartContainer
+    <ChartDataProvider
       height={300}
       dataset={presenceDetecteeDataset}
       xAxis={[
@@ -99,17 +101,32 @@ export default function WeeklyActivityChart(props: {
           categoryGapRatio: 0,
         },
       ]}
+      margin={{bottom: 0}}
       series={seriesConfig[props.activityType]}
     >
-      <BarPlot />
-      <LinePlot />
-      <ChartsAxis />
-      <ChartsAxisHighlight x="band" />
-      <VacanceParlementaire vacances={vacances} />
-      <ChartsTooltipContainer trigger="axis">
-        <TooltipContent dataset={presenceDetecteeDataset} />
-      </ChartsTooltipContainer>
-    </ChartContainer>
+      <Box
+        sx={{
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          gap: 0,
+          alignItems: "center",
+          mb: 4
+        }}
+      >
+        <ChartsSurface>
+          <BarPlot />
+          <LinePlot />
+          <ChartsAxis />
+          <ChartsAxisHighlight x="band" />
+          <VacanceParlementaire vacances={vacances} />
+        </ChartsSurface>
+        <ChartsTooltipContainer trigger="axis">
+          <TooltipContent dataset={presenceDetecteeDataset} />
+        </ChartsTooltipContainer>
+        <ChartsLegend />
+      </Box>
+    </ChartDataProvider>
   );
 }
 
@@ -135,9 +152,9 @@ function VacanceParlementaire({ vacances }: VacanceParlementaireProps) {
 }
 
 function TooltipContent({ dataset }: any) {
-  const tooltipData = useAxisTooltip();
+  const tooltipData = useAxesTooltip()?.[0];
 
-  if (tooltipData === null) {
+  if (tooltipData == null) {
     return null;
   }
 
@@ -179,6 +196,4 @@ function TooltipContent({ dataset }: any) {
       )}
     </Paper>
   );
-
-  return <p>kjdfshks</p>;
 }
