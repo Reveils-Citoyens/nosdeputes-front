@@ -21,7 +21,7 @@ export default async function Dossiers() {
         gap: 5,
       }}
     >
-      <Stack spacing={3} useFlexGap flex={2}>
+      <Stack spacing={3} useFlexGap flex={2} maxWidth={300}>
         <React.Suspense>
           <FilterContainer>
             <Filter />

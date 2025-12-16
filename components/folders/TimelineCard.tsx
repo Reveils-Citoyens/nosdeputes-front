@@ -17,7 +17,6 @@ import { CardLayout } from "@/components/folders/CardLayout";
 import { ActeLegislatif } from "@prisma/client";
 
 import { groupActs } from "@/repository/Acts";
-import { sortActDate } from "../utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -84,9 +83,10 @@ const TimelineItemLvl0 = ({
               justifyContent: "center",
               alignItems: "center",
               overflow: "hidden",
+              fontSize: 13,
             }}
           >
-            {logo && (
+            {logo ? (
               <Image
                 src={logo.src}
                 alt={logo.alt}
@@ -97,6 +97,8 @@ const TimelineItemLvl0 = ({
                   height: logo.size,
                 }}
               />
+            ) : (
+              act.codeActe
             )}
           </Box>
 
