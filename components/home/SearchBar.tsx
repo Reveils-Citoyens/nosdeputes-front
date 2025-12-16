@@ -7,21 +7,27 @@ import {
   Typography,
   Box,
   CircularProgress,
+  Stack,
+  Avatar,
 } from "@mui/material";
 import debounce from "@/utils/debounce";
 import { Dossier } from "@prisma/client";
-import { ReturnedSearchActeur, searchActeur } from "@/data/searchActeur";
 import { searchDossier } from "@/data/searchDossier";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { ActeurOption } from "./ActeurOption";
+import {
+  type CirconscriptionLegislativeSuggestion,
+  deputeAutocompletions,
+} from "@/data/autocomplet/suggestions";
+import { useQuery } from "@tanstack/react-query";
+import { getActeur } from "@/data/getActeur";
 
 const fetchActeurs = debounce(
   (
     search: string,
-    callback: (results: null | readonly ReturnedSearchActeur[]) => void
-  ) => searchActeur(search).then(callback)
+    callback: (results: readonly CirconscriptionLegislativeSuggestion[]) => void
+  ) => deputeAutocompletions(search).then(callback)
 );
 
 const fetchDossiers = debounce(
@@ -31,20 +37,23 @@ const fetchDossiers = debounce(
 const emptyOptions = [] as const;
 
 function isActeur(
-  item: Dossier | ReturnedSearchActeur
-): item is ReturnedSearchActeur {
-  return (item as ReturnedSearchActeur).prenom !== undefined;
+  item: Dossier | CirconscriptionLegislativeSuggestion
+): item is CirconscriptionLegislativeSuggestion {
+  return (item as CirconscriptionLegislativeSuggestion).depute !== undefined;
 }
 
+type Require<T, K extends keyof T> = T & { [P in K]-?: T[P] };
+
+type Circonscription = Require<CirconscriptionLegislativeSuggestion, "depute">;
 export default function SearchBar() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [value, setValue] = React.useState<
-    ReturnedSearchActeur | Dossier | null
-  >(null);
+  const [value, setValue] = React.useState<Circonscription | Dossier | null>(
+    null
+  );
   const [inputValue, setInputValue] = React.useState("");
   const [deputesOptions, setDeputesOptions] =
-    React.useState<readonly ReturnedSearchActeur[]>(emptyOptions);
+    React.useState<readonly Circonscription[]>(emptyOptions);
   const [dossierOptions, setDossierOptions] =
     React.useState<readonly Dossier[]>(emptyOptions);
 
@@ -60,16 +69,17 @@ export default function SearchBar() {
 
     fetchActeurs(
       inputValue,
-      (results: null | readonly ReturnedSearchActeur[]) => {
+      (results: readonly CirconscriptionLegislativeSuggestion[]) => {
         if (!active) {
           return;
         }
 
-        if (results === null) {
-          setDeputesOptions(emptyOptions);
-          return;
-        }
-        setDeputesOptions(results);
+        setDeputesOptions(
+          results.filter(
+            (suggestion): suggestion is Circonscription =>
+              suggestion.depute !== undefined && suggestion.score > 0.5
+          )
+        );
       }
     );
     fetchDossiers(inputValue, (results: null | readonly Dossier[]) => {
@@ -89,8 +99,8 @@ export default function SearchBar() {
     };
   }, [value, inputValue]);
 
-  const options: (ReturnedSearchActeur | Dossier)[] = React.useMemo(
-    () => [...deputesOptions, ...dossierOptions],
+  const options: (Circonscription | Dossier)[] = React.useMemo(
+    () => [...deputesOptions.slice(0, 5), ...dossierOptions.slice(0, 5)],
     [deputesOptions, dossierOptions]
   );
 
@@ -102,7 +112,7 @@ export default function SearchBar() {
             return option;
           }
           if (isActeur(option)) {
-            return `${option.prenom} ${option.nom}`;
+            return `${option.depute.etatCivil.ident.prenom} ${option.depute.etatCivil.ident.nom}`;
           }
           return option.titre!;
         }}
@@ -113,24 +123,6 @@ export default function SearchBar() {
         filterSelectedOptions
         value={value}
         noOptionsText="Aucun résultat"
-        onChange={(
-          event: any,
-          newValue: ReturnedSearchActeur | Dossier | null
-        ) => {
-          if (newValue && isActeur(newValue)) {
-            setDeputesOptions([newValue, ...deputesOptions]);
-            startTransition(() => {
-              router.push(`/depute/${newValue.slug}`);
-            });
-          }
-          if (newValue && !isActeur(newValue)) {
-            setDossierOptions([newValue, ...dossierOptions]);
-            startTransition(() => {
-              router.push(`/17/dossier/${newValue.uid}`);
-            });
-          }
-          setValue(newValue);
-        }}
         onInputChange={(event, newInputValue) => {
           setInputValue(newInputValue);
         }}
@@ -165,16 +157,7 @@ export default function SearchBar() {
           if (isActeur(option)) {
             return (
               <li key={key} {...props}>
-                <Link
-                  href={`/depute/${option.slug}`}
-                  onClick={(e) => {
-                    // Prevent default navigation since onChange handles it
-                    // This allows right-click/open in new tab to still work via href
-                    e.preventDefault();
-                  }}
-                >
-                  <ActeurOption {...option} />
-                </Link>
+                <ActeurOption {...option} />
               </li>
             );
           }
@@ -182,11 +165,7 @@ export default function SearchBar() {
             <li key={key} {...props}>
               <Link
                 href={`/17/dossier/${option.uid}`}
-                onClick={(e) => {
-                  // Prevent default navigation since onChange handles it
-                  // This allows right-click/open in new tab to still work via href
-                  e.preventDefault();
-                }}
+                style={{ width: "100%" }}
               >
                 {option.titre}
               </Link>
@@ -194,10 +173,56 @@ export default function SearchBar() {
           );
         }}
       />
-
       <Typography variant="body2" sx={{ mt: 2 }} fontWeight="light">
-        Yaël Braun-Pivet, Budget, Transport
+        Yaël Braun-Pivet, Budget, Transport, 59650, Lyon, ...
       </Typography>
     </Box>
+  );
+}
+
+export function ActeurOption(props: Circonscription) {
+  const { data: acteur } = useQuery({
+    queryKey: ["acteur", props.depute.uid],
+    queryFn: async () =>
+      props.depute.uid == null ? null : await getActeur(props.depute.uid),
+    enabled: !!props.depute.uid,
+  });
+
+  const { nom, prenom } = props.depute.etatCivil.ident;
+
+  if (!acteur) {
+    return null;
+  }
+  return (
+    <Link href={`/depute/${acteur.slug}`}>
+      <Stack direction="row" spacing={2}>
+        <Avatar
+          sx={{ height: 42, width: 42 }}
+          alt={"photo de " + prenom + " " + nom}
+          src={acteur?.urlImage ?? ""}
+        >
+          {prenom[0].toUpperCase()}
+          {nom[0].toUpperCase()}
+        </Avatar>
+        <div style={{ flexGrow: 1 }}>
+          <Typography variant="body1">
+            {props.depute.etatCivil.ident.nom}{" "}
+            {props.depute.etatCivil.ident.prenom}
+          </Typography>
+          <Stack direction="row" spacing={2} justifyContent="space-between">
+            {props.circonscription_legislative && (
+              <Typography variant="body1" fontWeight="light">
+                {props.circonscription_legislative.libelle}
+              </Typography>
+            )}
+            {props.role !== "député" && (
+              <Typography variant="body1" fontWeight="light" textAlign="end">
+                {props.autocompletion}
+              </Typography>
+            )}
+          </Stack>
+        </div>
+      </Stack>
+    </Link>
   );
 }

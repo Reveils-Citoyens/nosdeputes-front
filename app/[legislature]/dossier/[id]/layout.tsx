@@ -30,7 +30,7 @@ export default async function Dossier({
   const status = getCurrentStatus(actesLegislatifs);
 
   return (
-    <>
+    <React.Fragment>
       <HeroSection
         libelleProcedure={libelleProcedure ?? ""}
         titre={titre}
@@ -45,6 +45,6 @@ export default async function Dossier({
         showVotes={tableVotes}
       />
       {children}
-    </>
+    </React.Fragment>
   );
 }
