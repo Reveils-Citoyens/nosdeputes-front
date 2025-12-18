@@ -12,12 +12,9 @@ import { getActeurBySlug } from "@/data/getActeurBySlug";
 import AmendementCard from "@/components/folders/AmendementCard";
 
 import SearchIcon from "@mui/icons-material/Search";
-import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
 import Select from "@mui/material/Select";
 import Input from "@mui/material/Input";
-import LinearProgress from "@mui/material/LinearProgress";
 import MenuItem from "@mui/material/MenuItem";
 
 import debounce from "@/utils/debounce";
@@ -76,6 +73,7 @@ export default function Amendements() {
           <Input
             onChange={(event) => debouncedSetSearch(event.target.value)}
             startAdornment={<SearchIcon />}
+            placeholder="Search"
           />
           <Select
             value={sortAmendement}
@@ -84,6 +82,7 @@ export default function Amendements() {
               setPage(1);
             }}
             label="Status"
+            displayEmpty
             sx={{ minWidth: 150 }}
           >
             <MenuItem value="">-</MenuItem>
