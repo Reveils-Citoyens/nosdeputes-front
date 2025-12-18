@@ -10,8 +10,8 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import StatusChip from "@/components/StatusChip";
 
-import { Acteur, Amendement, Organe } from "@prisma/client";
-import DeputeCard from "@/components/folders/DeputeCard";
+import { Amendement } from "@prisma/client";
+
 import ActeurCard from "./ActeurCard";
 
 function getStatus(label: string | null) {
@@ -39,10 +39,7 @@ type AmendementCardProps = {
 export default function AmendementCard(props: AmendementCardProps) {
   const { amendement, acteurUid, titre } = props;
 
-  // TODO: utiliser la base cosignataires amendement pour avoir le nombre et les noms
-  const nbSignataires = amendement.signatairesLibelle
-    ? amendement.signatairesLibelle.split("&#160;").length - 1
-    : 1;
+  const nbSignataires = 1 + amendement.nombreCoSignataires;
 
   const pannelId = `${amendement.uid}-pannel`;
   const headerId = `${amendement.uid}-header`;
