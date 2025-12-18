@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   searchAmendement,
   sortAmendementPossible,
@@ -21,6 +21,7 @@ import LinearProgress from "@mui/material/LinearProgress";
 import MenuItem from "@mui/material/MenuItem";
 
 import debounce from "@/utils/debounce";
+import Pagination from "@/components/Pagination";
 
 export default function Amendements() {
   const { slug } = useParams<{ slug: string }>();
@@ -53,11 +54,12 @@ export default function Amendements() {
       });
       return data;
     },
+    placeholderData: keepPreviousData,
   });
 
   const data = result?.data ?? [];
   const pagination = result?.pagination;
-  const hasNextPage = pagination ? page < pagination.totalPage : false;
+
   const debouncedSetSearch = React.useMemo(
     () =>
       debounce((newSearch) => {
@@ -93,16 +95,12 @@ export default function Amendements() {
           </Select>
         </Stack>
 
-        {isPending && <LinearProgress />}
-        <Stack direction="row" justifyContent="space-between">
-          <Button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-            prev
-          </Button>
-          <Typography>page {page}</Typography>
-          <Button disabled={!hasNextPage} onClick={() => setPage((p) => p + 1)}>
-            next
-          </Button>
-        </Stack>
+        <Pagination
+          {...pagination}
+          page={page}
+          setPage={setPage}
+          isPending={isPending}
+        />
         {data.map((amendement) => {
           const titre = `Amendement N°${amendement.numeroOrdreDepot}`;
 

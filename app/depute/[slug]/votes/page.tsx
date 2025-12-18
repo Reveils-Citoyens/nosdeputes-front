@@ -4,19 +4,18 @@ import React from "react";
 import { Vote, Scrutin } from "@prisma/client";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
 import { searchVote } from "@/data/searchVote";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 
 import SearchIcon from "@mui/icons-material/Search";
-import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Select from "@mui/material/Select";
 import Input from "@mui/material/Input";
-import LinearProgress from "@mui/material/LinearProgress";
 import MenuItem from "@mui/material/MenuItem";
 
 import debounce from "@/utils/debounce";
+import Pagination from "@/components/Pagination";
 
 function colors(positionVote: string) {
   switch (positionVote) {
@@ -64,6 +63,8 @@ export default function Votes() {
       });
       return result;
     },
+
+    placeholderData: keepPreviousData,
   });
 
   const data = (result?.data ?? []) as (Vote & { scrutinRef: Scrutin })[];
@@ -105,16 +106,12 @@ export default function Votes() {
           </Select>
         </Stack>
 
-        {isPending && <LinearProgress />}
-        <Stack direction="row" justifyContent="space-between">
-          <Button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-            prev
-          </Button>
-          <Typography>page {page}</Typography>
-          <Button disabled={!hasNextPage} onClick={() => setPage((p) => p + 1)}>
-            next
-          </Button>
-        </Stack>
+        <Pagination
+          {...pagination}
+          page={page}
+          setPage={setPage}
+          isPending={isPending}
+        />
         {data?.map((vote) => {
           const { id, positionVote, parDelegation, scrutinRef } = vote;
 
