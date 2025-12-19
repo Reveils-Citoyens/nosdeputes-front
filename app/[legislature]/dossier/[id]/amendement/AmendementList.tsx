@@ -1,13 +1,12 @@
 "use client";
 import React from "react";
-
 import Stack from "@mui/material/Stack";
-
 import AmendementCard from "@/components/folders/AmendementCard";
-import { Button, Typography } from "@mui/material";
+import { Typography } from "@mui/material";
 import { searchAmendement } from "@/data/searchAmendement";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useQueryState } from "nuqs";
+import Pagination from "@/components/Pagination";
 
 export default function AmendementsList(props: { dossierUid: string }) {
   const { dossierUid } = props;
@@ -34,9 +33,8 @@ export default function AmendementsList(props: { dossierUid: string }) {
       search ?? "",
       page,
     ],
-
-    queryFn: async () => {
-      const data = await searchAmendement({
+    queryFn: () =>
+      searchAmendement({
         page,
         perPage: 20,
         dossierUid,
@@ -44,9 +42,8 @@ export default function AmendementsList(props: { dossierUid: string }) {
         documentRefUid: documentUid ?? "",
         acteurRefUid: deputeUid ?? "",
         search: search ?? "",
-      });
-      return data;
-    },
+      }),
+    placeholderData: keepPreviousData,
   });
 
   const amendements = result?.data ?? [];
@@ -54,11 +51,12 @@ export default function AmendementsList(props: { dossierUid: string }) {
 
   return (
     <Stack>
-      {/* {searchActivated && (
-        // <Typography>
-        //   {filteredAmendements.length} correspondent à votre recherche
-        // </Typography>
-        )} */}
+      <Pagination
+        {...pagination}
+        page={page}
+        setPage={setPage}
+        isPending={isPending}
+      />
       {isPending && <Typography>Chargement des amendements...</Typography>}
       {amendements.map((amendement) => (
         <AmendementCard
@@ -67,23 +65,6 @@ export default function AmendementsList(props: { dossierUid: string }) {
           key={amendement.uid}
         />
       ))}
-
-      <Stack
-        justifyContent="space-between"
-        direction="row"
-        alignItems="center"
-        my={2}
-      >
-        <Button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-          &lt; page précédente
-        </Button>
-        <Button
-          disabled={!pagination || page >= pagination.totalPage}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          page suivante &gt;
-        </Button>
-      </Stack>
     </Stack>
   );
 }

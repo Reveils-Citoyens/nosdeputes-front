@@ -3,78 +3,53 @@
 import * as React from "react";
 import { Stack } from "@mui/material";
 import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
 import Link from "next/link";
 import LabelChip from "../LabelChip";
-import { Dossier } from "@prisma/client";
 import { searchDossier } from "@/data/searchDossier";
 import { useQueryState } from "nuqs";
-
-const PAGE_SIZE = 10;
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import Pagination from "../Pagination";
 
 export default function DossierList() {
   const [theme] = useQueryState("theme");
   const [search] = useQueryState("search");
   const [codeProcedure] = useQueryState("codeProcedure");
 
-  const [dossiers, setDossiers] = React.useState<Dossier[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [currentPage, setCurrentPage] = React.useState(1);
+  const [page, setPage] = React.useState(1);
 
-  const fetchMoreDossiers = async () => {
-    setIsLoading(true);
-    const result = await searchDossier({
-      page: currentPage,
-      search: search ?? "",
-      codeProcedure: codeProcedure ?? "",
-    });
+  const pageWithDefault = page ?? 1;
+  const searchWithDefault = search ?? "";
+  const codeProcedureWithDefault = codeProcedure ?? "";
+  const { data: result, isPending } = useQuery({
+    queryKey: [
+      "dossiers",
+      pageWithDefault,
+      searchWithDefault,
+      codeProcedureWithDefault,
+    ],
 
-    setIsLoading(false);
-    if (result) {
-      setDossiers((prev) => [...prev, ...result.data]);
-      setCurrentPage((prev) => prev + 1);
-    }
-  };
+    queryFn: async () =>
+      searchDossier({
+        page: pageWithDefault,
+        search: searchWithDefault,
+        codeProcedure: codeProcedureWithDefault,
+      }),
+    placeholderData: keepPreviousData,
+  });
 
-  React.useEffect(() => {
-    let isValid = true;
-
-    setIsLoading(true);
-    setCurrentPage(1);
-    setDossiers([]);
-
-    async function fetchInitialDossier() {
-      await sleep(500); // debounce
-
-      if (!isValid) {
-        return;
-      }
-
-      const result = await searchDossier({
-        page: 1,
-        search: search ?? "",
-        codeProcedure: codeProcedure ?? "",
-      });
-
-      if (isValid && result) {
-        setIsLoading(false);
-        setDossiers(result.data);
-        setCurrentPage(2);
-      }
-    }
-    fetchInitialDossier();
-
-    return () => {
-      isValid = false;
-    };
-  }, [search, theme, codeProcedure]);
+  const data = result?.data ?? [];
+  const pagination = result?.pagination;
 
   return (
     <div>
+      <Pagination
+        {...pagination}
+        page={page}
+        setPage={setPage}
+        isPending={isPending}
+      />
       <Stack component="ol">
-        {dossiers
+        {data
           .filter((dossier) => theme === "" || dossier.theme === theme)
           .map((dossier) => (
             <Stack
@@ -115,14 +90,6 @@ export default function DossierList() {
             </Stack>
           ))}
       </Stack>
-
-      <Button
-        loading={isLoading}
-        onClick={() => fetchMoreDossiers()}
-        disabled={isLoading}
-      >
-        Dossiers suivant
-      </Button>
     </div>
   );
 }

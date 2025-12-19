@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   searchAmendement,
   sortAmendementPossible,
@@ -12,15 +12,13 @@ import { getActeurBySlug } from "@/data/getActeurBySlug";
 import AmendementCard from "@/components/folders/AmendementCard";
 
 import SearchIcon from "@mui/icons-material/Search";
-import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
 import Select from "@mui/material/Select";
 import Input from "@mui/material/Input";
-import LinearProgress from "@mui/material/LinearProgress";
 import MenuItem from "@mui/material/MenuItem";
 
 import debounce from "@/utils/debounce";
+import Pagination from "@/components/Pagination";
 
 export default function Amendements() {
   const { slug } = useParams<{ slug: string }>();
@@ -53,11 +51,12 @@ export default function Amendements() {
       });
       return data;
     },
+    placeholderData: keepPreviousData,
   });
 
   const data = result?.data ?? [];
   const pagination = result?.pagination;
-  const hasNextPage = pagination ? page < pagination.totalPage : false;
+
   const debouncedSetSearch = React.useMemo(
     () =>
       debounce((newSearch) => {
@@ -74,6 +73,7 @@ export default function Amendements() {
           <Input
             onChange={(event) => debouncedSetSearch(event.target.value)}
             startAdornment={<SearchIcon />}
+            placeholder="Search"
           />
           <Select
             value={sortAmendement}
@@ -82,6 +82,7 @@ export default function Amendements() {
               setPage(1);
             }}
             label="Status"
+            displayEmpty
             sx={{ minWidth: 150 }}
           >
             <MenuItem value="">-</MenuItem>
@@ -93,16 +94,12 @@ export default function Amendements() {
           </Select>
         </Stack>
 
-        {isPending && <LinearProgress />}
-        <Stack direction="row" justifyContent="space-between">
-          <Button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-            prev
-          </Button>
-          <Typography>page {page}</Typography>
-          <Button disabled={!hasNextPage} onClick={() => setPage((p) => p + 1)}>
-            next
-          </Button>
-        </Stack>
+        <Pagination
+          {...pagination}
+          page={page}
+          setPage={setPage}
+          isPending={isPending}
+        />
         {data.map((amendement) => {
           const titre = `Amendement N°${amendement.numeroOrdreDepot}`;
 
