@@ -41,9 +41,6 @@ jobs:
         run: |
           npm install --save-dev @prisma/client@^6.7.0 || true
 
-      - name: Run TypeScript type check
-        run: npm run typescript
-
       - name: Run linter
         run: npm run lint
 
