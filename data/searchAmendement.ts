@@ -93,6 +93,7 @@ export async function searchAmendement(
     perPage: perPage.toString(),
     page: page.toString(),
     sort,
+    chambre: "AN",
   });
 
   if (search) {
