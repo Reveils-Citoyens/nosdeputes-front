@@ -43,7 +43,6 @@ jobs:
 
       - name: Run TypeScript type check
         run: npm run typescript
-        continue-on-error: true
 
       - name: Run linter
         run: npm run lint
