@@ -53,3 +53,15 @@ body {
   flex-direction: column-reverse;
   gap: 40px;
 }
+
+
+@layer base {
+  body {
+    @apply antialiased text-slate-900;
+  }
+}
+
+/* Custom utility for the specific Raleway look in the screenshot */
+.nav-link-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

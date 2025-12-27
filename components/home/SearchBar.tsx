@@ -116,13 +116,28 @@ export default function SearchBar() {
           }
           return option.titre!;
         }}
+        slotProps={{
+            paper: {
+              sx: {
+                marginTop: "8px",
+                borderRadius: "20px",
+                boxShadow: "0px 4px 20px rgba(0,0,0,0.08)",
+                "&:empty": { display: "none" }
+              },
+            },
+          }}
         filterOptions={(x) => x}
         options={options}
         autoComplete
         includeInputInList
         filterSelectedOptions
+        popupIcon={null}
         value={value}
-        noOptionsText="Aucun résultat"
+        inputValue={inputValue}
+        noOptionsText={isPending ? "Recherche en cours..." : "Aucun résultat"}
+        openOnFocus={false}
+        open={inputValue.length > 2}
+        
         onInputChange={(event, newInputValue) => {
           setInputValue(newInputValue);
         }}
@@ -134,8 +149,12 @@ export default function SearchBar() {
                 bgcolor: "#fff",
                 height: 68,
                 borderRadius: 34,
-                pl: 1,
+                pl: 2,
                 pr: 1,
+                boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.08)",
+                "&:hover": {
+                  boxShadow: "0px 6px 25px rgba(0, 0, 0, 0.12)",
+                }
               },
             }}
             fullWidth
@@ -156,13 +175,13 @@ export default function SearchBar() {
         renderOption={({ key, ...props }, option) => {
           if (isActeur(option)) {
             return (
-              <li key={key} {...props}>
+              <li key={key} {...props} style={{ padding: '12px 10px' }}>
                 <ActeurOption {...option} />
               </li>
             );
           }
           return (
-            <li key={key} {...props}>
+            <li key={key} {...props} style={{ padding: '12px 10px' }}>
               <Link
                 href={`/17/dossier/${option.uid}`}
                 style={{ width: "100%" }}
@@ -173,8 +192,8 @@ export default function SearchBar() {
           );
         }}
       />
-      <Typography variant="body2" sx={{ mt: 2 }} fontWeight="light">
-        Yaël Braun-Pivet, Budget, Transport, 59650, Lyon, ...
+      <Typography variant="caption" sx={{ mt: 2 }} fontWeight="light">
+        Ex. Yaël Braun-Pivet, Budget, Transport, 59650, Lyon, ...
       </Typography>
     </Box>
   );
@@ -195,9 +214,9 @@ export function ActeurOption(props: Circonscription) {
   }
   return (
     <Link href={`/depute/${acteur.slug}`}>
-      <Stack direction="row" spacing={2}>
+      <Stack direction="row" spacing={1.5}>
         <Avatar
-          sx={{ height: 42, width: 42 }}
+          sx={{ height: 46, width: 46 }}
           alt={"photo de " + prenom + " " + nom}
           src={acteur?.urlImage ?? ""}
         >
@@ -205,11 +224,12 @@ export function ActeurOption(props: Circonscription) {
           {nom[0].toUpperCase()}
         </Avatar>
         <div style={{ flexGrow: 1 }}>
-          <Typography variant="body1">
-            {props.depute.etatCivil.ident.nom}{" "}
-            {props.depute.etatCivil.ident.prenom}
+          <Typography variant="body1" fontWeight="bold">
+            {props.depute.etatCivil.ident.prenom}{" "}
+            {props.depute.etatCivil.ident.nom}
+            
           </Typography>
-          <Stack direction="row" spacing={2} justifyContent="space-between">
+          <Stack direction="row" spacing={1} justifyContent="space-between">
             {props.circonscription_legislative && (
               <Typography variant="body1" fontWeight="light">
                 {props.circonscription_legislative.libelle}

@@ -16,7 +16,7 @@ const HeroSection = () => {
       }}
     >
       <Typography variant="body2">
-        Bienvenu sur le nouveau site NosDéputés.fr
+        Bienvenue sur le nouveau site NosDéputés.fr
       </Typography>
       <Box
         sx={{
@@ -36,9 +36,9 @@ const HeroSection = () => {
         <Typography
           variant="h1"
           fontWeight="bold"
-          sx={{ mb: 3, maxWidth: 700, lineHeight: "37px" }}
+          sx={{ mb: 3, maxWidth: 650, lineHeight: "37px" }}
         >
-          Tout comprendre au travail de vos représentants à l&apos;Assemblée
+          Tout comprendre au travail de nos représentants à l&apos;Assemblée
           Nationale
         </Typography>
         <Typography
@@ -48,9 +48,8 @@ const HeroSection = () => {
           component="p"
         >
           NosDéputés met en valeur l&apos;activité parlementaire des députés de
-          l&apos;Assemblée nationale Française en synthétisant les différentes
-          activités législatives et de contrôle du gouvernement des élus de la
-          nation.
+          l&apos;Assemblée nationale Française en synthétisant leurs différentes
+          activités législatives et de contrôle du gouvernement.
         </Typography>
 
         <SearchBar />

@@ -25,7 +25,7 @@ export default function Pagination(props: PaginationProps) {
           disabled={isPending || page === 1}
           onClick={() => setPage((p) => p - 1)}
         >
-          &lt; page précédente
+          &lt; Page précédente
         </Button>
         <Typography>
           Page {page} sur {totalPage}
@@ -34,7 +34,7 @@ export default function Pagination(props: PaginationProps) {
           disabled={isPending || page >= totalPage}
           onClick={() => setPage((p) => p + 1)}
         >
-          page suivante &gt;
+          Page suivante &gt;
         </Button>
       </Stack>
 

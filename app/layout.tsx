@@ -26,8 +26,8 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary",
-    site: "@RegardsCitoyens",
-    title: "NosDéputés.fr par @RegardsCitoyens",
+    site: "@ReveilsCitoyens",
+    title: "NosDéputés.fr par @ReveilsCitoyens",
     description:
       "Observatoire citoyen de l'activité parlementaire à l'Assemblée nationale",
     images: {
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    title: "NosDéputés.fr par Regards Citoyens",
+    title: "NosDéputés.fr par Réveils Citoyens",
     siteName: "NosDéputés.fr",
     description:
       "Observatoire citoyen de l'activité parlementaire à l'Assemblée nationale",
@@ -48,9 +48,9 @@ export const metadata: Metadata = {
 };
 
 const navigation: NavigationItem[] = [
-  { name: "Député·e·s", href: "/deputes" },
+  { name: "Députés", href: "/deputes" },
   { name: "Dossiers", href: "/dossiers" }, // old url is "/dossiers/date"
-  { name: "About", href: "/about" },
+  { name: "À Propos", href: "/about" },
   // ... more items
 ];
 

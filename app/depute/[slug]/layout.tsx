@@ -1,11 +1,42 @@
 import React from "react";
 import { Avatar, Box, Container, Stack, Typography } from "@mui/material";
+import { X as XIcon, Facebook as FacebookIcon, Language as LanguageIcon } from "@mui/icons-material";
+import Link from "next/link";
 import CircleDiv from "@/icons/CircleDiv";
 import Mandats from "./Mandats";
 import Contacts from "./Contacts";
 import Tabs from "./Tabs";
 import InfoPersonelles from "./InfoPersonelles";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
+
+
+const SocialLink = ({ Icon, href }: { Icon: React.ElementType; href: string }) => (
+<Box
+    component="a"
+    href={href}
+    target="_blank"
+    sx={{
+      width: 44,
+      height: 44,
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      bgcolor: "white",
+      boxShadow: "0px 2px 8px rgba(0,0,0,0.08)",
+      border: "1px solid #f0f0f0",
+      color: "#1A1A1B", // Couleur de l'icône
+      transition: "all 0.2s",
+      "&:hover": { 
+        transform: "scale(1.1)",
+        color: "#000" // L'icône devient un peu plus foncée au survol
+      },
+    }}
+  >
+    <Icon sx={{ fontSize: 20 }} />
+  </Box>
+);
+
 
 export default async function Page({
   children,
@@ -24,11 +55,17 @@ export default async function Page({
   const circonscription = depute.mandatPrincipal;
 
   return (
-    <Box sx={{ maxWidth: "1024px", width: "100%", mx: "auto", my: 5 }}>
-      <Stack direction="row" justifyContent="space-between">
-        <Box sx={{ display: "flex", flexDirection: "row" }}>
+    <Box sx={{ maxWidth: "1024px", width: "100%", mx: "auto", my: 5, px: { xs: 2, md: 0 } }}>
+      
+      <Stack 
+        direction="row" 
+        alignItems="center" 
+        justifyContent="space-between" 
+        sx={{ mb: 4 }}
+      >
+        <Stack direction="row" alignItems="center" spacing={2}>
           <Avatar
-            sx={{ bgcolor: "grey.200", width: 100, height: 100, mr: 1 }}
+            sx={{ bgcolor: "grey.200", width: 90, height: 90 }}
             alt={`${depute.prenom} ${depute.nom}`}
             src={depute.urlImage ?? ""}
           >
@@ -36,51 +73,50 @@ export default async function Page({
             {depute.nom[0]}
           </Avatar>
           <Box>
-            <Typography variant="h1" fontWeight="bold">
+            <Typography variant="h4" fontWeight="bold" sx={{ color: "#1A1A1B" }}>
               {depute.prenom} {depute.nom}
             </Typography>
 
             {circonscription && (
-              <Typography variant="body1" fontWeight="light">
-                {circonscription.departement} ({circonscription.numDepartement})
-                circonscription n°{circonscription.numCirco}
-                {circonscription.dateFin !== null && (
-                  <>
-                    <br />
-                    Fin de mandat le{" "}
-                    {new Date(circonscription.dateFin).toLocaleDateString(
-                      "fr-FR"
-                    )}
-                  </>
-                )}
+              <Typography variant="body1" fontWeight="light" color="text.secondary">
+                {circonscription.numCirco}° circonscription de {circonscription.departement} ({circonscription.numDepartement})
               </Typography>
             )}
-
-            {depute.groupeParlementaire && (
-              // Deputes sans mandat n'ont plus d'organe associé
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  mt: 1,
-                }}
-              >
-                <CircleDiv
-                  color={depute.groupeParlementaire.couleurAssociee!}
-                />{" "}
-                <Typography sx={{ ml: 1 }} variant="body1" fontWeight="light">
-                  {depute.groupeParlementaire.libelle} (
-                  {depute.groupeParlementaire.libelleAbrev})
-                </Typography>
-              </Box>
-            )}
           </Box>
-        </Box>
+        </Stack>
+
+        <Stack direction="row" alignItems="center" spacing={1.5}>
+          <SocialLink Icon={XIcon} href="#" />
+          <SocialLink Icon={FacebookIcon} href="#" />
+          <SocialLink Icon={LanguageIcon} href="#" />
+          <Link href="#contacts" style={{ textDecoration: "none" }}>
+            <Box
+              sx={{
+                bgcolor: "#1A1A1B",
+                color: "white",
+                px: 3.5,
+                py: 1.2,
+                borderRadius: "30px",
+                fontSize: "12px",
+                fontWeight: "bold",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                ml: 1,
+                cursor: "pointer",
+                transition: "background-color 0.2s",
+                "&:hover": { bgcolor: "#333" }
+              }}
+            >
+              Contacter
+            </Box>
+          </Link>
+        </Stack>
       </Stack>
+
       <Container
+        disableGutters
         sx={{
-          pt: 3,
+          pt: 1,
           display: "flex",
           flexDirection: {
             xs: "column",

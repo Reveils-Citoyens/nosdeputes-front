@@ -29,8 +29,8 @@ export const FilterContainer = ({
     return (
       <Paper sx={{ px: 2, py: 1.5, bgcolor: "grey.50" }} elevation={0}>
         <Stack direction="row" sx={{ mb: 2 }}>
-          <TuneIcon />
-          <Typography sx={{ ml: 1 }}>Filter</Typography>
+          {/* <TuneIcon /> */}
+          <Typography sx={{ fontSize: "16px" }} fontWeight={"bold"}>Filtrer</Typography>
         </Stack>
         <Stack
           direction="column"
