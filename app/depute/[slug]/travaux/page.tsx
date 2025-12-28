@@ -72,7 +72,7 @@ export default function Travaux() {
   return (
     <Stack>
       <Typography variant="subtitle1" fontWeight={"bold"}>Travaux législatifs</Typography>
-      <Typography variant="h3" sx={{ mb: 1, mt: 2 }}>
+      <Typography variant="h4" fontWeight="medium" sx={{ mb: 1, mt: 2 }}>
         Propositions de loi
       </Typography>
       {!propositionDeLoi || propositionDeLoi.length === 0 ? (
@@ -101,7 +101,7 @@ export default function Travaux() {
           ))}
         </ul>
       )}
-      <Typography variant="h3" sx={{ mb: 1, mt: 2 }}>
+      <Typography variant="h4" fontWeight="medium" sx={{ mb: 1, mt: 2 }}>
         Rapports
       </Typography>
       {!rapports || rapports.length === 0 ? (
@@ -133,11 +133,11 @@ export default function Travaux() {
           ))}
         </ul>
       )}
-      <Typography variant="h3" sx={{ mb: 1, mt: 2 }}>
-        Resolutions
+      <Typography variant="h4" fontWeight="medium" sx={{ mb: 1, mt: 2 }}>
+        Résolutions
       </Typography>
       {!resolutions || resolutions.length === 0 ? (
-        <Typography variant="body2">Aucune resolution trouvée.</Typography>
+        <Typography variant="body2">Aucune résolution trouvée.</Typography>
       ) : (
         <ul>
           {resolutions.map((docs) => (
@@ -166,11 +166,11 @@ export default function Travaux() {
         </ul>
       )}
 
-      <Typography variant="h3" sx={{ mb: 1, mt: 2 }}>
-        Dossier legislatifs initié
+      <Typography variant="h4" fontWeight="medium" sx={{ mb: 1, mt: 2 }}>
+        Dossier législatifs initié
       </Typography>
       {!dossiers || dossiers.length === 0 ? (
-        <Typography variant="body2">Aucune resolution trouvée.</Typography>
+        <Typography variant="body2">Aucun dossier trouvé.</Typography>
       ) : (
         <ul>
           {dossiers.map((dossier) => (
