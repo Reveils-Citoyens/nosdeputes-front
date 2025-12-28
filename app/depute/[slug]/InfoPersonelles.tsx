@@ -91,20 +91,21 @@ export default async function InfoPersonelles({
             alignItems: 'center' 
           }}>
             Groupe politique 
-            <Box component="span" sx={{ 
-              display: 'inline-flex', 
-              ml: 0.5,
-              '& button': { 
-                p: 0, 
-                minWidth: 0, 
-                height: 'auto',
-                verticalAlign: 'middle'
-              },
-              '& svg': { 
-                fontSize: '1rem',
-                color: 'grey.400' 
-              }
-            }}>
+              <Box component="span" sx={{ 
+                display: 'inline-flex', 
+                ml: 0.5,
+                verticalAlign: 'text-bottom',
+                '& button': { 
+                  p: 0, 
+                  minWidth: 0, 
+                  height: 'auto',
+                  lineHeight: 0
+                },
+                '& svg': { 
+                  fontSize: '1rem',
+                  color: 'grey.400' 
+                }
+              }}>
                 <InfoDialogIcon category="organe" item="GP" />
             </Box>
           </Typography>
@@ -123,20 +124,21 @@ export default async function InfoPersonelles({
             alignItems: 'center' 
           }}>
             Parti politique 
-            <Box component="span" sx={{ 
-              display: 'inline-flex', 
-              ml: 0.5,
-              '& button': { 
-                p: 0, 
-                minWidth: 0, 
-                height: 'auto',
-                verticalAlign: 'middle'
-              },
-              '& svg': { 
-                fontSize: '1rem',
-                color: 'grey.400' 
-              }
-            }}>
+              <Box component="span" sx={{ 
+                display: 'inline-flex', 
+                ml: 0.5,
+                verticalAlign: 'text-bottom',
+                '& button': { 
+                  p: 0, 
+                  minWidth: 0, 
+                  height: 'auto',
+                  lineHeight: 0
+                },
+                '& svg': { 
+                  fontSize: '1rem',
+                  color: 'grey.400' 
+                }
+              }}>
               <InfoDialogIcon category="organe" item="PARPOL" />
             </Box>
           </Typography>
@@ -158,26 +160,23 @@ export default async function InfoPersonelles({
         </div>
 
         <div>
-          <Typography variant="body2" fontWeight="light" color="grey.600" sx={{ 
-            lineHeight: 1, 
-            display: 'flex', 
-            alignItems: 'center' 
-          }}>
+          <Typography variant="body2" fontWeight="light" color="grey.600" sx={{ lineHeight: 1, display: 'flex', alignItems: 'center' }}>
             Profession 
-            <Box component="span" sx={{ 
-              display: 'inline-flex', 
-              ml: 0.5,
-              '& button': { 
-                p: 0, 
-                minWidth: 0, 
-                height: 'auto',
-                verticalAlign: 'middle'
-              },
-              '& svg': { 
-                fontSize: '1rem',
-                color: 'grey.400' 
-              }
-            }}>
+              <Box component="span" sx={{ 
+                display: 'inline-flex', 
+                ml: 0.5,
+                verticalAlign: 'text-bottom',
+                '& button': { 
+                  p: 0, 
+                  minWidth: 0, 
+                  height: 'auto',
+                  lineHeight: 0
+                },
+                '& svg': { 
+                  fontSize: '1rem',
+                  color: 'grey.400' 
+                }
+              }}>
             <InfoDialogIcon category="depute" item="profession" />
             </Box>
           </Typography>

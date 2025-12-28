@@ -52,7 +52,7 @@ const seriesConfig: Record<
       type: "bar",
       stack: "depute",
       color: "blue",
-      label: "Présence détectée en hémicicle",
+      label: "Présence détectée en hémicycle",
     },
     {
       id: "hemicicle-stats",
@@ -84,6 +84,8 @@ export default function WeeklyActivityChart(props: {
         {
           scaleType: "band",
           dataKey: "date",
+          categoryGapRatio: 0.3,
+          barGapRatio: 0.1,
           valueFormatter: (date, ctx) => {
             if (ctx.location === "tick") {
               return date.toLocaleDateString("fr-FR", {

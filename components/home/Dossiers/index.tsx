@@ -19,8 +19,8 @@ export default function DossiersSection() {
         },
       }}
     >
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-        <Typography variant="h2">Les derniers dossiers</Typography>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, mt: 6 }}>
+        <Typography variant="subtitle1" fontWeight={"bold"}>Les derniers dossiers</Typography>
         <Button
           variant="text"
           component={Link}

@@ -29,11 +29,11 @@ const periodes: StatsPeriode[] = [
 ];
 
 const quantilesSentences = [
-  "Dans les 20% moins actifs",
-  "Dans les 40% moins actifs",
-  "Dans les 60% moins actifs",
-  "Dans les 40% plus actifs",
-  "Dans les 20% plus actifs",
+  "Dans les 20% les moins actifs",
+  "Dans les 40% les moins actifs",
+  "Dans les 60% les plus actifs",
+  "Dans les 40% les plus actifs",
+  "Dans les 20% les plus actifs",
 ];
 
 const baselineTypeToInfo: Record<string, string> = {
@@ -54,17 +54,19 @@ const MetriqueCard = (props: Stats & { valeurDepute: number }) => {
   );
 
   return (
-    <Card key={props.id}>
+    <Card key={props.id} variant="outlined" sx={{ borderRadius: 3, borderColor: '#e0e0e0', boxShadow: 'none' }}>
       <CardContent>
-        <Typography variant="h1" sx={{ textAlign: "right" }}>
+        <Typography variant="h1" fontWeight="medium" sx={{ textAlign: "right", lineHeight: 1, mb: 0 }}>
           {props.valeurDepute}
         </Typography>
-        <Stack direction="row">
-          <InfoDialogIcon
-            category="depute"
-            item={baselineTypeToInfo[props.mesure]}
-          />
-          <Typography variant="body1" sx={{ textAlign: "right", flexGrow: 1 }}>
+        <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end" sx={{ mb: 1.5 }}>
+          <Box sx={{ display: "flex", flexShrink: 0 }}>
+            <InfoDialogIcon
+              category="depute"
+              item={baselineTypeToInfo[props.mesure]}
+            />
+          </Box>
+          <Typography variant="caption" sx={{ textAlign: "right" }}>
             {infoDialogContents.depute[baselineTypeToInfo[props.mesure]]
               ?.translation ?? props.mesure}
           </Typography>
@@ -76,7 +78,8 @@ const MetriqueCard = (props: Stats & { valeurDepute: number }) => {
             display: "flex",
             flexDirection: "row",
             alignItems: "stretch",
-            gap: 2,
+            gap: 1,
+            mb: .5
           }}
         >
           {quantiles.map((q, index) => {
@@ -109,6 +112,7 @@ const MetriqueCard = (props: Stats & { valeurDepute: number }) => {
                       position: "absolute",
                       bottom: 0,
                       left: 0,
+                      borderRadius: 1,
                     }}
                   />
                 </Box>
@@ -163,19 +167,51 @@ export function ActeurStatSectionClient({
 
   return (
     <div>
-      <Select
-        value={periode}
-        onChange={(event) => setPeriode(event.target.value)}
-      >
-        <MenuItem value="LEGISLATURE">Legislature</MenuItem>
-        <MenuItem value="LAST_YEAR">Un an</MenuItem>
-        <MenuItem value="LAST_SIX_MONTHS">Six mois</MenuItem>
-      </Select>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", mb:3, mt: 5 }} >
+        <Typography variant="subtitle1" fontWeight={"bold"} component="h2">
+          Statistiques d'activité
+        </Typography>
+        <Select
+          value={periode}
+          onChange={(event) => setPeriode(event.target.value)}
+          disableUnderline
+          variant="standard"
+          sx={{
+                minWidth: 180,
+                backgroundColor: 'white',
+                borderRadius: '50px',
+                fontSize: '0.9rem',
+                color: '#666',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#e0e0e0', 
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#ccc', 
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#aaa', 
+                  borderWidth: '1px'
+                },
+                '& .MuiSelect-select': {
+                  py: 1,
+                  px: 2,
+                  backgroundColor: 'transparent !important',
+                },
+                '& .MuiSvgIcon-root': {
+                  right: '12px',
+                  color: '#888',
+                }
+              }}>
+          <MenuItem value="LEGISLATURE">Toute la législature</MenuItem>
+          <MenuItem value="LAST_YEAR">12 derniers mois</MenuItem>
+          <MenuItem value="LAST_SIX_MONTHS">6 derniers mois</MenuItem>
+        </Select>
+      </Box>
 
       <Box
         sx={{
           display: "grid",
-          gap: 1,
+          gap: 2,
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
           mt: 2,
         }}

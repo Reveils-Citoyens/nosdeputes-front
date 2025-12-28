@@ -6,6 +6,7 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
+import Box from "@mui/material/Box";
 import InfoIcon from "@/icons/InfoIcon";
 
 import CommissionItem from "./CommissionItem";
@@ -42,20 +43,20 @@ export const CommissionsCard = async ({
   }
 
   return (
-    <Accordion elevation={0} disableGutters defaultExpanded color="secondary">
+    <Accordion elevation={0} disableGutters defaultExpanded sx={{ bgcolor: "grey.100", borderRadius: "16px", overflow: "hidden", '&:before': { display: 'none' }, "&.MuiAccordion-root": { borderRadius: "16px" }, "&.Mui-expanded": {borderRadius: "16px", margin: 0 }, "& .MuiAccordionSummary-root": {borderRadius: "16px" }}}>
       <AccordionSummary
         aria-controls="commission-content"
         id="commission-header"
-      >
-        <Typography>Rapporteurs et Rapporteuses</Typography>
+        sx={{ minHeight: 48, '& .MuiAccordionSummary-content': {my: 1}}}>
+        <Typography variant="subtitle1" fontWeight={"bold"}>Rapporteurs</Typography>
       </AccordionSummary>
-      <AccordionDetails>
-        <Stack direction="column" spacing={2}>
+      <AccordionDetails sx={{ pt: 0, pb: 2 }}>
+        <Stack direction="column" spacing={3}>
           {commissionFondIds && commissionFondIds.length > 0 && (
-            <div>
+            <Box>
               <Stack direction="row" spacing={0.5} alignItems="center">
-                <Typography variant="body2" fontWeight="light">
-                  Commission{commissionFondIds.length > 1 ? "s" : ""} saisie au
+                <Typography variant="body2" fontWeight="light" color="grey.600">
+                  Commission{commissionFondIds.length > 1 ? "s" : ""} saisie{commissionFondIds.length > 1 ? "s" : ""} au
                   fond
                 </Typography>
                 <InfoDialogIcon
@@ -65,7 +66,7 @@ export const CommissionsCard = async ({
                 />
               </Stack>
               {commissionFondIds.map((commissionId) => (
-                <div key={commissionId} style={{ paddingLeft: 4 }}>
+                <div key={commissionId} style={{ paddingLeft: 0, paddingBottom: 4 }}>
                   <React.Suspense
                     key={commissionId}
                     fallback={
@@ -83,24 +84,24 @@ export const CommissionsCard = async ({
                   ))}
                 </div>
               ))}
-            </div>
+            </Box>
           )}
 
           {commissionAvisIds && commissionAvisIds.length > 0 && (
             <div>
-              <Stack direction="row" spacing={0.5} alignItems="center">
-                <Typography variant="body2" fontWeight="light">
-                  Commission{commissionAvisIds.length > 1 ? "s" : ""} saisie
+              <Stack direction="row" spacing={.5} alignItems="center">
+                <Typography variant="body2" fontWeight="light" color="grey.600">
+                  Commission{commissionAvisIds.length > 1 ? "s" : ""} saisie{commissionFondIds.length > 1 ? "s" : ""}
                   pour avis
                 </Typography>
                 <InfoIcon sx={{ fontSize: "14px" }} />
               </Stack>
               <Stack direction="column" spacing={1} alignItems="start">
                 {commissionAvisIds.map((commissionId) => (
-                  <div key={commissionId} style={{ paddingLeft: 4 }}>
+                  <div key={commissionId}>
                     <React.Suspense
                       fallback={
-                        <Skeleton variant="text" sx={{ fontSize: "1rem" }} />
+                        <Skeleton variant="text" sx={{ fontWeight:"medium", fontSize: "1rem" }} />
                       }
                     >
                       <CommissionItem id={commissionId} pt={1} />

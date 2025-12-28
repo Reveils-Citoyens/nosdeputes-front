@@ -56,7 +56,7 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
     <Box
       sx={[
         {
-          px: 1.5,
+          px: 0.5,
           py: 0.5,
           display: "flex",
           justifyContent: "space-between",
@@ -87,14 +87,14 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            px: 1,
+            px: 1.3,
             minWidth: 0,
           }}
         >
           {link === "name" ? (
             <MuiLink
               variant="body2"
-              fontWeight="bold"
+              fontWeight="medium"
               underline="hover"
               component={Link}
               href={`/depute/${acteur.slug}`}
@@ -103,7 +103,7 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
               {acteur.prenom} {acteur.nom}
             </MuiLink>
           ) : (
-            <Typography variant="body2" fontWeight="bold">
+            <Typography variant="body2" fontWeight="medium">
               {acteur.prenom} {acteur.nom}
             </Typography>
           )}
@@ -118,17 +118,17 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
               <Box sx={{ display: "flex", alignItems: "center" }}>
                 <CircleDiv
                   color={acteur.groupeParlementaire.couleurAssociee || "gray"}
-                  size={groupColorSize === "small" ? 10 : 16}
+                  size={groupColorSize === "small" ? 10 : 12}
                 />
                 <Typography
                   sx={{
-                    ml: 0.5,
+                    ml: 0.7,
                     lineHeight: "18px",
                     display: "flex",
                     minWidth: 0,
                   }}
                   variant="caption"
-                  fontWeight="light"
+                  fontWeight="regular"
                 >
                   <span
                     style={{

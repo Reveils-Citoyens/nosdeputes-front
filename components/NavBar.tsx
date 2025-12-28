@@ -30,7 +30,7 @@ export function NavBar({ navigation }: NavBarProps) {
               alt="Logo"
               className="h-8 w-8 transition-transform duration-300 group-hover:scale-110"
             />
-            <span className="text-lg font-bold tracking-tighter uppercase text-slate-900 whitespace-nowrap">
+            <span className="text-md font-bold tracking-tighter uppercase text-slate-900 whitespace-nowrap">
               Nos Députés
             </span>
           </Link>

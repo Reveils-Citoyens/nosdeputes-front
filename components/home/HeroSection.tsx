@@ -47,9 +47,9 @@ const HeroSection = () => {
           sx={{ maxWidth: 500, mb: 6 }}
           component="p"
         >
-          NosDéputés met en valeur l&apos;activité parlementaire des députés de
-          l&apos;Assemblée nationale Française en synthétisant leurs différentes
-          activités législatives et de contrôle du gouvernement.
+          Nos Députés met en lumière l&apos;activité des députés de
+          l&apos;Assemblée Nationale en synthétisant leurs
+          travaux législatifs et en publiant le contenu des dossiers législatifs sur lesquels ils travaillent.
         </Typography>
 
         <SearchBar />

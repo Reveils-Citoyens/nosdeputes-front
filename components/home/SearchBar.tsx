@@ -158,7 +158,7 @@ export default function SearchBar() {
               },
             }}
             fullWidth
-            placeholder="Entrez un code postal ou un nom de député"
+            placeholder="Entrez un code postal, un nom de député ou un nom de dossier législatif"
             inputProps={{
               ...params.inputProps,
             }}
@@ -193,7 +193,7 @@ export default function SearchBar() {
         }}
       />
       <Typography variant="caption" sx={{ mt: 2 }} fontWeight="light">
-        Ex. Yaël Braun-Pivet, Budget, Transport, 59650, Lyon, ...
+        Ex. Yaël Braun-Pivet, Loi Finance, 59650, Lyon, ...
       </Typography>
     </Box>
   );
