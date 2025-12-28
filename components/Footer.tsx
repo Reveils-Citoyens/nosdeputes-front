@@ -68,7 +68,7 @@ export default function Footer() {
             </Typography>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
               <Link 
-                href="https://github.com/regardscitoyens/nosdeputes-front" 
+                href="https://github.com/Reveils-Citoyens/nosdeputes-front" 
                 target="_blank" 
                 color="text.secondary" 
                 variant="body2" 
