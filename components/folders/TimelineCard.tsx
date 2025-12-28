@@ -25,7 +25,7 @@ import { getDebats } from "@/data/getDebats";
 
 const dashedConnectorStyle = {
   bgcolor: "transparent",
-  borderLeft: "2px dashed",
+  borderLeft: "1px dashed",
   borderColor: "grey.400",
 };
 
