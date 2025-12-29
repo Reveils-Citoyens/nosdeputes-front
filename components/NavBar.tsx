@@ -44,14 +44,14 @@ export function NavBar({ navigation }: NavBarProps) {
 
             {/* --- CENTRE : Navigation Desktop (Cachée sur mobile) --- */}
             <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-              <div className="flex items-center bg-gray-50/80 p-1.5 rounded-full border border-gray-200/50 shadow-sm backdrop-blur-sm">
+              <div className="flex items-center bg-gray-50/80 p-1 rounded-full border border-gray-200/50 shadow-sm backdrop-blur-sm">
                 {navigation.map((item) => {
                   const isActive = pathname === item.href;
                   return (
                     <Link
                       key={item.name}
                       href={item.href}
-                      className={`px-5 py-4 rounded-full text-[11px] font-bold tracking-widest uppercase transition-all duration-300 ${
+                      className={`px-5 py-2.5 rounded-full text-[11px] font-bold tracking-widest uppercase transition-all duration-300 ${
                         isActive
                           ? "bg-[#1A1A1B] text-white shadow-md transform scale-105"
                           : "text-gray-500 hover:text-black hover:bg-white/60"
