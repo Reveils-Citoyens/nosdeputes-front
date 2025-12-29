@@ -1,119 +1,150 @@
 "use client";
 import React from "react";
-
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import {
-  searchAmendement,
-  sortAmendementPossible,
-} from "@/data/searchAmendement";
+import { useQuery } from "@tanstack/react-query";
+import { searchAmendement, sortAmendementPossible } from "@/data/searchAmendement";
 import { useParams } from "next/navigation";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
-
 import AmendementCard from "@/components/folders/AmendementCard";
-
+import { Stack, Select, Input, MenuItem, Button, CircularProgress, Box, Typography } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import Stack from "@mui/material/Stack";
-import Select from "@mui/material/Select";
-import Input from "@mui/material/Input";
-import MenuItem from "@mui/material/MenuItem";
-
 import debounce from "@/utils/debounce";
-import Pagination from "@/components/Pagination";
 
 export default function Amendements() {
   const { slug } = useParams<{ slug: string }>();
-
-  const { data: acteur } = useQuery({
-    queryKey: ["acteur", slug],
-
-    queryFn: async () => {
-      const data = await getActeurBySlug(slug);
-      return data;
-    },
-  });
-
   const [search, setSearch] = React.useState("");
   const [sortAmendement, setSortAmendement] = React.useState("");
   const [page, setPage] = React.useState(1);
+  
+  const [accumulatedData, setAccumulatedData] = React.useState<any[]>([]);
 
-  const { data: result, isPending } = useQuery({
-    queryKey: ["amendements", page, acteur?.uid, sortAmendement, search],
-
-    queryFn: async () => {
-      if (!acteur?.uid) {
-        return null;
-      }
-      const data = await searchAmendement({
-        page,
-        acteurRefUid: acteur?.uid,
-        sortAmendement,
-        search,
-      });
-      return data;
-    },
-    placeholderData: keepPreviousData,
+  const { data: acteur } = useQuery({
+    queryKey: ["acteur", slug],
+    queryFn: () => getActeurBySlug(slug),
   });
 
-  const data = result?.data ?? [];
-  const pagination = result?.pagination;
+  const { data: result, isFetching } = useQuery({
+    queryKey: ["amendements", page, acteur?.uid, sortAmendement, search],
+    queryFn: async () => {
+      if (!acteur?.uid) return null;
+      return await searchAmendement({
+        page,
+        perPage: 10,
+        acteurRefUid: acteur.uid,
+        sortAmendement,
+        search,
+        include: "dossierRef"
+      });
+    },
+    enabled: !!acteur?.uid,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  const debouncedSetSearch = React.useMemo(
+  React.useEffect(() => {
+    if (result?.data) {
+      setAccumulatedData((prev) => {
+        if (page === 1) return result.data;
+        
+        const newItems = result.data.filter(
+          (newItem) => !prev.some((prevItem) => prevItem.uid === newItem.uid)
+        );
+        return [...prev, ...newItems];
+      });
+    }
+  }, [result, page]);
+
+  const handleSearchChange = React.useMemo(
     () =>
-      debounce((newSearch) => {
-        setSearch(newSearch);
+      debounce((value: string) => {
+        setSearch(value);
         setPage(1);
-      }, 500),
+        setAccumulatedData([]); 
+      }, 300),
     []
   );
 
-  if (acteur?.uid) {
-    return (
-      <div>
-        <Stack direction="row">
-          <Input
-            onChange={(event) => debouncedSetSearch(event.target.value)}
-            startAdornment={<SearchIcon />}
-            placeholder="Search"
-          />
-          <Select
-            value={sortAmendement}
-            onChange={(event) => {
-              setSortAmendement(event.target.value);
-              setPage(1);
-            }}
-            label="Status"
-            displayEmpty
-            sx={{ minWidth: 150 }}
-          >
-            <MenuItem value="">-</MenuItem>
-            {sortAmendementPossible.map((sort) => (
-              <MenuItem key={sort} value={sort}>
-                {sort}
-              </MenuItem>
-            ))}
-          </Select>
-        </Stack>
+  const handleSortChange = (newSort: string) => {
+    setSortAmendement(newSort);
+    setPage(1);
+    setAccumulatedData([]); 
+  };
 
-        <Pagination
-          {...pagination}
-          page={page}
-          setPage={setPage}
-          isPending={isPending}
+  const handleLoadMore = () => {
+    setPage((prev) => prev + 1);
+  };
+
+  const totalAmendements = result?.pagination?.total ?? 0;
+  const hasMore = accumulatedData.length < totalAmendements;
+
+  return (
+    <Box sx={{ p: 2 }}>
+
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
+        <Input
+          fullWidth
+          onChange={(event) => handleSearchChange(event.target.value)}
+          startAdornment={<SearchIcon sx={{ mr: 1, color: "text.secondary" }} />}
+          placeholder="Rechercher par mot-clé ou numéro..."
+          sx={{
+            bgcolor: "background.paper",
+            borderRadius: 1,
+            px: 1,
+            border: "1px solid",
+            borderColor: "divider",
+          }}
         />
-        {data.map((amendement) => {
-          const titre = `Amendement N°${amendement.numeroOrdreDepot}`;
+        <Select
+          value={sortAmendement}
+          onChange={(e) => handleSortChange(e.target.value)}
+          displayEmpty
+          sx={{ minWidth: 200, bgcolor: "background.paper" }}
+        >
+          <MenuItem value="">Tous les statuts</MenuItem>
+          {sortAmendementPossible.map((sort) => (
+            <MenuItem key={sort} value={sort}>
+              {sort}
+            </MenuItem>
+          ))}
+        </Select>
+      </Stack>
 
-          return (
-            <AmendementCard
-              key={amendement.uid}
-              amendement={amendement}
-              acteurUid={null}
-              titre={titre}
-            />
-          );
-        })}
-      </div>
-    );
-  }
-  return null;
+      <Stack spacing={0}>
+        {accumulatedData.map((amendement) => (
+          <AmendementCard
+            key={amendement.uid}
+            amendement={amendement}
+            acteurUid={null}
+            titre={`Amendement N°${amendement.numeroOrdreDepot}`}
+          />
+        ))}
+      </Stack>
+
+      {accumulatedData.length === 0 && !isFetching && (
+        <Typography sx={{ textAlign: "center", mt: 4, color: "text.secondary" }}>
+          Aucun amendement trouvé.
+        </Typography>
+      )}
+
+      <Box sx={{ mt: 6, display: "flex", justifyContent: "center", pb: 4 }}>
+        {isFetching ? (
+          <CircularProgress size={30} />
+        ) : (
+          hasMore && (
+            <Button
+              variant="outlined"
+              onClick={handleLoadMore}
+              sx={{
+                borderRadius: "20px",
+                px: 2.3,
+                py: 1.2,
+                textTransform: "none",
+                fontWeight: "bold",
+              }}
+            >
+              Voir plus
+            </Button>
+          )
+        )}
+      </Box>
+    </Box>
+  );
 }

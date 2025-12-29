@@ -1,10 +1,21 @@
 "use client";
 import * as React from "react";
-import { Typography, Stack, Accordion, AccordionDetails, AccordionSummary, Box, Divider, Paper } from "@mui/material";
+import { 
+  Typography, 
+  Stack, 
+  Accordion, 
+  AccordionDetails, 
+  AccordionSummary, 
+  Box, 
+  Divider, 
+  Paper 
+} from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import StatusChip from "@/components/StatusChip";
-import { Amendement } from "@prisma/client";
+import { Amendement, Dossier } from "@prisma/client";
 import ActeurCard from "./ActeurCard";
+import Link from "next/link";
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 
 function getStatus(label: string | null) {
   switch (label) {
@@ -22,8 +33,9 @@ function getStatus(label: string | null) {
       return "review";
   }
 }
+
 type AmendementCardProps = {
-  amendement: Amendement;
+  amendement: Amendement & { dossierRef?: Dossier | null };
   acteurUid: null | string;
   titre?: string;
 };
@@ -47,14 +59,17 @@ export default function AmendementCard(props: AmendementCardProps) {
     >
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
-        sx={{ 
-          px: 2,
-          minHeight: 48,
-          '&.Mui-expanded': { minHeight: 64 } 
-        }}
+        sx={{ px: 2, minHeight: 48}}
       >
         <Stack direction="row" alignItems="center" spacing={2} sx={{ width: "100%", mr: 1 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: "medium", whiteSpace: 'nowrap' }}>
+            <Typography 
+            variant="subtitle2" 
+            sx={{ 
+              fontWeight: 700, 
+              whiteSpace: 'nowrap',
+              minWidth: "50px", 
+            }}
+          >
              {titre || `N°${amendement.numeroLong}`}
           </Typography>
           
@@ -70,19 +85,42 @@ export default function AmendementCard(props: AmendementCardProps) {
         </Stack>
       </AccordionSummary>
 
-      <AccordionDetails sx={{ px: 2, pt: 0, pb: 3 }}>
+      <AccordionDetails sx={{ px: 3, pt: 0, pb: 3 }}>
 
-        <Stack spacing={2}>
+        <Stack spacing={3}>
+          
+          {/* Lien vers le dossier */}
+          {amendement.dossierRef && (
+            <Box>
+              {/* <FolderOpenIcon fontSize="small" sx={{ color: 'text.secondary' }} /> */}
+              <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 'bold', mb: 0.5, display: 'block' }}>
+                Dossier
+              </Typography>
+              <Link 
+                href={`/${amendement.dossierRef.legislature}/dossier/${amendement.dossierRef.uid}`}
+                style={{ textDecoration: 'none' }}
+              >
+                <Typography 
+                  variant="body2" 
+                  color="primary" 
+                  sx={{ fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+                >
+                  {amendement.dossierRef.titre}
+                </Typography>
+              </Link>
+            </Box>
+          )}
+
+          {/* Dispositif */}
           {amendement.dispositif && (
             <Box>
-              <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 'bold', mb: 0.8, display: 'block' }}>
+              <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 'bold', mb: 0.5, display: 'block' }}>
                 Dispositif
               </Typography>
               <Paper
                 variant="outlined"
                 sx={{
-                  px: 3,
-                  py: 2,
+                  p: 2,
                   bgcolor: 'grey.50',
                   borderLeft: '4px solid',
                   borderColor: 'primary.light',
@@ -91,14 +129,14 @@ export default function AmendementCard(props: AmendementCardProps) {
               >
                 <Typography
                   variant="body2"
-                  sx={{ lineHeight: 1.8 }}
+                  sx={{ lineHeight: 1.7 }}
                   dangerouslySetInnerHTML={{ __html: amendement.dispositif }}
                 />
               </Paper>
             </Box>
           )}
 
-          {/* Section EXPOSÉ */}
+          {/* Exposé Sommaire */}
           {amendement.exposeSommaire && (
             <Box>
               <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 'bold', mb: 0.5, display: 'block' }}>
@@ -112,7 +150,8 @@ export default function AmendementCard(props: AmendementCardProps) {
             </Box>
           )}
 
-          <Box sx={{ pt: .5 }}>
+          {/* Footer Métadonnées */}
+          <Box sx={{ pt: 1 }}>
              <Stack 
                 direction="row" 
                 justifyContent="space-between" 
