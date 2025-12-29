@@ -96,10 +96,10 @@ export default async function Page({
     <Box sx={{ maxWidth: "1400px", width: "100%", mx: "auto", my: 5, px: { xs: 2, md: 4 } }}>
       
 <Stack 
-        direction={{ xs: "column", md: "row" }} // Colonne sur mobile, Ligne sur Desktop
-        alignItems={{ xs: "flex-start", md: "center" }} // Aligné à gauche sur mobile
+        direction={{ xs: "column", md: "row" }} 
+        alignItems={{ xs: "flex-start", md: "center" }} 
         justifyContent="space-between" 
-        spacing={{ xs: 3, md: 0 }} // Espace vertical sur mobile
+        spacing={{ xs: 3, md: 0 }} 
         sx={{ mb: 4 }}
       >
         
@@ -108,7 +108,6 @@ export default async function Page({
           <Avatar
             sx={{ 
               bgcolor: "grey.200", 
-              // Avatar légèrement plus petit sur mobile
               width: { xs: 70, md: 90 }, 
               height: { xs: 70, md: 90 } 
             }}
@@ -120,12 +119,11 @@ export default async function Page({
           </Avatar>
           <Box>
             <Typography 
-              variant="h4" 
+              variant="h3" 
               fontWeight="bold" 
               sx={{ 
                 color: "#1A1A1B",
-                // Taille de police responsive
-                fontSize: { xs: "1.5rem", md: "2.125rem" } 
+                fontSize: { xs: "1.5rem", md: "1.7rem" } 
               }}
             >
               {depute.prenom} {depute.nom}
@@ -133,7 +131,7 @@ export default async function Page({
 
             {circonscription && (
               <Typography variant="body1" fontWeight="light" color="text.secondary">
-                {circonscription.numCirco}° circ. de {circonscription.departement} ({circonscription.numDepartement})
+                {circonscription.numCirco}° circonscription de {circonscription.departement} ({circonscription.numDepartement})
               </Typography>
             )}
           </Box>
@@ -143,9 +141,9 @@ export default async function Page({
         <Stack 
           direction="row" 
           alignItems="center" 
-          flexWrap="wrap" // Permet aux icônes de passer à la ligne si besoin
-          gap={1.5} // Utilisation de gap pour mieux gérer le flexWrap
-          sx={{ width: { xs: "100%", md: "auto" } }} // Prend toute la largeur sur mobile
+          flexWrap="wrap" 
+          gap={1.5} 
+          sx={{ width: { xs: "100%", md: "auto" } }}
         >
           {website && <SocialLink Icon={WebsiteIcon} href={`https://${website}`} />}
           {twitter && <SocialLink Icon={XIcon} href={`https://x.com/${twitter}`} />}
