@@ -1,7 +1,9 @@
 "use client";
 
-import { usePathname } from "next/navigation"; // This is hypothetical, replace with the appropriate import
+import * as React from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { Menu as MenuIcon, Close as CloseIcon } from "@mui/icons-material";
 
 export interface NavigationItem {
   name: string;
@@ -14,56 +16,95 @@ interface NavBarProps {
 
 export function NavBar({ navigation }: NavBarProps) {
   const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   return (
-    <nav className="bg-white border-b border-gray-100 h-20 flex items-center">
-      {/* On utilise grid-cols-3 pour diviser la barre en 3 zones égales.
-          Cela force la zone du milieu à être mathématiquement au centre de la page.
-      */}
-      <div className="w-full px-8 grid grid-cols-3 items-center">
-        
-        {/* GAUCHE : Logo */}
-        <div className="flex justify-start">
-          <Link href="/" className="flex items-center gap-3 group">
-            <img
-              src="/icon.png"
-              alt="Logo"
-              className="h-8 w-8 transition-transform duration-300 group-hover:scale-110"
-            />
-            <span className="text-md font-bold tracking-tighter uppercase text-slate-900 whitespace-nowrap">
-              Nos Députés
-            </span>
-          </Link>
-        </div>
+    <>
+      <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 transition-all duration-300">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-full">
+          <div className="flex justify-between items-center h-full">
+            
+            {/* --- GAUCHE : Logo --- */}
+            <div className="flex-shrink-0 flex items-center">
+              <Link href="/" className="flex items-center gap-3 group relative z-50">
+                <img
+                  src="/icon.png"
+                  alt="Logo"
+                  className="h-8 w-8 transition-transform duration-300 group-hover:rotate-12"
+                />
+                <span className="text-lg font-extrabold tracking-tight uppercase text-slate-900 whitespace-nowrap">
+                  Nos Députés
+                </span>
+              </Link>
+            </div>
 
-        {/* CENTRE : Onglets avec forme "Pill" */}
-        <div className="flex justify-center">
-          <div className="flex items-center bg-[#F8F9FA] p-1.5 rounded-full border border-gray-100">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`px-6 py-2 rounded-full text-[11px] font-bold tracking-[0.15em] uppercase transition-all duration-300 ${
-                    isActive
-                      ? "bg-[#1A1A1B] text-white shadow-md"
-                      : "text-gray-500 hover:text-black hover:bg-gray-200/50"
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              );
-            })}
+            {/* --- CENTRE : Navigation Desktop (Cachée sur mobile) --- */}
+            <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <div className="flex items-center bg-gray-50/80 p-1.5 rounded-full border border-gray-200/50 shadow-sm backdrop-blur-sm">
+                {navigation.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`px-5 py-4 rounded-full text-[11px] font-bold tracking-widest uppercase transition-all duration-300 ${
+                        isActive
+                          ? "bg-[#1A1A1B] text-white shadow-md transform scale-105"
+                          : "text-gray-500 hover:text-black hover:bg-white/60"
+                      }`}
+                    >
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* --- DROITE : Menu Mobile (Hamburger) --- */}
+            <div className="flex md:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors relative z-50"
+                aria-label="Menu principal"
+              >
+                {isMobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
+              </button>
+            </div>
+
+            {/* --- DROITE : Desktop (Placeholder pour équilibre ou boutons futurs) --- */}
+            <div className="hidden md:flex w-[140px] justify-end">
+            </div>
           </div>
         </div>
+      </nav>
 
-        {/* DROITE : Vide (Sert de contrepoids pour le centrage) */}
-        <div className="flex justify-end invisible md:visible">
-            {/* Laisser vide pour l'instant */}
+      {/* --- Overlay Menu Mobile --- */}
+      <div 
+        className={`fixed inset-0 z-40 bg-white transform transition-transform duration-300 ease-in-out md:hidden ${
+            isMobileMenuOpen ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"
+        }`}
+        style={{ top: "80px" }}
+      >
+        <div className="flex flex-col items-center pt-8 px-6 space-y-4">
+            {navigation.map((item) => (
+                <Link
+                    key={item.name}
+                    href={item.href}
+                    className="w-full text-center py-4 text-lg font-bold text-gray-800 border-b border-gray-100 uppercase tracking-widest hover:bg-gray-50 transition-colors"
+                >
+                    {item.name}
+                </Link>
+            ))}
+
+            <div className="pt-8">
+               <p className="text-xs text-gray-400 uppercase tracking-widest">Réveils Citoyens</p>
+            </div>
         </div>
-
       </div>
-    </nav>
+    </>
   );
 }

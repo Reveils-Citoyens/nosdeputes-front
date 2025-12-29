@@ -7,15 +7,15 @@ import {
   AccordionDetails, 
   AccordionSummary, 
   Box, 
-  Divider, 
-  Paper 
+  Paper,
+  useMediaQuery,
+  useTheme
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import StatusChip from "@/components/StatusChip";
 import { Amendement, Dossier } from "@prisma/client";
 import ActeurCard from "./ActeurCard";
 import Link from "next/link";
-import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 
 function getStatus(label: string | null) {
   switch (label) {
@@ -43,6 +43,8 @@ type AmendementCardProps = {
 export default function AmendementCard(props: AmendementCardProps) {
   const { amendement, acteurUid, titre } = props;
   const nbSignataires = 1 + amendement.nombreCoSignataires;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   return (
     <Accordion
@@ -59,40 +61,51 @@ export default function AmendementCard(props: AmendementCardProps) {
     >
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
-        sx={{ px: 2, minHeight: 48}}
+        sx={{ 
+            px: 2, 
+            minHeight: 60,
+            "& .MuiAccordionSummary-content": {
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: 1
+            }
+        }}
       >
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ width: "100%", mr: 1 }}>
-            <Typography 
-            variant="subtitle2" 
-            sx={{ 
-              fontWeight: 700, 
-              whiteSpace: 'nowrap',
-              minWidth: "50px", 
-            }}
-          >
-             {titre || `N°${amendement.numeroLong}`}
-          </Typography>
-          
-          <Box sx={{ flexGrow: 1 }}>
-            {acteurUid && <ActeurCard id={acteurUid} smallGroupColor link="name" />}
-          </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0, justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0, flex: 1 }}>
+                <Typography 
+                    variant="subtitle2" 
+                    sx={{ 
+                    fontWeight: 700, 
+                    whiteSpace: 'nowrap',
+                    minWidth: "auto"
+                    }}
+                >
+                    {titre || `N°${amendement.numeroLong}`}
+                </Typography>
+                
+                <Box sx={{ flexGrow: 0, minWidth: 0, maxWidth: isMobile ? 150 : 'auto' }}>
+                    {acteurUid && <ActeurCard id={acteurUid} smallGroupColor link="name" />}
+                </Box>
+            </Box>
 
-          <StatusChip
-            size="small"
-            label={amendement.sortAmendement}
-            status={getStatus(amendement.sortAmendement)}
-          />
-        </Stack>
+            <Box sx={{ flexShrink: 0 }}>
+                <StatusChip
+                    size="small"
+                    label={amendement.sortAmendement}
+                    status={getStatus(amendement.sortAmendement)}
+                />
+            </Box>
+        </Box>
+
       </AccordionSummary>
 
       <AccordionDetails sx={{ px: 3, pt: 0, pb: 3 }}>
-
         <Stack spacing={3}>
           
-          {/* Lien vers le dossier */}
-          {amendement.dossierRef && (
+            {amendement.dossierRef && (
             <Box>
-              {/* <FolderOpenIcon fontSize="small" sx={{ color: 'text.secondary' }} /> */}
               <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 'bold', mb: 0.5, display: 'block' }}>
                 Dossier
               </Typography>
@@ -111,7 +124,6 @@ export default function AmendementCard(props: AmendementCardProps) {
             </Box>
           )}
 
-          {/* Dispositif */}
           {amendement.dispositif && (
             <Box>
               <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 'bold', mb: 0.5, display: 'block' }}>
@@ -136,7 +148,6 @@ export default function AmendementCard(props: AmendementCardProps) {
             </Box>
           )}
 
-          {/* Exposé Sommaire */}
           {amendement.exposeSommaire && (
             <Box>
               <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 'bold', mb: 0.5, display: 'block' }}>
@@ -150,11 +161,11 @@ export default function AmendementCard(props: AmendementCardProps) {
             </Box>
           )}
 
-          {/* Footer Métadonnées */}
           <Box sx={{ pt: 1 }}>
              <Stack 
-                direction="row" 
+                direction={{ xs: "column", sm: "row" }}
                 justifyContent="space-between" 
+                spacing={{ xs: 2, sm: 0 }}
                 sx={{ bgcolor: 'grey.100', p: 1.5, borderRadius: 1 }}
               >
                 <MetaItem label="Signataires" value={`${nbSignataires} député${nbSignataires > 1 ? "s" : ""}`} />

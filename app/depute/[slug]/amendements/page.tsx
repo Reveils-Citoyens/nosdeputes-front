@@ -5,7 +5,7 @@ import { searchAmendement, sortAmendementPossible } from "@/data/searchAmendemen
 import { useParams } from "next/navigation";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
 import AmendementCard from "@/components/folders/AmendementCard";
-import { Stack, Select, Input, MenuItem, Button, CircularProgress, Box, Typography } from "@mui/material";
+import { Stack, Select, Input, MenuItem, Button, CircularProgress, Box, Typography, Container } from "@mui/material"; // Ajout de Container
 import SearchIcon from "@mui/icons-material/Search";
 import debounce from "@/utils/debounce";
 
@@ -32,7 +32,6 @@ export default function Amendements() {
         acteurRefUid: acteur.uid,
         sortAmendement,
         search,
-        include: "dossierRef"
       });
     },
     enabled: !!acteur?.uid,
@@ -75,10 +74,10 @@ export default function Amendements() {
   const totalAmendements = result?.pagination?.total ?? 0;
   const hasMore = accumulatedData.length < totalAmendements;
 
+  // Utilisation d'un Container avec maxWidth="xl" pour utiliser plus d'espace sur les grands écrans
   return (
-    <Box sx={{ p: 2 }}>
-
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
+    <Container maxWidth="xl" sx={{ p: { xs: 2, md: 4 } }}> 
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 3 }}>
         <Input
           fullWidth
           onChange={(event) => handleSearchChange(event.target.value)}
@@ -87,16 +86,25 @@ export default function Amendements() {
           sx={{
             bgcolor: "background.paper",
             borderRadius: 1,
-            px: 1,
+            px: 2,
+            py: 0.5,
             border: "1px solid",
             borderColor: "divider",
+            flexGrow: 1, // Prend tout l'espace disponible
           }}
+          disableUnderline // Plus propre visuellement
         />
         <Select
           value={sortAmendement}
           onChange={(e) => handleSortChange(e.target.value)}
           displayEmpty
-          sx={{ minWidth: 200, bgcolor: "background.paper" }}
+          sx={{ 
+            minWidth: 220, 
+            bgcolor: "background.paper",
+            borderRadius: 1,
+          }}
+          variant="outlined" // Style cohérent avec l'input si on le style manuellement
+          size="small" // Un peu plus compact
         >
           <MenuItem value="">Tous les statuts</MenuItem>
           {sortAmendementPossible.map((sort) => (
@@ -107,7 +115,7 @@ export default function Amendements() {
         </Select>
       </Stack>
 
-      <Stack spacing={0}>
+      <Stack spacing={1}> {/* Espacement réduit entre les cartes pour plus de densité */}
         {accumulatedData.map((amendement) => (
           <AmendementCard
             key={amendement.uid}
@@ -119,12 +127,12 @@ export default function Amendements() {
       </Stack>
 
       {accumulatedData.length === 0 && !isFetching && (
-        <Typography sx={{ textAlign: "center", mt: 4, color: "text.secondary" }}>
-          Aucun amendement trouvé.
+        <Typography sx={{ textAlign: "center", mt: 6, color: "text.secondary", fontSize: '1.1rem' }}>
+          Aucun amendement trouvé pour cette recherche.
         </Typography>
       )}
 
-      <Box sx={{ mt: 6, display: "flex", justifyContent: "center", pb: 4 }}>
+      <Box sx={{ mt: 6, display: "flex", justifyContent: "center", pb: 3 }}>
         {isFetching ? (
           <CircularProgress size={30} />
         ) : (
@@ -138,6 +146,12 @@ export default function Amendements() {
                 py: 1.2,
                 textTransform: "none",
                 fontWeight: "bold",
+                borderColor: 'divider',
+                color: 'text.primary',
+                '&:hover': {
+                    borderColor: 'primary.main',
+                    bgcolor: 'action.hover'
+                }
               }}
             >
               Voir plus
@@ -145,6 +159,6 @@ export default function Amendements() {
           )
         )}
       </Box>
-    </Box>
+    </Container>
   );
 }
