@@ -56,23 +56,14 @@ const HeroSection = () => {
               variant="h1"
               fontWeight="bold"
               sx={{
-                fontSize: { xs: "1.75rem", sm: "2.5rem", md: "3rem" },
+                fontSize: { xs: "1.75rem", sm: "2.1rem", md: "2.2rem" },
                 lineHeight: { xs: 1.3, md: 1.2 },
                 color: "#1A1A1B",
               }}
             >
               Tout comprendre au travail de nos représentants à l&apos;Assemblée
               Nationale
-            </Typography>
-
-                    <Typography
-          variant="h1"
-          fontWeight="bold"
-          sx={{ mb: 3, maxWidth: 650, lineHeight: "37px" }}
-        >
-          
-
-            </Typography>              
+            </Typography>           
 
             <Typography
               variant="body1"
