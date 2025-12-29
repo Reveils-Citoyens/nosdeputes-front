@@ -38,7 +38,7 @@ export default async function InfoPersonelles({
     ).getFullYear() - 1970;
 
   return (
-    <Paper sx={{ p: 2, bgcolor: "grey.100", width: 300, borderRadius: "16px" }} elevation={0}>
+    <Paper sx={{ p: 2, bgcolor: "grey.100", borderRadius: "16px", width: "100%" }} elevation={0}>
       <Stack direction="column" spacing={2}>
         <Typography variant="subtitle1" fontWeight={"bold"}>Fiche d'identité</Typography>
 
