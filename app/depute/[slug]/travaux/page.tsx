@@ -71,7 +71,7 @@ export default function Travaux() {
 
   return (
     <Stack>
-      <Typography variant="subtitle1" fontWeight={"bold"}>Travaux législatifs</Typography>
+      <Typography variant="subtitle1" component="h2" fontWeight={"bold"}>Travaux législatifs</Typography>
       <Typography variant="h4" fontWeight="medium" sx={{ mb: 1, mt: 2 }}>
         Propositions de loi
       </Typography>

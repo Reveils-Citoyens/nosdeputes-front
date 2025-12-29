@@ -6,23 +6,15 @@ import Stack from "@mui/material/Stack";
 import { FilterContainer } from "@/components/FilterContainer";
 import { Filter } from "./Filter";
 import Container from "@mui/material/Container";
-import { debounce } from "@mui/material/utils";
 import Input from "@mui/material/Input";
 import SearchIcon from "@mui/icons-material/Search";
 import { useQueryState } from "nuqs";
 
 export default function Page() {
   const { id: dossierUid } = useParams<{ id: string }>();
-  const [search, handleSearch] = useQueryState("search", {
+  const [, handleSearch] = useQueryState("search", {
     limitUrlUpdates: { method: "debounce", timeMs: 500 },
   });
-  const debouncedSetSearch = React.useMemo(
-    () =>
-      debounce((newSearch) => {
-        handleSearch(newSearch);
-      }, 500),
-    []
-  );
 
   return (
     <Container
@@ -46,7 +38,7 @@ export default function Page() {
           {flattenAmendements?.length ?? 0} Amendements
         </Typography> */}
         <Input
-          onChange={(event) => debouncedSetSearch(event.target.value)}
+          onChange={(event) => handleSearch(event.target.value)}
           startAdornment={<SearchIcon />}
         />
         <AmendementList dossierUid={dossierUid} />

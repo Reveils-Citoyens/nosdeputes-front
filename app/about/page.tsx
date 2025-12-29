@@ -16,9 +16,8 @@ import {
   Code as OpenSourceIcon,
   Group as TeamIcon,
   History as HistoryIcon,
-  TrendingUp as FutureIcon,
   Favorite as ContributeIcon,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
 } from "@mui/icons-material";
 
 // Composant pour les cartes de valeurs
@@ -57,7 +56,7 @@ const ValueCard = ({
       <Typography variant="h6" gutterBottom fontWeight="bold">
         {title}
       </Typography>
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" color="text.secondary" textAlign="start">
         {text}
       </Typography>
     </CardContent>
@@ -66,7 +65,15 @@ const ValueCard = ({
 
 const TeamMember = ({ name }: { name: string }) => (
   <Stack alignItems="center" spacing={1}>
-    <Avatar sx={{ width: 64, height: 64, bgcolor: "secondary.main", color: "text.primary", fontWeight: "bold" }}>
+    <Avatar
+      sx={{
+        width: 64,
+        height: 64,
+        bgcolor: "secondary.main",
+        color: "text.primary",
+        fontWeight: "bold",
+      }}
+    >
       {name[0]}
     </Avatar>
     <Typography variant="body2" fontWeight="bold">
@@ -78,7 +85,6 @@ const TeamMember = ({ name }: { name: string }) => (
 export default function About() {
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
-      
       {/* HEADER SECTION */}
       <Stack alignItems="center" mb={8} textAlign="center">
         <Typography variant="h2" component="h1" fontWeight="bold" gutterBottom>
@@ -89,12 +95,17 @@ export default function About() {
           color="text.secondary"
           sx={{ maxWidth: 800, fontWeight: "light" }}
         >
-          NosDéputés.fr est un site transpartisan géré par une équipe bénévole de citoyens, avec pour objectif de promouvoir l’accès à l’activité parlementaire française.
+          NosDéputés.fr est un site transpartisan géré par une équipe bénévole
+          de citoyens, avec pour objectif de promouvoir l’accès à l’activité
+          parlementaire française.
         </Typography>
       </Stack>
 
       {/* HISTOIRE SECTION */}
-      <Paper elevation={0} sx={{ p: 4, mb: 6, bgcolor: "grey.50", borderRadius: 2 }}>
+      <Paper
+        elevation={0}
+        sx={{ p: 4, mb: 6, bgcolor: "grey.50", borderRadius: 2 }}
+      >
         <Stack direction="row" spacing={2} alignItems="center" mb={2}>
           <HistoryIcon color="primary" />
           <Typography variant="h4" fontWeight="bold">
@@ -102,10 +113,16 @@ export default function About() {
           </Typography>
         </Stack>
         <Typography paragraph>
-          Initié en 2009 par l’association <strong>Regards Citoyens</strong>, NosDéputés.fr est un projet pionnier de l'ouverture des données publiques en France. Après plus de dix ans d'existence, l'équipe fondatrice a passé le flambeau en 2022 à une nouvelle équipe de citoyens bénévoles.
+          Initié en 2009 par l’association <strong>Regards Citoyens</strong>,
+          NosDéputés.fr est un projet pionnier de l'ouverture des données
+          publiques en France. Après plus de dix ans d'existence, l'équipe
+          fondatrice a passé le flambeau en 2022 à une nouvelle équipe de
+          citoyens bénévoles.
         </Typography>
         <Typography>
-          Notre mission reste inchangée : moderniser l'accès à l'information parlementaire pour la rendre intelligible à tous, experts comme novices.
+          Notre mission reste inchangée : moderniser l'accès à l'information
+          parlementaire pour la rendre intelligible à tous, experts comme
+          novices.
         </Typography>
       </Paper>
 
@@ -114,12 +131,12 @@ export default function About() {
         <Typography variant="h4" fontWeight="bold" textAlign="center" mb={4}>
           Ce qui nous unit
         </Typography>
-        
-        <Stack 
-          direction={{ xs: 'column', md: 'row' }} 
-          spacing={4} 
+
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={4}
           justifyContent="center"
-          alignItems="stretch" 
+          alignItems="stretch"
         >
           <Box flex={1}>
             <ValueCard
@@ -147,11 +164,11 @@ export default function About() {
 
       <Divider sx={{ my: 6 }} />
 
-      {/* VISION / FUTUR SECTION */}
-      <Stack 
-        direction={{ xs: 'column', md: 'row' }} 
-        spacing={6} 
-        alignItems="center" 
+      {/* VISION / FUTURE SECTION */}
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        spacing={6}
+        alignItems="center"
         mb={8}
       >
         <Box flex={7}>
@@ -161,70 +178,105 @@ export default function About() {
               Notre ambition
             </Typography>
           </Stack>
-          <Typography paragraph color="text.secondary">
-            L'information parlementaire reste souvent réservée aux initiés. Nous voulons lever trois obstacles majeurs :
+          <Typography mb={2} color="text.secondary">
+            L'information parlementaire reste souvent réservée aux initiés. Nous
+            voulons lever trois obstacles majeurs :
           </Typography>
-          <Stack spacing={2} pl={2}>
-             <Box>
-                <Typography variant="subtitle1" fontWeight="bold">1. La thématisation</Typography>
-                <Typography variant="body2">Classer les dossiers par sujets concrets (santé, énergie...) plutôt que par commission administrative.</Typography>
-             </Box>
-             <Box>
-                <Typography variant="subtitle1" fontWeight="bold">2. Le vocabulaire</Typography>
-                <Typography variant="body2">Décrypter le jargon législatif (amendement, navette, projet de loi) pour le rendre accessible.</Typography>
-             </Box>
-             <Box>
-                <Typography variant="subtitle1" fontWeight="bold">3. La synthèse</Typography>
-                <Typography variant="body2">Utiliser la technologie pour résumer des heures de débats et identifier les arguments clés.</Typography>
-             </Box>
-          </Stack>
+
+          <Box component="ol" sx={{ "& li": { mt: 2 } }}>
+            <li>
+              <Typography variant="subtitle1" fontWeight="bold">
+                1. La thématisation
+              </Typography>
+              <Typography variant="body2">
+                Classer les dossiers par sujets concrets (santé, énergie...)
+                plutôt que par commission administrative.
+              </Typography>
+            </li>
+            <li>
+              <Typography variant="subtitle1" fontWeight="bold">
+                2. Le vocabulaire
+              </Typography>
+              <Typography variant="body2">
+                Décrypter le jargon législatif (amendement, navette, projet de
+                loi) pour le rendre accessible.
+              </Typography>
+            </li>
+            <li>
+              <Typography variant="subtitle1" fontWeight="bold">
+                3. La synthèse
+              </Typography>
+              <Typography variant="body2">
+                Utiliser la technologie pour résumer des heures de débats et
+                identifier les arguments clés.
+              </Typography>
+            </li>
+          </Box>
         </Box>
-        
+
         <Box flex={5} width="100%">
-            <Paper sx={{ p: 4, bgcolor: "secondary.main", color: "secondary.contrastText", borderRadius: 4, textAlign: 'center' }}>
-                <Typography variant="h6" fontStyle="italic">
-                "À une époque de désinformation, il est primordial de revenir aux faits tels qu’ils sont rendus accessibles publiquement."
-                </Typography>
-            </Paper>
+          <Paper
+            sx={{
+              p: 4,
+              bgcolor: "secondary.main",
+              color: "secondary.contrastText",
+              borderRadius: 4,
+              textAlign: "center",
+            }}
+          >
+            <Typography variant="h6" fontStyle="italic">
+              "À une époque de désinformation, il est primordial de revenir aux
+              faits tels qu’ils sont rendus accessibles publiquement."
+            </Typography>
+          </Paper>
         </Box>
       </Stack>
 
       {/* EQUIPE SECTION */}
       <Box mb={8} textAlign="center">
-        <Stack direction="row" spacing={2} alignItems="center" justifyContent="center" mb={4}>
-            <TeamIcon color="primary" />
-            <Typography variant="h4" fontWeight="bold">
-            L'équipe bénévole
-            </Typography>
-        </Stack>
         <Stack
-            direction="row"
-            justifyContent="center"
-            flexWrap="wrap"
-            gap={4}
+          direction="row"
+          spacing={2}
+          alignItems="center"
+          justifyContent="center"
+          mb={4}
         >
-            {["Alex", "David", "Emmanuel", "Henry", "Samuel", "Thomas"].map((name) => (
-                <TeamMember key={name} name={name} />
-            ))}
+          <TeamIcon color="primary" />
+          <Typography variant="h4" fontWeight="bold">
+            L'équipe bénévole
+          </Typography>
+        </Stack>
+        <Stack direction="row" justifyContent="center" flexWrap="wrap" gap={4}>
+          {["Alex", "David", "Emmanuel", "Henry", "Samuel", "Thomas"].map(
+            (name) => (
+              <TeamMember key={name} name={name} />
+            )
+          )}
         </Stack>
       </Box>
 
       {/* CALL TO ACTION */}
-      <Paper 
-        sx={{ 
-            p: 6, 
-            textAlign: "center", 
-            background: "linear-gradient(45deg, #171B1E 30%, #343A40 90%)", 
-            color: "white", 
-            borderRadius: 3 
+      <Paper
+        sx={{
+          p: 6,
+          textAlign: "center",
+          background: "linear-gradient(45deg, #171B1E 30%, #343A40 90%)",
+          color: "white",
+          borderRadius: 3,
         }}
       >
         <ContributeIcon sx={{ fontSize: 40, mb: 2, color: "#EF4444" }} />
         <Typography variant="h4" fontWeight="bold" gutterBottom color="white">
           Vous pouvez aussi contribuer
         </Typography>
-        <Typography variant="body1" sx={{ mb: 4, maxWidth: 600, mx: "auto", opacity: 0.9 }} color="white">
-          Au-delà des coûts d’hébergement, votre soutien est inestimable pour nous encourager à développer de nouvelles fonctionnalités pour la démocratie.
+        <Typography
+          variant="body1"
+          sx={{ mb: 4, maxWidth: 600, mx: "auto", opacity: 0.9 }}
+          color="white"
+        >
+          Au-delà des coûts d’hébergement, votre soutien est inestimable pour
+          nous encourager à développer de nouvelles fonctionnalités pour la
+          démocratie.
         </Typography>
       </Paper>
     </Container>

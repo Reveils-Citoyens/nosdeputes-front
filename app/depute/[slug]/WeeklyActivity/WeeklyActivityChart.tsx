@@ -23,7 +23,7 @@ import Typography from "@mui/material/Typography";
 import { StatistiqueHebdomadaire } from "@prisma/client";
 
 const seriesConfig: Record<
-  "commission" | "hemicicle",
+  "commission" | "hemicycle",
   (BarSeriesType | LineSeriesType)[]
 > = {
   commission: [
@@ -45,9 +45,9 @@ const seriesConfig: Record<
       label: "Présences en commissions",
     },
   ],
-  hemicicle: [
+  hemicycle: [
     {
-      id: "hemicicle-depute",
+      id: "hemicycle-depute",
       dataKey: "debat",
       type: "bar",
       stack: "depute",
@@ -55,7 +55,7 @@ const seriesConfig: Record<
       label: "Présence détectée en hémicycle",
     },
     {
-      id: "hemicicle-stats",
+      id: "hemicycle-stats",
       dataKey: "debatMedian",
       type: "line",
       stack: "mediane",
@@ -73,7 +73,7 @@ export default function WeeklyActivityChart(props: {
   presenceDetecteeMediane: StatistiqueHebdomadaire[];
   presenceCommisionMax: StatistiqueHebdomadaire[];
   presenceCommisionMediane: StatistiqueHebdomadaire[];
-  activityType: "commission" | "hemicicle";
+  activityType: "commission" | "hemicycle";
 }) {
   const { presenceDetecteeDataset, vacances } = useAgregateWeeklyStats(props);
   return (
@@ -84,8 +84,6 @@ export default function WeeklyActivityChart(props: {
         {
           scaleType: "band",
           dataKey: "date",
-          categoryGapRatio: 0.3,
-          barGapRatio: 0.1,
           valueFormatter: (date, ctx) => {
             if (ctx.location === "tick") {
               return date.toLocaleDateString("fr-FR", {
@@ -100,7 +98,7 @@ export default function WeeklyActivityChart(props: {
           },
           tickInterval: (_, index) => index % 10 === 5,
           // @ts-ignore
-          categoryGapRatio: 0,
+          categoryGapRatio: 0.5,
         },
       ]}
       margin={{bottom: 0}}
