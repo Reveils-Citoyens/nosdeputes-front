@@ -35,9 +35,9 @@ function getStatus(label: string | null) {
 }
 
 type AmendementCardProps = {
-  amendement: Amendement & { dossierRef?: Dossier | null };
-  acteurUid: null | string;
-  titre?: string;
+    amendement: Amendement & { dossierRef?: Dossier | null };
+    acteurUid: null | string;
+    titre?: string;
 };
 
 export default function AmendementCard(props: AmendementCardProps) {
@@ -105,23 +105,23 @@ export default function AmendementCard(props: AmendementCardProps) {
         <Stack spacing={3}>
           
             {amendement.dossierRef && (
-            <Box>
-              <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 'bold', mb: 0.5, display: 'block' }}>
-                Dossier
-              </Typography>
-              <Link 
-                href={`/${amendement.dossierRef.legislature}/dossier/${amendement.dossierRef.uid}`}
-                style={{ textDecoration: 'none' }}
-              >
-                <Typography 
-                  variant="body2" 
-                  color="primary" 
-                  sx={{ fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
-                >
-                  {amendement.dossierRef.titre}
+              <Box>
+                <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 'bold', mb: 0.5, display: 'block' }}>
+                  Dossier : 
                 </Typography>
-              </Link>
-            </Box>
+                <Link 
+                  href={`/${amendement.dossierRef.legislature}/dossier/${amendement.dossierRef.uid}`}
+                  style={{ textDecoration: 'none' }}
+                >
+                  <Typography 
+                    variant="body2" 
+                    color="primary" 
+                    sx={{ fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+                  >
+                    {amendement.dossierRef.titre}
+                  </Typography>
+                </Link>
+              </Box>
           )}
 
           {amendement.dispositif && (

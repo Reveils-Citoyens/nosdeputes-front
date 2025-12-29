@@ -32,6 +32,7 @@ export default function Amendements() {
         acteurRefUid: acteur.uid,
         sortAmendement,
         search,
+        include: "dossierRef",
       });
     },
     enabled: !!acteur?.uid,
@@ -74,7 +75,6 @@ export default function Amendements() {
   const totalAmendements = result?.pagination?.total ?? 0;
   const hasMore = accumulatedData.length < totalAmendements;
 
-  // Utilisation d'un Container avec maxWidth="xl" pour utiliser plus d'espace sur les grands écrans
   return (
     <Container maxWidth="xl" sx={{ p: { xs: 2, md: 4 } }}> 
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 3 }}>
@@ -90,9 +90,9 @@ export default function Amendements() {
             py: 0.5,
             border: "1px solid",
             borderColor: "divider",
-            flexGrow: 1, // Prend tout l'espace disponible
+            flexGrow: 1, 
           }}
-          disableUnderline // Plus propre visuellement
+          disableUnderline
         />
         <Select
           value={sortAmendement}
@@ -103,8 +103,8 @@ export default function Amendements() {
             bgcolor: "background.paper",
             borderRadius: 1,
           }}
-          variant="outlined" // Style cohérent avec l'input si on le style manuellement
-          size="small" // Un peu plus compact
+          variant="outlined"
+          size="small" 
         >
           <MenuItem value="">Tous les statuts</MenuItem>
           {sortAmendementPossible.map((sort) => (
@@ -115,7 +115,7 @@ export default function Amendements() {
         </Select>
       </Stack>
 
-      <Stack spacing={1}> {/* Espacement réduit entre les cartes pour plus de densité */}
+      <Stack spacing={1}> 
         {accumulatedData.map((amendement) => (
           <AmendementCard
             key={amendement.uid}
