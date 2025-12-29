@@ -16,6 +16,8 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 @media (min-width: 900px) {
@@ -54,14 +56,12 @@ body {
   gap: 40px;
 }
 
-
 @layer base {
   body {
     @apply antialiased text-slate-900;
   }
 }
 
-/* Custom utility for the specific Raleway look in the screenshot */
 .nav-link-transition {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
