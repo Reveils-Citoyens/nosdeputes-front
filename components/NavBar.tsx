@@ -34,7 +34,7 @@ export function NavBar({ navigation }: NavBarProps) {
                 <img
                   src="/icon.png"
                   alt="Logo"
-                  className="h-8 w-8 transition-transform duration-300 group-hover:rotate-12"
+                  className="h-8 w-8"
                 />
                 <span className="text-lg font-extrabold tracking-tight uppercase text-slate-900 whitespace-nowrap">
                   Nos Députés
