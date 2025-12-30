@@ -3,6 +3,7 @@
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Menu as MenuIcon, Close as CloseIcon } from "@mui/icons-material";
 
 export interface NavigationItem {
@@ -27,15 +28,19 @@ export function NavBar({ navigation }: NavBarProps) {
       <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 transition-all duration-300">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-full">
           <div className="flex justify-between items-center h-full">
-            
             {/* --- GAUCHE : Logo --- */}
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="flex items-center gap-3 group relative z-50">
-                <img
+              <Link
+                href="/"
+                className="flex items-center gap-3 group relative z-50"
+              >
+                <Image
                   src="/icon.png"
                   alt="Logo"
+                  width={32}
+                  height={32}
                   className="h-8 w-8"
-                />
+                ></Image>
                 <span className="text-lg font-extrabold tracking-tight uppercase text-slate-900 whitespace-nowrap">
                   Nos Députés
                 </span>
@@ -76,33 +81,36 @@ export function NavBar({ navigation }: NavBarProps) {
             </div>
 
             {/* --- DROITE : Desktop (Placeholder pour équilibre ou boutons futurs) --- */}
-            <div className="hidden md:flex w-[140px] justify-end">
-            </div>
+            <div className="hidden md:flex w-[140px] justify-end"></div>
           </div>
         </div>
       </nav>
 
       {/* --- Overlay Menu Mobile --- */}
-      <div 
+      <div
         className={`fixed inset-0 z-40 bg-white transform transition-transform duration-300 ease-in-out md:hidden ${
-            isMobileMenuOpen ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"
+          isMobileMenuOpen
+            ? "translate-y-0 opacity-100"
+            : "-translate-y-full opacity-0 pointer-events-none"
         }`}
         style={{ top: "80px" }}
       >
         <div className="flex flex-col items-center pt-8 px-6 space-y-4">
-            {navigation.map((item) => (
-                <Link
-                    key={item.name}
-                    href={item.href}
-                    className="w-full text-center py-4 text-lg font-bold text-gray-800 border-b border-gray-100 uppercase tracking-widest hover:bg-gray-50 transition-colors"
-                >
-                    {item.name}
-                </Link>
-            ))}
+          {navigation.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              className="w-full text-center py-4 text-lg font-bold text-gray-800 border-b border-gray-100 uppercase tracking-widest hover:bg-gray-50 transition-colors"
+            >
+              {item.name}
+            </Link>
+          ))}
 
-            <div className="pt-8">
-               <p className="text-xs text-gray-400 uppercase tracking-widest">Réveils Citoyens</p>
-            </div>
+          <div className="pt-8">
+            <p className="text-xs text-gray-400 uppercase tracking-widest">
+              Réveils Citoyens
+            </p>
+          </div>
         </div>
       </div>
     </>

@@ -54,12 +54,26 @@ const MetriqueCard = (props: Stats & { valeurDepute: number }) => {
   );
 
   return (
-    <Card key={props.id} variant="outlined" sx={{ borderRadius: 3, borderColor: '#e0e0e0', boxShadow: 'none' }}>
+    <Card
+      key={props.id}
+      variant="outlined"
+      sx={{ borderRadius: 3, borderColor: "#e0e0e0", boxShadow: "none" }}
+    >
       <CardContent>
-        <Typography variant="h1" fontWeight="medium" sx={{ textAlign: "right", lineHeight: 1, mb: 0 }}>
+        <Typography
+          variant="h1"
+          fontWeight="medium"
+          sx={{ textAlign: "right", lineHeight: 1, mb: 0 }}
+        >
           {props.valeurDepute}
         </Typography>
-        <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end" sx={{ mb: 1.5 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          justifyContent="flex-end"
+          sx={{ mb: 1.5 }}
+        >
           <Box sx={{ display: "flex", flexShrink: 0 }}>
             <InfoDialogIcon
               category="depute"
@@ -79,7 +93,7 @@ const MetriqueCard = (props: Stats & { valeurDepute: number }) => {
             flexDirection: "row",
             alignItems: "stretch",
             gap: 1,
-            mb: .5
+            mb: 0.5,
           }}
         >
           {quantiles.map((q, index) => {
@@ -167,9 +181,18 @@ export function ActeurStatSectionClient({
 
   return (
     <div>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", mb:3, mt: 5 }} >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          width: "100%",
+          mb: 3,
+          mt: 5,
+        }}
+      >
         <Typography variant="subtitle1" fontWeight={"bold"} component="h2">
-          Statistiques d'activité
+          Statistiques d&apos;activité
         </Typography>
         <Select
           value={periode}
@@ -177,31 +200,32 @@ export function ActeurStatSectionClient({
           disableUnderline
           variant="standard"
           sx={{
-                minWidth: 180,
-                backgroundColor: 'white',
-                borderRadius: '50px',
-                fontSize: '0.9rem',
-                color: '#666',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#e0e0e0', 
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#ccc', 
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#aaa', 
-                  borderWidth: '1px'
-                },
-                '& .MuiSelect-select': {
-                  py: 1,
-                  px: 2,
-                  backgroundColor: 'transparent !important',
-                },
-                '& .MuiSvgIcon-root': {
-                  right: '12px',
-                  color: '#888',
-                }
-              }}>
+            minWidth: 180,
+            backgroundColor: "white",
+            borderRadius: "50px",
+            fontSize: "0.9rem",
+            color: "#666",
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#e0e0e0",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#ccc",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#aaa",
+              borderWidth: "1px",
+            },
+            "& .MuiSelect-select": {
+              py: 1,
+              px: 2,
+              backgroundColor: "transparent !important",
+            },
+            "& .MuiSvgIcon-root": {
+              right: "12px",
+              color: "#888",
+            },
+          }}
+        >
           <MenuItem value="LEGISLATURE">Toute la législature</MenuItem>
           <MenuItem value="LAST_YEAR">12 derniers mois</MenuItem>
           <MenuItem value="LAST_SIX_MONTHS">6 derniers mois</MenuItem>

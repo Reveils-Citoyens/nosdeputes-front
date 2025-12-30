@@ -38,16 +38,23 @@ export default async function InfoPersonelles({
     ).getFullYear() - 1970;
 
   return (
-    <Paper sx={{ p: 2, bgcolor: "grey.100", borderRadius: "16px", width: "100%" }} elevation={0}>
+    <Paper
+      sx={{ p: 2, bgcolor: "grey.100", borderRadius: "16px", width: "100%" }}
+      elevation={0}
+    >
       <Stack direction="column" spacing={2}>
-        <Typography variant="subtitle1" fontWeight={"bold"}>Fiche d'identité</Typography>
+        <Typography variant="subtitle1" fontWeight={"bold"}>
+          Fiche d&apos;identité
+        </Typography>
 
         {dernierMandatDepute === undefined ? (
           <div>
             <Typography variant="body2" fontWeight="light">
               Début de mandat
             </Typography>
-            <Typography variant="body2" fontWeight="medium">Pas de mandat de député·e</Typography>
+            <Typography variant="body2" fontWeight="medium">
+              Pas de mandat de député·e
+            </Typography>
           </div>
         ) : (
           <React.Fragment>
@@ -85,28 +92,36 @@ export default async function InfoPersonelles({
         )}
 
         <div>
-          <Typography variant="body2" fontWeight="light" color="grey.600" sx={{ 
-            lineHeight: 1, 
-            display: 'flex', 
-            alignItems: 'center' 
-          }}>
-            Groupe politique 
-              <Box component="span" sx={{ 
-                display: 'inline-flex', 
+          <Typography
+            variant="body2"
+            fontWeight="light"
+            color="grey.600"
+            sx={{
+              lineHeight: 1,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            Groupe politique
+            <Box
+              component="span"
+              sx={{
+                display: "inline-flex",
                 ml: 0.5,
-                verticalAlign: 'text-bottom',
-                '& button': { 
-                  p: 0, 
-                  minWidth: 0, 
-                  height: 'auto',
-                  lineHeight: 0
+                verticalAlign: "text-bottom",
+                "& button": {
+                  p: 0,
+                  minWidth: 0,
+                  height: "auto",
+                  lineHeight: 0,
                 },
-                '& svg': { 
-                  fontSize: '1rem',
-                  color: 'grey.400' 
-                }
-              }}>
-                <InfoDialogIcon category="organe" item="GP" />
+                "& svg": {
+                  fontSize: "1rem",
+                  color: "grey.400",
+                },
+              }}
+            >
+              <InfoDialogIcon category="organe" item="GP" />
             </Box>
           </Typography>
           <Typography variant="body2" fontWeight="medium">
@@ -118,27 +133,35 @@ export default async function InfoPersonelles({
         </div>
 
         <div>
-          <Typography variant="body2" fontWeight="light" color="grey.600" sx={{ 
-            lineHeight: 1, 
-            display: 'flex', 
-            alignItems: 'center' 
-          }}>
-            Parti politique 
-              <Box component="span" sx={{ 
-                display: 'inline-flex', 
+          <Typography
+            variant="body2"
+            fontWeight="light"
+            color="grey.600"
+            sx={{
+              lineHeight: 1,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            Parti politique
+            <Box
+              component="span"
+              sx={{
+                display: "inline-flex",
                 ml: 0.5,
-                verticalAlign: 'text-bottom',
-                '& button': { 
-                  p: 0, 
-                  minWidth: 0, 
-                  height: 'auto',
-                  lineHeight: 0
+                verticalAlign: "text-bottom",
+                "& button": {
+                  p: 0,
+                  minWidth: 0,
+                  height: "auto",
+                  lineHeight: 0,
                 },
-                '& svg': { 
-                  fontSize: '1rem',
-                  color: 'grey.400' 
-                }
-              }}>
+                "& svg": {
+                  fontSize: "1rem",
+                  color: "grey.400",
+                },
+              }}
+            >
               <InfoDialogIcon category="organe" item="PARPOL" />
             </Box>
           </Typography>
@@ -160,27 +183,37 @@ export default async function InfoPersonelles({
         </div>
 
         <div>
-          <Typography variant="body2" fontWeight="light" color="grey.600" sx={{ lineHeight: 1, display: 'flex', alignItems: 'center' }}>
-            Profession 
-              <Box component="span" sx={{ 
-                display: 'inline-flex', 
+          <Typography
+            variant="body2"
+            fontWeight="light"
+            color="grey.600"
+            sx={{ lineHeight: 1, display: "flex", alignItems: "center" }}
+          >
+            Profession
+            <Box
+              component="span"
+              sx={{
+                display: "inline-flex",
                 ml: 0.5,
-                verticalAlign: 'text-bottom',
-                '& button': { 
-                  p: 0, 
-                  minWidth: 0, 
-                  height: 'auto',
-                  lineHeight: 0
+                verticalAlign: "text-bottom",
+                "& button": {
+                  p: 0,
+                  minWidth: 0,
+                  height: "auto",
+                  lineHeight: 0,
                 },
-                '& svg': { 
-                  fontSize: '1rem',
-                  color: 'grey.400' 
-                }
-              }}>
-            <InfoDialogIcon category="depute" item="profession" />
+                "& svg": {
+                  fontSize: "1rem",
+                  color: "grey.400",
+                },
+              }}
+            >
+              <InfoDialogIcon category="depute" item="profession" />
             </Box>
           </Typography>
-          <Typography variant="body2" fontWeight="medium">{profession}</Typography>
+          <Typography variant="body2" fontWeight="medium">
+            {profession}
+          </Typography>
         </div>
       </Stack>
     </Paper>

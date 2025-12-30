@@ -113,16 +113,16 @@ export default function About() {
           </Typography>
         </Stack>
         <Typography paragraph>
-          Initié en 2009 par l’association <strong>Regards Citoyens</strong>,
-          NosDéputés.fr est un projet pionnier de l'ouverture des données
-          publiques en France. Après plus de dix ans d'existence, l'équipe
-          fondatrice a passé le flambeau en 2022 à une nouvelle équipe de
-          citoyens bénévoles.
+          Initié en 2009 par l&apos;association{" "}
+          <strong>Regards Citoyens</strong>, NosDéputés.fr est un projet
+          pionnier de l&apos;ouverture des données publiques en France. Après
+          plus de dix ans d&apos;existence, l&apos;équipe fondatrice a passé le
+          flambeau en 2022 à une nouvelle équipe de citoyens bénévoles.
         </Typography>
         <Typography>
-          Notre mission reste inchangée : moderniser l'accès à l'information
-          parlementaire pour la rendre intelligible à tous, experts comme
-          novices.
+          Notre mission reste inchangée : moderniser l&apos;accès à
+          l&apos;information parlementaire pour la rendre intelligible à tous,
+          experts comme novices.
         </Typography>
       </Paper>
 
@@ -179,8 +179,8 @@ export default function About() {
             </Typography>
           </Stack>
           <Typography mb={2} color="text.secondary">
-            L'information parlementaire reste souvent réservée aux initiés. Nous
-            voulons lever trois obstacles majeurs :
+            L&apos;information parlementaire reste souvent réservée aux initiés.
+            Nous voulons lever trois obstacles majeurs :
           </Typography>
 
           <Box component="ol" sx={{ "& li": { mt: 2 } }}>
@@ -225,8 +225,9 @@ export default function About() {
             }}
           >
             <Typography variant="h6" fontStyle="italic">
-              "À une époque de désinformation, il est primordial de revenir aux
-              faits tels qu’ils sont rendus accessibles publiquement."
+              &quot;À une époque de désinformation, il est primordial de revenir
+              aux faits tels qu&apos;ils sont rendus accessibles
+              publiquement.&quot;
             </Typography>
           </Paper>
         </Box>
@@ -243,7 +244,7 @@ export default function About() {
         >
           <TeamIcon color="primary" />
           <Typography variant="h4" fontWeight="bold">
-            L'équipe bénévole
+            L&apos;équipe bénévole
           </Typography>
         </Stack>
         <Stack direction="row" justifyContent="center" flexWrap="wrap" gap={4}>

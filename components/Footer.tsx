@@ -1,5 +1,12 @@
 import * as React from "react";
-import { Box, Container, Typography, Link, Divider, Stack } from "@mui/material";
+import {
+  Box,
+  Container,
+  Typography,
+  Link,
+  Divider,
+  Stack,
+} from "@mui/material";
 import Image from "next/image";
 
 export default function Footer() {
@@ -18,8 +25,8 @@ export default function Footer() {
       <Container maxWidth="lg">
         {/* Conteneur principal : Stack responsive */}
         <Stack
-          direction={{ xs: "column", md: "row" }} 
-          spacing={{ xs: 6, md: 4 }} 
+          direction={{ xs: "column", md: "row" }}
+          spacing={{ xs: 6, md: 4 }}
           justifyContent="space-between"
           alignItems={{ xs: "flex-start", md: "flex-start" }}
         >
@@ -34,27 +41,37 @@ export default function Footer() {
                 style={{ objectFit: "contain" }}
               />
             </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-              Observatoire citoyen de l'activité parlementaire.
-              Un outil pour une démocratie plus transparente et accessible.
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ lineHeight: 1.6 }}
+            >
+              Observatoire citoyen de l&apos;activité parlementaire. Un outil
+              pour une démocratie plus transparente et accessible.
             </Typography>
           </Box>
 
           {/* Section 2 : Association */}
           <Box sx={{ width: "100%", maxWidth: { md: 350 } }}>
-            <Typography variant="subtitle2" color="text.primary" gutterBottom fontWeight="bold">
+            <Typography
+              variant="subtitle2"
+              color="text.primary"
+              gutterBottom
+              fontWeight="bold"
+            >
               À propos de nous
             </Typography>
             <Stack spacing={1}>
               <Typography variant="body2" color="text.secondary">
-                NosDéputés.fr est géré par l'association transpartisane Loi 1901
+                NosDéputés.fr est géré par l&apos;association transpartisane Loi
+                1901
                 <strong> Réveils Citoyens</strong>.
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Contact :{" "}
-                <Link 
-                  href="mailto:info@reveilscitoyens.org" 
-                  underline="hover" 
+                <Link
+                  href="mailto:info@reveilscitoyens.org"
+                  underline="hover"
                   color="primary"
                   fontWeight="medium"
                 >
@@ -66,7 +83,12 @@ export default function Footer() {
 
           {/* Section 3 : Ressources */}
           <Box sx={{ width: "100%", maxWidth: { md: 200 } }}>
-            <Typography variant="subtitle2" color="text.primary" gutterBottom fontWeight="bold">
+            <Typography
+              variant="subtitle2"
+              color="text.primary"
+              gutterBottom
+              fontWeight="bold"
+            >
               Ressources
             </Typography>
             <Stack component="nav" spacing={1}>
@@ -80,7 +102,12 @@ export default function Footer() {
               >
                 Code Source
               </Link>
-              <Link href="/mentions-legales" color="text.secondary" variant="body2" underline="hover">
+              <Link
+                href="/mentions-legales"
+                color="text.secondary"
+                variant="body2"
+                underline="hover"
+              >
                 Mentions Légales
               </Link>
             </Stack>
