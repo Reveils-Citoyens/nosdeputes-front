@@ -23,7 +23,7 @@ import Typography from "@mui/material/Typography";
 import { StatistiqueHebdomadaire } from "@prisma/client";
 
 const seriesConfig: Record<
-  "commission" | "hemicicle",
+  "commission" | "hemicycle",
   (BarSeriesType | LineSeriesType)[]
 > = {
   commission: [
@@ -32,7 +32,7 @@ const seriesConfig: Record<
       dataKey: "presenceCommissionMedian",
       type: "line",
       stack: "mediane",
-      color: "red",
+      color: "darkgreen",
       curve: "step",
       label: "Médiane des députés",
     },
@@ -41,25 +41,25 @@ const seriesConfig: Record<
       dataKey: "presenceCommission",
       type: "bar",
       stack: "depute",
-      color: "orange",
+      color: "lightgreen",
       label: "Présences en commissions",
     },
   ],
-  hemicicle: [
+  hemicycle: [
     {
-      id: "hemicicle-depute",
+      id: "hemicycle-depute",
       dataKey: "debat",
       type: "bar",
       stack: "depute",
-      color: "blue",
-      label: "Présence détectée en hémicicle",
+      color: "lightblue",
+      label: "Présence détectée en hémicycle",
     },
     {
-      id: "hemicicle-stats",
+      id: "hemicycle-stats",
       dataKey: "debatMedian",
       type: "line",
       stack: "mediane",
-      color: "darkblue",
+      color: "blue",
       curve: "step",
       label: "Mediane des députés",
     },
@@ -73,7 +73,7 @@ export default function WeeklyActivityChart(props: {
   presenceDetecteeMediane: StatistiqueHebdomadaire[];
   presenceCommisionMax: StatistiqueHebdomadaire[];
   presenceCommisionMediane: StatistiqueHebdomadaire[];
-  activityType: "commission" | "hemicicle";
+  activityType: "commission" | "hemicycle";
 }) {
   const { presenceDetecteeDataset, vacances } = useAgregateWeeklyStats(props);
   return (
@@ -97,11 +97,11 @@ export default function WeeklyActivityChart(props: {
             })}`;
           },
           tickInterval: (_, index) => index % 10 === 5,
-          // @ts-ignore
-          categoryGapRatio: 0,
+          categoryGapRatio: 0.1,
         },
       ]}
-      margin={{bottom: 0}}
+      yAxis={[{ width: 30 }]}
+      margin={{ left: 0, right: 0, top: 20, bottom: 5 }}
       series={seriesConfig[props.activityType]}
     >
       <Box
@@ -111,7 +111,7 @@ export default function WeeklyActivityChart(props: {
           flexDirection: "column",
           gap: 0,
           alignItems: "center",
-          mb: 4
+          mb: 4,
         }}
       >
         <ChartsSurface>

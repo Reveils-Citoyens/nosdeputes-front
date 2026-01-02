@@ -14,23 +14,50 @@ export default function WeeklyActivitySectionClient(props: {
   presenceCommisionMediane: StatistiqueHebdomadaire[];
 }) {
   const [activityType, setActivityType] = React.useState<
-    "commission" | "hemicicle"
-  >("hemicicle");
+    "commission" | "hemicycle"
+  >("hemicycle");
 
   return (
     <div>
       <Stack direction="row" justifyContent="space-between">
-        <Typography variant="h4" component="h2">
+        <Typography variant="subtitle1" fontWeight="bold" component="h2">
           Présences et participations
         </Typography>
         <Select
-          variant="outlined"
           value={activityType}
           onChange={(event) =>
-            setActivityType(event.target.value as "commission" | "hemicicle")
+            setActivityType(event.target.value as "commission" | "hemicycle")
           }
+          disableUnderline
+          variant="standard"
+          sx={{
+            minWidth: 140,
+            backgroundColor: "white",
+            borderRadius: "50px",
+            fontSize: "0.9rem",
+            color: "#666",
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#e0e0e0",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#ccc",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#aaa",
+              borderWidth: "1px",
+            },
+            "& .MuiSelect-select": {
+              py: 1,
+              px: 2,
+              backgroundColor: "transparent !important",
+            },
+            "& .MuiSvgIcon-root": {
+              right: "12px",
+              color: "#888",
+            },
+          }}
         >
-          <MenuItem value="hemicicle">Hémicicle</MenuItem>
+          <MenuItem value="hemicycle">Hémicycle</MenuItem>
           <MenuItem value="commission">Commissions</MenuItem>
         </Select>
       </Stack>
