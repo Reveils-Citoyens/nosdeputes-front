@@ -19,7 +19,7 @@ export default function Signataires(props: {
     <Box sx={{ maxHeight: 350, overflow: "auto" }}>
       <Stack direction="column" spacing={1}>
         <Stack direction="row" spacing={0.5} alignItems="center">
-          <Typography variant="body2" fontWeight="light">
+          <Typography variant="body2" fontWeight="light" color="grey.600">
             Co-signataires
           </Typography>
           <InfoIcon sx={{ fontSize: "14px" }} />

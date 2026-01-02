@@ -190,40 +190,40 @@ Elle ne décrit ni une fonction parlementaire, ni un statut actuel, mais permet 
 
 Cette information aide à comprendre la diversité des origines socioprofessionnelles des élus, mais elle n’implique pas qu’ils continuent à exercer cette activité pendant leur mandat.`},
         presences: {
-            translation: `Présence et participation `,
+            translation: `Présences détectées`,
             dialog: `La présence et participation indique le nombre de fois où un député a pris part aux travaux de l’Assemblée nationale, principalement à partir de ses interventions en séance publique ou en commission.
 
 Attention, il ne s’agit pas d’un registre officiel de présence, car l’Assemblée nationale ne publie pas de telles données. Les présences sont déduites des prises de parole, rapports, amendements ou mentions dans les comptes rendus, ce qui reflète l’activité visible, non la présence physique continue.`,
         },
         nb_documents_publie: {
-            translation: `Nombre de documents publiés`,
+            translation: `Documents publiés`,
             dialog: `Le nombre de documents publiés correspond aux rapports, avis, propositions de loi, amendements ou interventions écrites produits par un député.
 
 Ces documents traduisent l’implication rédactionnelle et le travail de fond d’un élu au sein de l’Assemblée, notamment dans les commissions.
 Ils sont recensés à partir des publications officielles sur les sites institutionnels.`,
         },
         presences_commission: {
-            translation: `Présence en commission`,
+            translation: `Présences en commission`,
             dialog: `La présence en commission indique la participation d’un député aux réunions officielles de sa commission permanente (affaires sociales, finances, etc.).
 
 Ces données proviennent des comptes rendus publics où les interventions et présences sont enregistrées.
 Comme pour les séances plénières, il s’agit de présences détectées à partir des prises de parole et non d’un registre d’émargement.`,
         },
         nb_questions_ecrite: {
-            translation: `Nombre de questions écrites`,
+            translation: `Questions écrites`,
             dialog: `Les questions écrites sont des questions formelles envoyées par les députés aux ministres, pour obtenir des précisions ou attirer l’attention sur un sujet précis.
 
 Elles doivent recevoir une réponse écrite du gouvernement, publiée au Journal officiel. Le nombre de questions écrites reflète la vigilance et le suivi thématique du député sur certains dossiers.`,
         },
         nb_questions_orale: {
-            translation: `Nombre de questions orales`,
+            translation: `Questions orales`,
             dialog: `Les questions orales sont posées directement au gouvernement, en séance publique (ex. : séances de questions au gouvernement du mardi et du mercredi).
 
 Elles permettent un échange direct et public entre députés et ministres, sur des sujets d’actualité ou de politique publique.
 Le nombre de questions orales reflète donc la visibilité et la participation publique du député dans l’hémicycle.`,
         },
         nb_amendements: {
-            translation: `Nombre d'amendements`,
+            translation: `Amendements`,
             dialog: `Le nombre d’amendements correspond au total des modifications qu’un député a proposées sur des textes de loi pendant leur examen.
 
 Un amendement peut ajouter, supprimer ou reformuler une partie d’un article de loi.
