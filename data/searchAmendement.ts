@@ -16,6 +16,7 @@ type SearchAmendementParams = {
   sort?: string;
   search?: string;
   sortAmendement?: string;
+  include?: string;
 } & (
   | {
       /**
@@ -87,6 +88,7 @@ export async function searchAmendement(
     documentRefUid,
     acteurRefUid,
     sortAmendement,
+    include
   } = params;
 
   const searchParams = new URLSearchParams({
@@ -110,6 +112,9 @@ export async function searchAmendement(
   }
   if (documentRefUid) {
     searchParams.set("documentRefUid", documentRefUid);
+  }
+  if (include) {
+    searchParams.set("include", include);
   }
   try {
     const rep = await fetch(
