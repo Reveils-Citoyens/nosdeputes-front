@@ -6,9 +6,9 @@ import Stack from "@mui/material/Stack";
 import Accordion from "@mui/material/Accordion";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import AccordionSummary from "@mui/material/AccordionSummary";
-
+import Box from "@mui/material/Box";
+import Paper from "@mui/material/Paper";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-
 import { Organe, Question } from "@prisma/client";
 import StatusChip from "@/components/StatusChip";
 
@@ -23,7 +23,6 @@ export default function QuestionCard(props: QuestionCardProps) {
       type,
       numero,
       dateDepot,
-      // dateCloture,
       titre,
       rubrique,
       texteQuestion,
@@ -41,104 +40,171 @@ export default function QuestionCard(props: QuestionCardProps) {
     <Accordion
       elevation={0}
       disableGutters
-      sx={(theme) => ({
-        borderBottom: `solid ${theme.palette.divider} 1px`,
-        borderRadius: 0,
-      })}
+      sx={{
+        "&:before": { display: "none" },
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        "&.Mui-expanded": {
+          bgcolor: "rgba(0, 0, 0, 0.01)",
+        },
+      }}
     >
       <AccordionSummary
+        expandIcon={<ExpandMoreIcon />}
+        sx={{
+          px: 2,
+          minHeight: 48,
+          "&.Mui-expanded": { minHeight: 64 },
+        }}
         aria-controls={pannelId}
         id={headerId}
-        expandIcon={<ExpandMoreIcon />}
       >
         <Stack
           direction="row"
           alignItems="center"
-          spacing={1}
-          sx={{ width: "100%", mr: 2 }}
+          spacing={2}
+          sx={{ width: "100%", mr: 1 }}
         >
-          {titre && <Typography sx={{ flexGrow: 1 }}>{titre}</Typography>}
-          {rubrique && <StatusChip size="small" label={rubrique} />}
-          {type && <StatusChip size="small" label={type} />}
+          <Typography
+            variant="subtitle2"
+            sx={{ fontWeight: "medium", flexGrow: 1 }}
+          >
+            {titre || `Question N°${numero}`}
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            {rubrique && <StatusChip size="small" label={rubrique} />}
+            {type && <StatusChip size="small" label={type} />}
+          </Stack>
         </Stack>
       </AccordionSummary>
-      <AccordionDetails>
-        <Stack direction="column" spacing={2}>
-          <Typography variant="caption">N°{numero}</Typography>
+
+      <AccordionDetails sx={{ px: 2, pt: 0, pb: 3 }}>
+        <Stack spacing={3}>
           {texteQuestion && (
-            <Typography
-              fontWeight="light"
-              variant="body1"
-              flexGrow={1}
-              flexShrink={1}
-              flexBasis={0}
-              component="div"
-              sx={{ bgcolor: "grey.50", p: 1 }}
-              dangerouslySetInnerHTML={{ __html: texteQuestion }}
-            />
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: "bold",
+                  mb: 0.5,
+                  display: "block",
+                }}
+              >
+                Question {erratumQuestion && "(avec Erratum)"}
+              </Typography>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  bgcolor: "grey.50",
+                  borderLeft: "4px solid",
+                  borderColor: "primary.light",
+                  borderRadius: "0 4px 4px 0",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{ lineHeight: 1.8 }}
+                  dangerouslySetInnerHTML={{ __html: texteQuestion }}
+                />
+                {erratumQuestion && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      mt: 2,
+                      display: "block",
+                      fontStyle: "italic",
+                      color: "warning.main",
+                    }}
+                  >
+                    Note: {erratumQuestion}
+                  </Typography>
+                )}
+              </Paper>
+            </Box>
           )}
+
+          {/* SECTION RÉPONSE */}
           {texteReponse && (
-            <Typography
-              fontWeight="light"
-              variant="body1"
-              flexGrow={1}
-              flexShrink={1}
-              flexBasis={0}
-              component="div"
-              sx={{ bgcolor: "grey.50", p: 1 }}
-              dangerouslySetInnerHTML={{ __html: texteReponse }}
-            />
-          )}
-          {erratumQuestion && (
-            <Typography
-              fontWeight="light"
-              variant="body1"
-              flexGrow={1}
-              flexShrink={1}
-              flexBasis={0}
-              component="div"
-              sx={{ bgcolor: "grey.50", p: 1 }}
-            >
-              {erratumQuestion}
-            </Typography>
-          )}
-          {erratumReponse && (
-            <Typography
-              fontWeight="light"
-              variant="body1"
-              flexGrow={1}
-              flexShrink={1}
-              flexBasis={0}
-              component="div"
-              sx={{ bgcolor: "grey.50", p: 1 }}
-            >
-              {erratumReponse}
-            </Typography>
-          )}
-          <Stack direction="row" justifyContent="space-between" flexBasis={0}>
-            <Typography fontWeight="light" variant="body2">
-              Envoyé à:&nbsp;
-              <Typography component="span" variant="body2">
-                {ministerInteroge?.libelleAbrege}
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: "bold",
+                  mb: 0.5,
+                  display: "block",
+                }}
+              >
+                Réponse du Ministère {erratumReponse && "(avec Erratum)"}
               </Typography>
-            </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  lineHeight: 1.8,
+                  color: "text.primary",
+                  textAlign: "justify",
+                }}
+                dangerouslySetInnerHTML={{ __html: texteReponse }}
+              />
+              {erratumReponse && (
+                <Typography
+                  variant="caption"
+                  sx={{ mt: 1, display: "block", fontStyle: "italic" }}
+                >
+                  Erratum: {erratumReponse}
+                </Typography>
+              )}
+            </Box>
+          )}
 
-            <Typography fontWeight="light" variant="body2">
-              Date de dépôt:&nbsp;
-              <Typography component="span" variant="body2">
-                {dateDepot && dateDepot.toLocaleDateString("fr-FR")}
-              </Typography>
-            </Typography>
-
-            {/* <Typography fontWeight="light" variant="body2">
-              Date de cloture:&nbsp;
-              <Typography component="span" variant="body2">
-                {dateCloture && dateCloture.toLocaleDateString("fr-FR")}
-              </Typography>
-            </Typography> */}
-          </Stack>
+          <Box sx={{ pt: 1 }}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              sx={{ bgcolor: "grey.100", p: 1.5, borderRadius: 1 }}
+            >
+              <MetaItem label="N° Question" value={numero.toString()} />
+              <MetaItem
+                label="Destinataire"
+                value={ministerInteroge?.libelleAbrege || "Non spécifié"}
+              />
+              <MetaItem
+                label="Déposée le"
+                value={
+                  dateDepot
+                    ? new Date(dateDepot).toLocaleDateString("fr-FR")
+                    : "-"
+                }
+              />
+            </Stack>
+          </Box>
         </Stack>
       </AccordionDetails>
     </Accordion>
+  );
+}
+
+function MetaItem({ label, value }: { label: string; value: string }) {
+  return (
+    <Box>
+      <Typography
+        variant="caption"
+        display="block"
+        sx={{
+          color: "text.secondary",
+          textTransform: "uppercase",
+          fontSize: "0.6rem",
+          fontWeight: 800,
+        }}
+      >
+        {label}
+      </Typography>
+      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.85rem" }}>
+        {value}
+      </Typography>
+    </Box>
   );
 }
