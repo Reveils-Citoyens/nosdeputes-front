@@ -199,7 +199,7 @@ export default function DeputesView({
           }}
         >
           {grouping === "groupPolitique"
-            ? "Par group parlementaire"
+            ? "Par groupe parlementaire"
             : "Par ordre alphabetique"}
         </Button>
       </Stack>
