@@ -1,180 +1,285 @@
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
+import React from "react";
+import {
+  Box,
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  Avatar,
+  Stack,
+  Paper,
+  Divider,
+} from "@mui/material";
+import {
+  Balance as NeutralityIcon,
+  Visibility as TransparencyIcon,
+  Code as OpenSourceIcon,
+  Group as TeamIcon,
+  History as HistoryIcon,
+  Favorite as ContributeIcon,
+  TrendingUp as TrendingUpIcon,
+} from "@mui/icons-material";
+
+// Composant pour les cartes de valeurs
+const ValueCard = ({
+  title,
+  text,
+  icon: Icon,
+}: {
+  title: string;
+  text: string;
+  icon: React.ElementType;
+}) => (
+  <Card
+    elevation={0}
+    sx={{
+      height: "100%",
+      bgcolor: "grey.50",
+      border: "1px solid",
+      borderColor: "grey.200",
+      transition: "0.3s",
+      "&:hover": { borderColor: "primary.main", transform: "translateY(-4px)" },
+    }}
+  >
+    <CardContent sx={{ textAlign: "center", p: 3 }}>
+      <Avatar
+        sx={{
+          bgcolor: "primary.main",
+          width: 56,
+          height: 56,
+          mb: 2,
+          mx: "auto",
+        }}
+      >
+        <Icon sx={{ fontSize: 30, color: "white" }} />
+      </Avatar>
+      <Typography variant="h6" gutterBottom fontWeight="bold">
+        {title}
+      </Typography>
+      <Typography variant="body2" color="text.secondary" textAlign="start">
+        {text}
+      </Typography>
+    </CardContent>
+  </Card>
+);
+
+const TeamMember = ({ name }: { name: string }) => (
+  <Stack alignItems="center" spacing={1}>
+    <Avatar
+      sx={{
+        width: 64,
+        height: 64,
+        bgcolor: "secondary.main",
+        color: "text.primary",
+        fontWeight: "bold",
+      }}
+    >
+      {name[0]}
+    </Avatar>
+    <Typography variant="body2" fontWeight="bold">
+      {name}
+    </Typography>
+  </Stack>
+);
 
 export default function About() {
   return (
-    <Box
-      sx={{
-        py: 3,
-        px: 2,
-        maxWidth: 1000,
-        mx: "auto",
-        "& p, & ul": {
-          my: 1.5,
-        },
-        "& ul": {
-          my: 1,
-          listStyle: "inside",
-        },
-        "&& *": {
-          fontWeight: 400,
-        },
-      }}
-    >
-      <Typography>
-        NosDéputés.fr est un site transpartisan géré par une équipe bénévole de
-        citoyens, avec pour objectif de promouvoir l’accès à l’activité
-        parlementaire française.
-      </Typography>
+    <Container maxWidth="lg" sx={{ py: 6 }}>
+      {/* HEADER SECTION */}
+      <Stack alignItems="center" mb={8} textAlign="center">
+        <Typography variant="h2" component="h1" fontWeight="bold" gutterBottom>
+          À propos de NosDéputés.fr
+        </Typography>
+        <Typography
+          variant="h5"
+          color="text.secondary"
+          sx={{ maxWidth: 800, fontWeight: "light" }}
+        >
+          NosDéputés.fr est un site transpartisan géré par une équipe bénévole
+          de citoyens, avec pour objectif de promouvoir l’accès à l’activité
+          parlementaire française.
+        </Typography>
+      </Stack>
 
-      <Typography variant="h2">HISTOIRE DU GROUPE</Typography>
+      {/* HISTOIRE SECTION */}
+      <Paper
+        elevation={0}
+        sx={{ p: 4, mb: 6, bgcolor: "grey.50", borderRadius: 2 }}
+      >
+        <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+          <HistoryIcon color="primary" />
+          <Typography variant="h4" fontWeight="bold">
+            Notre Histoire
+          </Typography>
+        </Stack>
+        <Typography paragraph>
+          Initié en 2009 par l&apos;association{" "}
+          <strong>Regards Citoyens</strong>, NosDéputés.fr est un projet
+          pionnier de l&apos;ouverture des données publiques en France. Après
+          plus de dix ans d&apos;existence, l&apos;équipe fondatrice a passé le
+          flambeau en 2022 à une nouvelle équipe de citoyens bénévoles.
+        </Typography>
+        <Typography>
+          Notre mission reste inchangée : moderniser l&apos;accès à
+          l&apos;information parlementaire pour la rendre intelligible à tous,
+          experts comme novices.
+        </Typography>
+      </Paper>
 
-      <Typography>
-        NosDéputés.fr a été initié par l’association Regards Citoyens, fondée en
-        2009 par Tangui Morlier, Benjamin Ooghe-Tabanou, Jean-Baptiste
-        Gabellieri et Brice Person. Depuis sa création, plusieurs autres projets
-        liés à l’ouverture des données publiques ont été développés par Regards
-        Citoyens, notamment Nos Sénateurs et La Fabrique de la Loi.
-      </Typography>
+      {/* VALEURS SECTION */}
+      <Box mb={8}>
+        <Typography variant="h4" fontWeight="bold" textAlign="center" mb={4}>
+          Ce qui nous unit
+        </Typography>
 
-      <Typography>
-        Après plus de dix ans de développement, l’équipe fondatrice a choisi, en
-        2022, de constituer une équipe de transition afin d’assurer la pérennité
-        de Nos Députés. Depuis ce passage de flambeau, la nouvelle équipe s’est
-        attelée à une refonte complète du site, visant à moderniser son
-        ergonomie et à en renforcer l’accessibilité.
-      </Typography>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={4}
+          justifyContent="center"
+          alignItems="stretch"
+        >
+          <Box flex={1}>
+            <ValueCard
+              title="Neutralité"
+              icon={NeutralityIcon}
+              text="Une initiative transpartisane. Les données brutes et les indicateurs sont présentés sans biais idéologique pour permettre à chacun de se forger sa propre opinion."
+            />
+          </Box>
+          <Box flex={1}>
+            <ValueCard
+              title="Transparence"
+              icon={TransparencyIcon}
+              text="Nous rendons accessibles et intelligibles les données complexes de l'Assemblée. Toutes nos méthodes de calcul sont documentées et publiques."
+            />
+          </Box>
+          <Box flex={1}>
+            <ValueCard
+              title="Open Source"
+              icon={OpenSourceIcon}
+              text="Le code du site est libre (licence AGPL-3.0). Nous croyons en la collaboration et permettons à d'autres initiatives non commerciales de réutiliser notre travail."
+            />
+          </Box>
+        </Stack>
+      </Box>
 
-      <Typography variant="h2">CE QUI NOUS UNIS / LES VALEURS</Typography>
+      <Divider sx={{ my: 6 }} />
 
-      <Typography>
-        La raison d’être de NosDéputés.fr est de revitaliser le lien entre les
-        citoyens et leurs représentants.
-      </Typography>
+      {/* VISION / FUTURE SECTION */}
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        spacing={6}
+        alignItems="center"
+        mb={8}
+      >
+        <Box flex={7}>
+          <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+            <TrendingUpIcon color="primary" />
+            <Typography variant="h4" fontWeight="bold">
+              Notre ambition
+            </Typography>
+          </Stack>
+          <Typography mb={2} color="text.secondary">
+            L&apos;information parlementaire reste souvent réservée aux initiés.
+            Nous voulons lever trois obstacles majeurs :
+          </Typography>
 
-      <Typography>
-        À une époque où les problèmes liés à la désinformation et aux bulles
-        informationnelles prennent une ampleur croissante, il nous semble
-        primordial de revenir aux faits tels qu’ils sont rendus accessibles
-        publiquement. Nous voulons aider les citoyens – qu’ils soient familiers
-        des institutions ou novices – à lire, comprendre et analyser la réalité
-        de l’Assemblée nationale sans que des prismes idéologiques ne viennent
-        altérer leur perception.
-      </Typography>
+          <Box component="ol" sx={{ "& li": { mt: 2 } }}>
+            <li>
+              <Typography variant="subtitle1" fontWeight="bold">
+                1. La thématisation
+              </Typography>
+              <Typography variant="body2">
+                Classer les dossiers par sujets concrets (santé, énergie...)
+                plutôt que par commission administrative.
+              </Typography>
+            </li>
+            <li>
+              <Typography variant="subtitle1" fontWeight="bold">
+                2. Le vocabulaire
+              </Typography>
+              <Typography variant="body2">
+                Décrypter le jargon législatif (amendement, navette, projet de
+                loi) pour le rendre accessible.
+              </Typography>
+            </li>
+            <li>
+              <Typography variant="subtitle1" fontWeight="bold">
+                3. La synthèse
+              </Typography>
+              <Typography variant="body2">
+                Utiliser la technologie pour résumer des heures de débats et
+                identifier les arguments clés.
+              </Typography>
+            </li>
+          </Box>
+        </Box>
 
-      <Typography>
-        Les valeurs qui ont guidé Nos Députés depuis ses débuts et qui
-        continueront de le faire à l’avenir sont les suivantes :
-      </Typography>
-      <ul>
-        <li>
-          <strong>Neutralité</strong> : Nos Députés est une initiative
-          transpartisane. La totalité de l’information publiée sur le site est
-          exempte de liens idéologiques. Les indicateurs d’activité et les
-          transcriptions des interventions des députés sont présentés de manière
-          uniforme pour chaque membre de l’Assemblée, sans aucun biais dans le
-          traitement des données.
-        </li>
-        <li>
-          <strong>Transparence</strong> : Les développements de la plateforme
-          visent à fournir un accès large aux données issues de l’Assemblée
-          nationale, ainsi qu’à leur traitement afin qu’elles soient
-          intelligibles pour le plus grand nombre. Toutes les données présentées
-          sur le site sont publiques et leur publication est autorisée. Lorsque
-          des analyses ou indicateurs sont ajoutés, leur méthode de calcul est
-          intégralement documentée et disponible sur le dépôt du projet.
-        </li>
-        <li>
-          <strong>Open source</strong> : Les développements liés à la plateforme
-          Nos Députés sont accessibles via un dépôt GitHub sous licence
-          AGPL-3.0. Cette licence impose que toute modification apportée au site
-          soit publiée librement sur le dépôt et permet à toute initiative non
-          commerciale de copier ou réutiliser le code, à condition que le projet
-          reste lui-même accessible librement.
-        </li>
-      </ul>
+        <Box flex={5} width="100%">
+          <Paper
+            sx={{
+              p: 4,
+              bgcolor: "secondary.main",
+              color: "secondary.contrastText",
+              borderRadius: 4,
+              textAlign: "center",
+            }}
+          >
+            <Typography variant="h6" fontStyle="italic">
+              &quot;À une époque de désinformation, il est primordial de revenir
+              aux faits tels qu&apos;ils sont rendus accessibles
+              publiquement.&quot;
+            </Typography>
+          </Paper>
+        </Box>
+      </Stack>
 
-      <Typography variant="h2">QUI SOMMES NOUS ?</Typography>
+      {/* EQUIPE SECTION */}
+      <Box mb={8} textAlign="center">
+        <Stack
+          direction="row"
+          spacing={2}
+          alignItems="center"
+          justifyContent="center"
+          mb={4}
+        >
+          <TeamIcon color="primary" />
+          <Typography variant="h4" fontWeight="bold">
+            L&apos;équipe bénévole
+          </Typography>
+        </Stack>
+        <Stack direction="row" justifyContent="center" flexWrap="wrap" gap={4}>
+          {["Alex", "David", "Emmanuel", "Henry", "Samuel", "Thomas"].map(
+            (name) => (
+              <TeamMember key={name} name={name} />
+            )
+          )}
+        </Stack>
+      </Box>
 
-      <ul>
-        <li>Alex</li>
-        <li>David</li>
-        <li>Emmanuel</li>
-        <li>Henry</li>
-        <li>Samuel</li>
-        <li>Thomas</li>
-      </ul>
-
-      <Typography variant="h2">CE QUE NOUS SOUHAITONS FAIRE</Typography>
-
-      <Typography>
-        Si l’accès à l’information parlementaire s’est considérablement
-        démocratisé depuis la création de Nos Députés, l’utilisation de la
-        plateforme reste majoritairement réservée à des utilisateurs avertis. En
-        effet, seul un utilisateur disposant de connaissances préalables sur le
-        fonctionnement de l’Assemblée peut pleinement exploiter les informations
-        disponibles.
-      </Typography>
-
-      <Typography>
-        En analysant les besoins des citoyens, nous avons identifié trois
-        obstacles majeurs à une veille personnelle équilibrée et efficace sur
-        leurs sujets d’intérêt :
-      </Typography>
-      <ul>
-        <li>
-          L’absence de « thématisation » des dossiers législatifs : Les dossiers
-          législatifs de l’Assemblée nationale ne sont pas catégorisés par
-          thématique. Seules les commissions parlementaires permettent un
-          certain tri, mais leur nombre restreint (huit commissions permanentes,
-          par exemple) limite leur capacité à identifier les dossiers pertinents
-          pour une personne cherchant à se concentrer sur des domaines
-          spécifiques comme l’énergie, l’éducation ou la santé.
-        </li>
-        <li>
-          La complexité du formalisme parlementaire : Les termes tels que projet
-          de loi, proposition de loi, amendement ou navette parlementaire
-          peuvent sembler intimidants pour une personne non familiarisée avec le
-          fonctionnement institutionnel. Une explication systématique de ces
-          concepts est essentielle pour rendre l’activité parlementaire
-          accessible à tous.
-        </li>
-        <li>
-          Le volume de données disponible : Pour la plupart des citoyens – même
-          ceux qui s’intéressent vivement à un sujet – il est difficile de
-          concilier une vie bien remplie avec la consultation de dizaines
-          d’heures de travaux en commission. L’utilisation de technologies de
-          synthèse pourrait offrir des résumés clairs et impartiaux des débats,
-          des arguments ou encore des positions des différentes parties
-          prenantes.
-        </li>
-      </ul>
-      <Typography>
-        Les développements futurs de la plateforme viseront à lever ces
-        barrières, afin de rendre Nos Députés encore plus accessible et utile
-        pour tous.
-      </Typography>
-      <Typography variant="h2">VOUS POUVEZ AUSSI CONTRIBUER</Typography>
-
-      <Typography>Votre soutien est inestimable.</Typography>
-
-      <Typography>
-        Au-delà des coûts d’hébergement et des missions ponctuelles que nous
-        finançons grâce à vos dons, vos contributions nous encouragent à aller
-        de l’avant. Vous pouvez nous aider de plusieurs façons :
-      </Typography>
-
-      {/* <Typography>Vous pouvez nous aider de plusieurs façon :</Typography>
-      <ul>
-        <li>
-          Contribuer au projet : envoyez-nous un message à [Adresse mail] en
-          nous expliquant comment vous souhaiteriez participer au projet
-        </li>
-        <li>
-          Faire un don : Vous pouvez faire un don en suivant les étapes décrites
-          ici : [Instructions pour les dons et déductions fiscales]
-        </li>
-      </ul> */}
-    </Box>
+      {/* CALL TO ACTION */}
+      <Paper
+        sx={{
+          p: 6,
+          textAlign: "center",
+          background: "linear-gradient(45deg, #171B1E 30%, #343A40 90%)",
+          color: "white",
+          borderRadius: 3,
+        }}
+      >
+        <ContributeIcon sx={{ fontSize: 40, mb: 2, color: "#EF4444" }} />
+        <Typography variant="h4" fontWeight="bold" gutterBottom color="white">
+          Vous pouvez aussi contribuer
+        </Typography>
+        <Typography
+          variant="body1"
+          sx={{ mb: 4, maxWidth: 600, mx: "auto", opacity: 0.9 }}
+          color="white"
+        >
+          Au-delà des coûts d’hébergement, votre soutien est inestimable pour
+          nous encourager à développer de nouvelles fonctionnalités pour la
+          démocratie.
+        </Typography>
+      </Paper>
+    </Container>
   );
 }
