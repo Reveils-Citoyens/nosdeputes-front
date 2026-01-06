@@ -1,19 +1,42 @@
 import * as React from "react";
 import { Question, Organe } from "@prisma/client";
 import { getOrgane } from "./getOrgane";
+import { extractPaginationMetadata, PaginatedResponse } from "./pagination";
 
-async function getQuestionUnCached(
-  acteurUid: string
-): Promise<ReturnedGetQuestion[]> {
+type GetQuestionsParams = {
+  perPage?: number;
+  page?: number;
+  sort?: string
+}
+
+async function getQuestionsUnCached(
+  acteurUid: string,
+  params: GetQuestionsParams
+): Promise<PaginatedResponse<ReturnedGetQuestion>> {
+
+  const {
+    perPage = 10,
+    page = 1,
+    sort = "dateDepot.desc"
+  } = params
   try {
     if (acteurUid === "") {
-      return [];
+      return { data: [], pagination: { total: 0, totalPage: 0, perPage: 0, currentPage: 0 } };
     }
 
+    const searchParams = new URLSearchParams({
+      acteurRefUid: acteurUid,
+      perPage: perPage.toString(),
+      page: page.toString(),
+      sort,
+      dataset: "17",
+    });
+
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/questions/?acteurRefUid=${acteurUid}`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/questions/?${searchParams.toString()}`
     );
 
+    const pagination = extractPaginationMetadata(rep, page);
     const { data } = (await rep.json()) as { data: Question[] };
 
     const groupes = await Promise.all(
@@ -22,19 +45,22 @@ async function getQuestionUnCached(
       )
     );
 
-    return data.map((item, index) => ({
-      ...item,
-      dateCloture: item.dateCloture ? new Date(item.dateCloture) : null,
-      dateDepotSignal: item.dateDepotSignal
-        ? new Date(item.dateDepotSignal)
-        : null,
-      dateDepot: item.dateDepot ? new Date(item.dateDepot) : null,
-      dateMaj: new Date(item.dateMaj),
-      ministerInteroge: groupes[index],
-    }));
+    return {
+      data: data.map((item, index) => ({
+        ...item,
+        dateCloture: item.dateCloture ? new Date(item.dateCloture) : null,
+        dateDepotSignal: item.dateDepotSignal
+          ? new Date(item.dateDepotSignal)
+          : null,
+        dateDepot: item.dateDepot ? new Date(item.dateDepot) : null,
+        dateMaj: new Date(item.dateMaj),
+        ministerInteroge: groupes[index],
+      })),
+      pagination
+    };
   } catch (error) {
     console.error("Error fetching dossier:", error);
-    return [];
+    return { data: [], pagination: { total: 0, totalPage: 0, perPage: 0, currentPage: 0 } };
   }
 }
 
@@ -42,4 +68,4 @@ export type ReturnedGetQuestion = Question & {
   ministerInteroge: Organe | null;
 };
 
-export const getQuestion = React.cache(getQuestionUnCached);
+export const getQuestions = React.cache(getQuestionsUnCached);
