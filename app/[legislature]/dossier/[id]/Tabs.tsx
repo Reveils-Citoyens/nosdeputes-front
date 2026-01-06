@@ -63,7 +63,27 @@ export default function DossiersTabs(props: {
         borderColor: "divider",
       }}
     >
-      <Tabs
+      <Tabs sx={{
+          minHeight: 40,
+          '& .MuiTabs-indicator': {
+            backgroundColor: 'black',
+            height: 2,
+          },
+          '& .MuiTab-root': {
+            textTransform: 'uppercase',
+            minHeight: 40,
+            minWidth: 'auto',
+            px: 3, 
+            fontWeight: 600,
+            fontSize: '0.75rem',
+            letterSpacing: '0.15em', 
+            color: 'text.secondary',
+            fontFamily: 'inherit',
+          },
+          '& .Mui-selected': {
+            color: 'black !important',
+          }
+        }}
         value={
           segment &&
           tabs

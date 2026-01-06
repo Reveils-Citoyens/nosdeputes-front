@@ -10,7 +10,6 @@ import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 
-import Breadcrumbs from "@mui/material/Breadcrumbs";
 import EnergyIcon from "@/icons/EnergyIcon";
 import LabelChip from "@/components/LabelChip";
 import StatusChip from "@/components/StatusChip";
@@ -47,14 +46,6 @@ export const HeroSection = ({
 
   return (
     <>
-      <Breadcrumbs
-        // separator={<ChevronRightIcon sx={{ fontSize: 8 }} />}
-        separator=">"
-        aria-label="breadcrumb"
-        sx={{ backgroundColor: "#fff", padding: "12px 16px" }}
-      >
-        {breadcrumbs}
-      </Breadcrumbs>
       <Box
         sx={{
           minHeight: "272px", // picture height + header box padding
@@ -73,7 +64,7 @@ export const HeroSection = ({
         <Box
           sx={{
             position: "absolute",
-            top: 104, // navbar + breadcrumb height
+            top: 80, // navbar height
             left: 0,
             zIndex: -1,
             backgroundImage: `url('/Panorama_hemicyle_assemblée_nationale.jpg')`,
@@ -90,7 +81,7 @@ export const HeroSection = ({
             py: 4,
             px: 3,
             width: "680px",
-            borderRadius: 1,
+            borderRadius: 4,
             backgroundColor: "transparent",
             [theme.breakpoints.up("md")]: {
               backgroundColor: "#fff",
@@ -118,7 +109,7 @@ export const HeroSection = ({
               }}
             >
               <Typography
-                fontWeight="bold"
+                fontWeight="medium"
                 variant="body2"
                 sx={{
                   color: "#fff",
