@@ -3,6 +3,7 @@ import { Raleway } from "next/font/google";
 import "./globals.css";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import { NavBar, NavigationItem } from "@/components/NavBar";
+import Footer from "@/components/Footer";
 import theme from "./theme";
 import { ThemeProvider } from "@mui/material/styles";
 import { CssBaseline } from "@mui/material";
@@ -26,8 +27,8 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary",
-    site: "@RegardsCitoyens",
-    title: "NosDéputés.fr par @RegardsCitoyens",
+    site: "@ReveilsCitoyens",
+    title: "NosDéputés.fr par @ReveilsCitoyens",
     description:
       "Observatoire citoyen de l'activité parlementaire à l'Assemblée nationale",
     images: {
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    title: "NosDéputés.fr par Regards Citoyens",
+    title: "NosDéputés.fr par Réveils Citoyens",
     siteName: "NosDéputés.fr",
     description:
       "Observatoire citoyen de l'activité parlementaire à l'Assemblée nationale",
@@ -48,10 +49,9 @@ export const metadata: Metadata = {
 };
 
 const navigation: NavigationItem[] = [
-  { name: "Député·e·s", href: "/deputes" },
+  { name: "Députés", href: "/deputes" },
   { name: "Dossiers", href: "/dossiers" }, // old url is "/dossiers/date"
-  { name: "About", href: "/about" },
-  // ... more items
+  { name: "À Propos", href: "/about" }
 ];
 
 export default function RootLayout({
@@ -70,6 +70,7 @@ export default function RootLayout({
                 <main className="flex min-h-screen flex-col">
                   <NavBar navigation={navigation} />
                   <Providers>{children}</Providers>
+                  <Footer />
                   <InfoDialog />
                 </main>
               </ThemeProvider>

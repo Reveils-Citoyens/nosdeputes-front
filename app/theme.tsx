@@ -52,21 +52,23 @@ const theme = createTheme({
   },
   spacing: 8,
   typography: {
-    fontFamily: "var(--font-raleway)",
-    fontWeightBold: 700,
-    fontWeightRegular: 600,
-    fontWeightLight: 400,
+    fontFamily: "var(--font-inter)",
+    fontWeightLight: 300,   // Light
+    fontWeightRegular: 400, // Regular (Standard)
+    fontWeightMedium: 500,  // Medium
+    // fontWeightSemiBold: 600, // Semi-Bold
+    fontWeightBold: 700,    // Bold
 
     h1: { fontSize: "1.802rem", lineHeight: "2.7rem" },
     h2: { fontSize: "1.602rem", lineHeight: "2.4rem" },
     h3: { fontSize: "1.424rem", lineHeight: "2.136rem" },
     h4: { fontSize: "1.266rem", lineHeight: "1.899rem" },
-    subtitle1: { fontSize: "1.125rem", lineHeight: "1.687rem" },
+    subtitle1: { fontSize: "1rem", lineHeight: "1.687rem" },
     body1: { fontSize: "1rem", lineHeight: "1.5rem" },
     body2: { fontSize: "0.889rem", lineHeight: "1.333rem" },
     caption: { fontSize: "0.79rem", lineHeight: "1.185rem" },
     allVariants: {
-      color: "#171B1E",
+      color: "#111",
     },
   },
   components: {
