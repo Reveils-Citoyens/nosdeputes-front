@@ -110,9 +110,8 @@ export const CommissionsCard = async ({
             <div>
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <Typography variant="body2" fontWeight="light" color="grey.600">
-                  Commission{commissionAvisIds.length > 1 ? "s" : ""} saisie
-                  {commissionFondIds.length > 1 ? "s" : ""}
-                  pour avis
+                  Commission{commissionAvisIds.length > 1 ? "s" : ""} saisie{commissionAvisIds.length > 1 ? "s" : ""} pour
+                  avis
                 </Typography>
                 <InfoIcon sx={{ fontSize: "14px" }} />
               </Stack>
