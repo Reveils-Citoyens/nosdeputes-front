@@ -11,15 +11,11 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import Box from "@mui/material/Box";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from "@mui/material/useMediaQuery";
 import { infoDialogContents } from "../contents";
 
 export default function InfoDialog() {
   const contentKey = React.useContext(InfoDialogContext);
   const setContentKey = React.useContext(InfoDialogDispatchContext);
-  const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down("xs"));
 
   const handleClose = () => setContentKey?.(null);
 
@@ -30,8 +26,7 @@ export default function InfoDialog() {
 
   return (
     <Dialog
-      fullScreen={fullScreen}
-      maxWidth="sm"
+      maxWidth="md"
       fullWidth
       onClose={handleClose}
       open={!!contentKey}
@@ -65,7 +60,7 @@ export default function InfoDialog() {
           aria-label="close"
           onClick={handleClose}
           sx={{
-            color: (theme) => theme.palette.grey[500],
+            color: "grey.500",
             mr: -1.5,
           }}
         >
