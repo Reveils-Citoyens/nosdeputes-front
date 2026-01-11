@@ -20,8 +20,8 @@ export default function SubSectionItem(props: ParoleItemProps) {
   return (
     <TimelineItem>
       <TimelineSeparator sx={{ minWidth: 50 }}>
-        <TimelineDot />
-        {!withoutConnector && <TimelineConnector />}
+        <TimelineDot sx={{ bgcolor: "grey.300", borderWidth: 0 }} />
+        {!withoutConnector && <TimelineConnector sx={{ bgcolor: "transparent", borderLeft: "1px dashed", borderColor: "grey.400" }}/>}
       </TimelineSeparator>
       <TimelineContent>
         <Stack direction="column" spacing={1}>

@@ -36,6 +36,12 @@ function TimelineDot() {
   );
 }
 
+const connectorStyle = {
+  bgcolor: "transparent", 
+  borderLeft: "1px dashed", 
+  borderColor: "grey.400" 
+};
+
 interface ParoleItemProps {
   title: string | null;
   subtitle?: string | null;
@@ -48,11 +54,11 @@ export default function SectionItem(props: ParoleItemProps) {
   return (
     <TimelineItem sx={{ minHeight: 100 }} id={id}>
       <TimelineSeparator sx={{ minWidth: 50 }}>
-        <TimelineConnector />
+        <TimelineConnector sx={connectorStyle} />
         <TimelineDot />
-        <TimelineConnector />
+        <TimelineConnector sx={connectorStyle} />
       </TimelineSeparator>
-      <TimelineContent sx={{ my: "auto" }}>
+      <TimelineContent sx={{ my: "auto", py: 2 }}>
         <Stack direction="column" spacing={1}>
           <Typography
             variant="body1"
