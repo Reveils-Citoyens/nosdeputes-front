@@ -6,7 +6,7 @@ async function getDebatsUnCached(
 ): Promise<ReturnedDebat[] | null> {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/points_odj/?dossierLegislatifUid=${dossierUid}&include=agendaRef.compteRenduRef&perPage=100`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/points_odj/?chambre=AN&dossierLegislatifUid=${dossierUid}&include=agendaRef.compteRenduRef&perPage=100`
     );
 
     const pointsOdj = (await rep.json()) as { data: { agendaRef?: { compteRenduRef?: Debat[] } }[] };
