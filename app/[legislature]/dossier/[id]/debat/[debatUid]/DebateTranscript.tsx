@@ -6,6 +6,7 @@ import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import Stack from "@mui/material/Stack";
+import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 
 import { SpeakingTime } from "@/components/folders/SpeakingTime";
@@ -63,7 +64,7 @@ export const DebateTranscript = (props: DebateTranscriptProps) => {
 
   return (
     <>
-      <Stack spacing={1}>
+      <Stack spacing={1} mb={2}>
         <Typography variant="h4">{title}</Typography>
         <Stack direction="row" alignItems="center" spacing={1}>
           <ClockMovingIcon fontSize="inherit" fill={theme.palette.grey[900]} />
@@ -93,7 +94,9 @@ export const DebateTranscript = (props: DebateTranscriptProps) => {
           <SpeakingTime wordsPerActeur={wordsPerActeur} />
         </AccordionDetails>
       </Accordion>
-      <DebateTimeline paragraphes={paragraphes} />
+      <Box sx={{ mt: 2 }}>
+        <DebateTimeline paragraphes={paragraphes} />
+      </Box>
     </>
   );
 };
