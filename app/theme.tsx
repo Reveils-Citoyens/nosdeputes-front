@@ -96,21 +96,33 @@ const theme = createTheme({
     },
     MuiTabs: {
       styleOverrides: {
+        root: {
+          minHeight: 40,
+        },
         indicator: {
           height: 2,
-          backgroundColor: "#171B1E",
+          backgroundColor: "black",
         },
       },
     },
     MuiTab: {
       styleOverrides: {
-        root: {
+        root: ({ theme }) => ({
+          textTransform: "uppercase",
+          minHeight: 40,
+          minWidth: "auto",
+          paddingLeft: theme.spacing(3),
+          paddingRight: theme.spacing(3),
           fontWeight: 600,
-          color: "#171B1E",
+          fontSize: "0.75rem",
+          letterSpacing: "0.15em",
+          color: theme.palette.text.secondary,
+          fontFamily: "inherit",
+
           "&.Mui-selected": {
-            color: "#171B1E",
+            color: "black",
           },
-        },
+        }),
       },
     },
     MuiAccordion: {
@@ -169,7 +181,7 @@ const theme = createTheme({
     },
     MuiTimelineConnector: {
       styleOverrides: {
-        root:  ({ theme }) => ({
+        root: ({ theme }) => ({
           backgroundColor: "transparent",
           borderLeft: "1px dashed",
           borderColor: theme.palette.grey[400],
