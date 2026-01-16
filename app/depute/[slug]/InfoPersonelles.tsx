@@ -124,7 +124,7 @@ export default async function InfoPersonelles({
             </Box>
           </Typography>
           <Chip 
-              label={derniergroupeParlementaire.organeRef?.libelle}
+              label={derniergroupeParlementaire.organeRef?.libelle ?? '-'}
               size="small"
               sx={{
                 backgroundColor: derniergroupeParlementaire.organeRef?.couleurAssociee || "#e0e0e0",
