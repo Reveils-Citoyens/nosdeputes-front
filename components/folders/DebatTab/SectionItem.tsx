@@ -52,7 +52,7 @@ export default function SectionItem(props: ParoleItemProps) {
         <TimelineDot />
         <TimelineConnector />
       </TimelineSeparator>
-      <TimelineContent sx={{ my: "auto" }}>
+      <TimelineContent sx={{ my: "auto", py: 2 }}>
         <Stack direction="column" spacing={1}>
           <Typography
             variant="body1"
