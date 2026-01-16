@@ -23,7 +23,7 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
     }}
   >
     {paragraphes.map(
-      ({ id, codeGrammaire, acteurRefUid, roleDebat, texte }) => {
+      ({ id, codeGrammaire, acteurRefUid, roleDebat, texte }, index) => {
         switch (codeGrammaire) {
           case "PAROLE_GENERIQUE":
           case "INTERRUPTION_1_10":
@@ -33,6 +33,7 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
                 acteurUid={acteurRefUid}
                 roleDebat={roleDebat}
                 texte={texte}
+                isFirst={index === 0}
               />
             );
 
