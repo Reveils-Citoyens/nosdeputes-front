@@ -107,7 +107,7 @@ export default function ParoleItem(props: ParoleItemProps) {
                 <Typography
                 variant="body1"
                 fontWeight="bold"
-                {...(acteur?.mandatPrincipalUid !== null
+                {...(acteur?.mandatPrincipal?.chambre === "AN"
                     ? {
                         component: Link,
                         href: `/depute/${acteur?.slug}`,
