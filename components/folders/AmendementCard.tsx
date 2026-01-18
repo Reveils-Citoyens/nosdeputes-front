@@ -13,6 +13,7 @@ import StatusChip from "@/components/StatusChip";
 import { Amendement } from "@prisma/client";
 
 import ActeurCard from "./ActeurCard";
+import { Avatar, Box } from "@mui/material";
 
 function getStatus(label: string | null) {
   switch (label) {
@@ -32,12 +33,38 @@ function getStatus(label: string | null) {
 }
 type AmendementCardProps = {
   amendement: Amendement;
-  acteurUid: null | string;
   titre?: string;
 };
 
+function GouvernementAvatar(props: { sx?: React.CSSProperties }) {
+  return (
+    <Box sx={{ display: "flex", minWidth: 0, ...props.sx }}>
+      <Avatar
+        sx={{ height: 40, width: 40 }}
+        alt="Gouvernement"
+        src="/marianne.png"
+      >
+        Gouv
+      </Avatar>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          px: 1.3,
+          minWidth: 0,
+        }}
+      >
+        <Typography variant="body2" fontWeight="medium">
+          Gouvernement
+        </Typography>
+        <Typography variant="body2" fontWeight="medium"></Typography>
+      </Box>
+    </Box>
+  );
+}
 export default function AmendementCard(props: AmendementCardProps) {
-  const { amendement, acteurUid, titre } = props;
+  const { amendement, titre } = props;
 
   const nbSignataires = 1 + amendement.nombreCoSignataires;
 
@@ -63,14 +90,19 @@ export default function AmendementCard(props: AmendementCardProps) {
           spacing={1}
           sx={{ width: "100%", mr: 2 }}
         >
-          {acteurUid && (
-            <ActeurCard
-              id={acteurUid}
-              smallGroupColor
-              sx={{ flexGrow: 1 }}
-              link="name"
-            />
-          )}
+          <Box sx={{ flexGrow: 1 }}>
+            {amendement.acteurRefUid && (
+              <ActeurCard
+                id={amendement.acteurRefUid}
+                smallGroupColor
+                link="name"
+              />
+            )}
+            {!amendement.acteurRefUid &&
+              amendement.typeAuteur === "Gouvernement" && (
+                <GouvernementAvatar />
+              )}
+          </Box>
           {titre && <Typography>{titre}</Typography>}
 
           <StatusChip
@@ -116,9 +148,15 @@ export default function AmendementCard(props: AmendementCardProps) {
           <Stack direction="row" justifyContent="space-between" flexBasis={0}>
             <Typography fontWeight="light" variant="body2">
               Déposé par:&nbsp;
-              <Typography component="span" variant="body2">
-                {nbSignataires} député{nbSignataires > 1 ? "s" : ""}
-              </Typography>
+              {amendement.typeAuteur === "Gouvernement" ? (
+                <Typography component="span" variant="body2">
+                  Gouvernement
+                </Typography>
+              ) : (
+                <Typography component="span" variant="body2">
+                  {nbSignataires} député{nbSignataires > 1 ? "s" : ""}
+                </Typography>
+              )}
             </Typography>
 
             <Typography fontWeight="light" variant="body2">

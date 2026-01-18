@@ -61,7 +61,6 @@ export default function AmendementsList(props: { dossierUid: string }) {
       {amendements.map((amendement) => (
         <AmendementCard
           amendement={amendement}
-          acteurUid={amendement.acteurRefUid}
           key={amendement.uid}
         />
       ))}

@@ -107,7 +107,6 @@ export default function Amendements() {
             <AmendementCard
               key={amendement.uid}
               amendement={amendement}
-              acteurUid={null}
               titre={titre}
             />
           );
