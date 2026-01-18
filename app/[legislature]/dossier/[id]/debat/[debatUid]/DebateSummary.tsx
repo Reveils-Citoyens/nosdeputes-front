@@ -30,11 +30,11 @@ const noop = () => {};
 // From https://github.com/mui/material-ui/blob/8b66a36f3378d8c6c3554b44cd65fb2b61d28b64/docs/src/modules/components/AppTableOfContents.js
 function useThrottledOnScroll(
   callback: ((args: any) => any) | null,
-  delay: number
+  delay: number,
 ) {
   const throttledCallback = React.useMemo(
     () => (callback ? throttle(callback, delay) : noop),
-    [callback, delay]
+    [callback, delay],
   );
 
   React.useEffect(() => {
@@ -70,7 +70,7 @@ export const DebateSummary = (props: DebateSummaryProps) => {
   const { sections, wordsCounts } = props;
   const theme = useTheme();
 
-  const [activeState, setActiveState] = React.useState<number | null>(null);
+  const [activeState, setActiveState] = React.useState<string | null>(null);
   const clickedRef = React.useRef(false);
   const unsetClickedRef = React.useRef<any>(null);
   const findActiveIndex = React.useCallback(() => {
@@ -83,17 +83,17 @@ export const DebateSummary = (props: DebateSummaryProps) => {
     for (let i = sections.length - 1; i >= 0; i -= 1) {
       // No id if we're near the top of the page
       if (document.documentElement.scrollTop < 200) {
-        active = { id: null };
+        active = { uid: null };
         break;
       }
 
       const item = sections[i];
-      const node = document.getElementById(item.id.toString());
+      const node = document.getElementById(item.uid);
 
       if (process.env.NODE_ENV !== "production") {
         if (!node) {
           console.error(
-            `Missing node on the item ${JSON.stringify(item, null, 2)}`
+            `Missing node on the item ${JSON.stringify(item, null, 2)}`,
           );
         }
       }
@@ -109,8 +109,8 @@ export const DebateSummary = (props: DebateSummaryProps) => {
       }
     }
 
-    if (active && activeState !== active.id) {
-      setActiveState(active.id);
+    if (active && activeState !== active.uid) {
+      setActiveState(active.uid);
     }
   }, [activeState, sections]);
 
@@ -118,7 +118,7 @@ export const DebateSummary = (props: DebateSummaryProps) => {
   useThrottledOnScroll(sections.length > 0 ? findActiveIndex : null, 166);
 
   const handleClick =
-    (id: number) => (event: React.MouseEvent<HTMLElement>) => {
+    (uid: string) => (event: React.MouseEvent<HTMLElement>) => {
       // Ignore click events meant for native link handling, for example open in new tab
       if (samePageLinkNavigation(event)) {
         return;
@@ -130,8 +130,8 @@ export const DebateSummary = (props: DebateSummaryProps) => {
         clickedRef.current = false;
       }, 1000);
 
-      if (activeState !== id) {
-        setActiveState(id);
+      if (activeState !== uid) {
+        setActiveState(uid);
       }
     };
 
@@ -139,7 +139,7 @@ export const DebateSummary = (props: DebateSummaryProps) => {
     () => () => {
       clearTimeout(unsetClickedRef.current);
     },
-    []
+    [],
   );
 
   return (
@@ -162,10 +162,10 @@ export const DebateSummary = (props: DebateSummaryProps) => {
       </AccordionSummary>
       <AccordionDetails>
         <Stack direction="column" spacing={2} pb={3}>
-          {sections.map(({ id, texte }, index) =>
-            activeState === id || (activeState === null && index === 0) ? (
+          {sections.map(({ uid, texte }, index) =>
+            activeState === uid || (activeState === null && index === 0) ? (
               <Box
-                key={id}
+                key={uid}
                 sx={{
                   backgroundColor: theme.palette.grey[900],
                   p: 1,
@@ -175,7 +175,7 @@ export const DebateSummary = (props: DebateSummaryProps) => {
                 <Typography
                   color="#fff"
                   component="a"
-                  href={`#${id}`}
+                  href={`#${uid}`}
                   dangerouslySetInnerHTML={{ __html: cleanText(texte!) }}
                 />
                 <Stack direction="row" alignItems="center" spacing={0.5}>
@@ -186,22 +186,22 @@ export const DebateSummary = (props: DebateSummaryProps) => {
                       variant="caption"
                       fontWeight="light"
                     >
-                      {getDuration(wordsCounts[id]) ?? "?"} minute
-                      {getDuration(wordsCounts[id]) === 1 ? "" : "s"}
+                      {getDuration(wordsCounts[uid]) ?? "?"} minute
+                      {getDuration(wordsCounts[uid]) === 1 ? "" : "s"}
                     </Typography>
                   )}
                 </Stack>
               </Box>
             ) : (
               <Typography
-                key={id}
+                key={uid}
                 component="a"
-                href={`#${id}`}
+                href={`#${uid}`}
                 dangerouslySetInnerHTML={{ __html: cleanText(texte!) }}
                 variant="body2"
-                onClick={handleClick(id)}
+                onClick={handleClick(uid)}
               />
-            )
+            ),
           )}
         </Stack>
         {/* TODO: Ajouter ce message quand on a ajouté la page pour afficher le debat entier d'une seance. */}

@@ -35,15 +35,14 @@ export default function ParoleItem(props: ParoleItemProps) {
   return (
     <TimelineItem>
       <TimelineSeparator sx={{ minWidth: 50 }}>
-
-      {!isFirst ? (
+        {!isFirst ? (
           <TimelineConnector
             sx={{
               bgcolor: "transparent",
               borderLeft: "1px dashed",
               borderColor: "grey.400",
               flexGrow: 0,
-              height: "24px", 
+              height: "24px",
             }}
           />
         ) : (
@@ -68,18 +67,18 @@ export default function ParoleItem(props: ParoleItemProps) {
           }}
         >
           <Avatar
-            sx={{ height: 40, width: 40, bgcolor: "white"}}
+            sx={{ height: 40, width: 40, bgcolor: "white" }}
             alt={`${acteur?.prenom ?? ""} ${acteur?.nom ?? ""}`}
             src={acteur?.urlImage ?? ""}
           >
             {acteur ? (
-               // Cas Député sans image : Initiales
-               <>
-                 {acteur.prenom?.[0]?.toUpperCase()}
-                 {acteur.nom?.[0]?.toUpperCase()}
-               </>
-            ) : (
-               // Cas Invité ou autre personne non identifiée (acteur est null) : Icône micro
+              // Cas Député sans image : Initiales
+              <>
+                {acteur.prenom?.[0]?.toUpperCase()}
+                {acteur.nom?.[0]?.toUpperCase()}
+              </>
+            ) : isPending ? null : (
+              // Cas Invité ou autre personne non identifiée (acteur est null) : Icône micro
               <Image
                 src="/microphone.jpg"
                 alt="Microphone"
@@ -90,37 +89,36 @@ export default function ParoleItem(props: ParoleItemProps) {
           </Avatar>
         </Box>
 
-        <TimelineConnector 
-                    sx={{ 
-                        bgcolor: "transparent", 
-                        borderLeft: "1px dashed", 
-                        borderColor: "grey.400",
-                        flexGrow: 1 
-                    }} 
-                />
-
+        <TimelineConnector
+          sx={{
+            bgcolor: "transparent",
+            borderLeft: "1px dashed",
+            borderColor: "grey.400",
+            flexGrow: 1,
+          }}
+        />
       </TimelineSeparator>
-      <TimelineContent sx={{ py: 3, pr: 0}}>
+      <TimelineContent sx={{ py: 3, pr: 0 }}>
         <Stack direction="column" spacing={1}>
           <Stack direction="row" spacing={1} alignItems="center">
-             {acteur ? (
-                <Typography
+            {acteur ? (
+              <Typography
                 variant="body1"
                 fontWeight="bold"
                 {...(acteur?.mandatPrincipal?.chambre === "AN"
-                    ? {
-                        component: Link,
-                        href: `/depute/${acteur?.slug}`,
-                        target: "_blank",
+                  ? {
+                      component: Link,
+                      href: `/depute/${acteur?.slug}`,
+                      target: "_blank",
                     }
-                    : {})}
-                >
+                  : {})}
+              >
                 {acteur?.prenom ?? ""} {acteur?.nom ?? ""}
-                </Typography>
+              </Typography>
             ) : (
-                <Typography variant="body1" fontWeight="bold">
-                    Intervenant
-                </Typography>
+              <Typography variant="body1" fontWeight="bold">
+                Intervenant
+              </Typography>
             )}
             {acteur?.groupeParlementaire?.libelle &&
               acteur?.groupeParlementaire?.couleurAssociee && (
@@ -128,22 +126,26 @@ export default function ParoleItem(props: ParoleItemProps) {
                   placement="top"
                   title={`${acteur?.groupeParlementaire?.libelle}`}
                 >
-              <Chip 
-              label={`${acteur?.groupeParlementaire?.libelleAbrev}`}
-              size="small"
-              sx={{
-                backgroundColor: acteur?.groupeParlementaire?.couleurAssociee || "#e0e0e0",
-                color: acteur?.groupeParlementaire?.couleurAssociee ? "#fff" : "rgba(0, 0, 0, 0.87)",
-                fontWeight: 600,
-                fontSize: "0.8rem",
-                height: "30px",
-                mt: 0.7,
-                "& .MuiChip-label": {
-                    paddingLeft: 1.5,
-                    paddingRight: 1.5
-                }
-              }}
-            />
+                  <Chip
+                    label={`${acteur?.groupeParlementaire?.libelleAbrev}`}
+                    size="small"
+                    sx={{
+                      backgroundColor:
+                        acteur?.groupeParlementaire?.couleurAssociee ||
+                        "#e0e0e0",
+                      color: acteur?.groupeParlementaire?.couleurAssociee
+                        ? "#fff"
+                        : "rgba(0, 0, 0, 0.87)",
+                      fontWeight: 600,
+                      fontSize: "0.8rem",
+                      height: "30px",
+                      mt: 0.7,
+                      "& .MuiChip-label": {
+                        paddingLeft: 1.5,
+                        paddingRight: 1.5,
+                      },
+                    }}
+                  />
                 </Tooltip>
               )}
             {roleDebat && <Typography>{roleDebat}</Typography>}
@@ -151,7 +153,7 @@ export default function ParoleItem(props: ParoleItemProps) {
 
           <Typography
             variant="body1"
-            sx = {{
+            sx={{
               lineHeight: 1.7,
               mt: 1,
             }}
