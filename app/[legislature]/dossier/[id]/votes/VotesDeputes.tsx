@@ -79,9 +79,9 @@ export function VotesDeputes({ votes }: { votes: VoteWithActeur[] }) {
                 }}
               >
                 {innerVotes.map((vote) => {
-                  const { acteurRef, id, positionVote, groupeVotantRef } = vote;
+                  const { acteurRef, uid, positionVote, groupeVotantRef } = vote;
                   return (
-                    acteurRef && <ActeurCard key={id} id={acteurRef.uid} />
+                    acteurRef && <ActeurCard key={uid} id={acteurRef.uid} />
                   );
                 })}
               </Box>

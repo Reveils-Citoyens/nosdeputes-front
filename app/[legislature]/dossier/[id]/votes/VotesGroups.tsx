@@ -116,9 +116,9 @@ export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
                   }}
                 >
                   {votes.map(
-                    ({ id, positionVote, acteurRef, groupeVotantRef }) => (
+                    ({ uid, positionVote, acteurRef, groupeVotantRef }) => (
                       <DeputeCard
-                        key={id}
+                        key={uid}
                         slug={acteurRef?.slug ?? ""}
                         urlImage={acteurRef?.urlImage ?? ""}
                         prenom={acteurRef?.prenom ?? ""}
@@ -129,13 +129,13 @@ export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
                           groupeVotantRef?.positionMajoritaire ?? undefined
                         }
                       />
-                    )
+                    ),
                   )}
                 </Box>
               </AccordionDetails>
             </Accordion>
           </React.Fragment>
-        )
+        ),
       )}
     </div>
   );
