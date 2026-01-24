@@ -22,12 +22,6 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getDebats } from "@/data/getDebats";
 
-const dashedConnectorStyle = {
-  bgcolor: "transparent",
-  borderLeft: "1px dashed",
-  borderColor: "grey.400",
-};
-
 // Utilitaire pour formater la date proprement
 const formatDate = (date?: Date | null) => {
   if (!date) return "?";
@@ -119,7 +113,7 @@ const TimelineItemLvl0 = ({
               act.codeActe
             )}
           </Box>
-          <TimelineConnector sx={dashedConnectorStyle} />
+          <TimelineConnector />
         </TimelineSeparator>
 
         <TimelineContent sx={{ pr: 0 }}>
@@ -186,9 +180,7 @@ const TimelineItemLvl1 = ({
       )}
 
       <TimelineSeparator sx={{ minWidth: isMobile ? 40 : 50 }}>
-        <TimelineConnector
-          sx={{ ...dashedConnectorStyle, height: 14, flexGrow: 0 }}
-        />
+        <TimelineConnector sx={{ height: 14, flexGrow: 0 }} />
         <Box
           sx={{
             bgcolor: "black",
@@ -199,7 +191,7 @@ const TimelineItemLvl1 = ({
             borderRadius: "50%",
           }}
         />
-        <TimelineConnector sx={dashedConnectorStyle} />
+        <TimelineConnector />
       </TimelineSeparator>
 
       <TimelineContent sx={{ pb: 2, pr: 0 }}>

@@ -6,6 +6,7 @@ import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import Stack from "@mui/material/Stack";
+import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 
 import { SpeakingTime } from "@/components/folders/SpeakingTime";
@@ -102,7 +103,9 @@ export const DebateTranscript = (props: DebateTranscriptProps) => {
           <SpeakingTime wordsPerActeur={wordsPerActeur} />
         </AccordionDetails>
       </Accordion>
-      <DebateTimeline paragraphes={paragraphes} />
+      <Box sx={{ mt: 2 }}>
+        <DebateTimeline paragraphes={paragraphes} />
+      </Box>
     </>
   );
 };

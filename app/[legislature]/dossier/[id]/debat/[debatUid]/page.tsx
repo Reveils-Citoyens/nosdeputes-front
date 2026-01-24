@@ -69,20 +69,13 @@ return (
       <div
         style={{
           display: "flex",
-          flexDirection: "row",
-          gap: 24,
-          flex: 2,
+          flexDirection: "column",
+          flex: 5,
+          margin: hasSummary ? "0" : "0 auto",
+          maxWidth: hasSummary ? "none" : "750px",
+          width: "100%",
         }}
       >
-        <DebateSummary
-          // wordsCounts={wordsCounts}
-          sections={interventions.filter(
-            (p) =>
-              SUMMARY_CODES.has(p.codeGrammaire!) 
-          )}
-        />
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", flex: 5 }}>
         <DebateTranscript
           title={debat?.dateSeance ?? ""}
           paragraphes={interventions}

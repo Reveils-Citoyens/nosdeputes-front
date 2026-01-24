@@ -46,10 +46,11 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
           case "INTERRUPTION_1_10":
             return (
               <ParoleItem
-                key={id}
+                key={uid}
                 acteurUid={acteurRefUid}
                 roleDebat={roleDebat}
                 texte={texte}
+                isFirst={index === 0}
               />
             );
 
@@ -114,7 +115,7 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
             }
             return texte ? (
               <SubSectionItem
-                key={id}
+                key={uid}
                 title={texte}
                 withoutConnector={codeGrammaire === "FIN_SEAN_1_0"}
               />

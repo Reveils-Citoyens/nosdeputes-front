@@ -113,13 +113,13 @@ export default function Votes() {
           isPending={isPending}
         />
         {data?.map((vote) => {
-          const { id, positionVote, parDelegation, scrutinRef } = vote;
+          const { uid, positionVote, parDelegation, scrutinRef } = vote;
 
           const titrePrincipal = scrutinRef?.titre ?? "Titre non trouvé";
 
           return (
             <Stack
-              key={id}
+              key={uid}
               direction="row"
               justifyContent="space-between"
               flexWrap="wrap"
