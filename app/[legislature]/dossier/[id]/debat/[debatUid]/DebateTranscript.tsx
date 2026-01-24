@@ -45,7 +45,7 @@ function getWordsPerActeur(paragraphes: Paragraphe[]) {
 type DebateTranscriptProps = {
   paragraphes: Paragraphe[];
   wordsCounts: Record<string, number>;
-  title: string;
+  title: string | Date;
   debatUid: string;
   chambre?: string | null;
 };
