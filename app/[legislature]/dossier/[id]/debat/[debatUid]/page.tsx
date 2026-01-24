@@ -66,10 +66,11 @@ export default async function Page({
       </div>
       <div style={{ display: "flex", flexDirection: "column", flex: 5 }}>
         <DebateTranscript
-          title={debat?.dateSeanceJour ?? ""}
+          title={debat?.dateSeanceJour?.toString() ?? ""}
           paragraphes={interventions}
           wordsCounts={wordsCounts}
-        />
+          debatUid={debatUid}   
+          chambre={debat?.chambre} />
       </div>
     </>
   );

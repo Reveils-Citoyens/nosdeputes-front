@@ -3,6 +3,7 @@ import React from "react";
 
 import { useSelectedLayoutSegment } from "next/navigation";
 import { permanentRedirect } from "next/navigation";
+import { formatDateDebat } from "@/utils/formatDateDebat";
 
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
@@ -63,15 +64,20 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
           justifyContent="space-between"
           sx={{ width: "100%" }}
         >
-          <Select value={sceanceUid} displayEmpty sx={{ flex: 1 }}>
+          <Select value={sceanceUid || ""} displayEmpty sx={{ flex: 1 }}>
             {debats.map((debat) => {
+              const dateStr = debat.dateSeance ? formatDateDebat(debat.dateSeance) : "Date inconnue";
+              const chambre = debat.chambre ?? "AN";
+              const isHemicycle = debat.uid?.startsWith("CRSANR");
+              const lieu = isHemicycle ? "Hémicycle" : "Commission";
+
               return (
                 // @ts-ignore
                 <MenuItem
                   key={debat.uid}
-                  value={debat.uid}
+                  value={debat.uid || ""}
                   component={Link}
-                  href={debat.uid}
+                  href={(debat.uid as string) || "#"}
                 >
                   <Typography
                     variant="caption"
@@ -82,7 +88,7 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
                       },
                     }}
                   >
-                    {debat.dateSeanceJour}
+                    {dateStr} - {chambre} - {lieu}
                   </Typography>
                 </MenuItem>
               );
