@@ -25,10 +25,9 @@ export default async function Page({
 
   const wordsCounts: Record<string, number> = interventions.reduce(
     (acc, paragraphe) => {
-      const { codeGrammaire, texte,  } = paragraphe;
-
-      if ( SUMMARY_CODES.has(codeGrammaire!)) {
-        lastId = paragraphe.id.toString();
+      const { codeGrammaire, texte } = paragraphe;
+      if (SUMMARY_CODES.has(codeGrammaire!)) {
+        lastId = paragraphe.uid.toString();
         return { ...acc, [lastId]: 0 };
       }
 
@@ -38,33 +37,49 @@ export default async function Page({
           ...acc,
           [lastId]: acc[lastId] + texteLength,
         };
+      } else {
+        console.log("codeGrammaire: ", codeGrammaire, paragraphe);
       }
       return acc;
     },
     {
       init: 0,
-    } as Record<string, number>
+    } as Record<string, number>,
   );
+
+  const sections = interventions.filter((p) =>
+    SUMMARY_CODES.has(p.codeGrammaire!),
+  );
+
+  const hasSummary = sections.length > 0;
 
   return (
     <>
+      {/* On n'affiche la colonne de gauche que s'il y a un sommaire associé */}
+      {hasSummary && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 24,
+            flex: 2,
+          }}
+        >
+          <DebateSummary sections={sections} />
+        </div>
+      )}
+
+      {/* On adapte le style de la colonne principale */}
       <div
         style={{
           display: "flex",
-          flexDirection: "row",
-          gap: 24,
-          flex: 2,
+          flexDirection: "column",
+          flex: 5,
+          margin: hasSummary ? "0" : "0 auto",
+          maxWidth: hasSummary ? "none" : "750px",
+          width: "100%",
         }}
       >
-        <DebateSummary
-          // wordsCounts={wordsCounts}
-          sections={interventions.filter(
-            (p) =>
-              SUMMARY_CODES.has(p.codeGrammaire!) 
-          )}
-        />
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", flex: 5 }}>
         <DebateTranscript
           title={debat?.dateSeanceJour ?? ""}
           paragraphes={interventions}
