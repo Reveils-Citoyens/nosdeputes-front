@@ -51,7 +51,13 @@ export default function DeputeCard<RootComponent extends React.ElementType>(
     ...other
   } = props;
 
-  const isDissident = groupPosition !== vote && vote !== "nonVotant";
+  // const isDissident = groupPosition !== vote && vote !== "nonVotant";
+
+  const isDissident = 
+    vote && 
+    groupPosition && 
+    vote !== groupPosition && 
+    vote !== "nonVotant";
 
   return (
     <Box
@@ -162,10 +168,11 @@ export default function DeputeCard<RootComponent extends React.ElementType>(
         sx={{ minWidth: "auto" }}
       >
         {isDissident && (
-          <Tooltip title="Dissident à son groupe">
-            <CompareArrowsSharpIcon />
+          <Tooltip title={`Dissident (Groupe : ${groupPosition})`}>
+            <CompareArrowsSharpIcon color="error" sx={{ fontSize: 20 }} />
           </Tooltip>
         )}
+
         {showVote && vote && vote !== "nonVotant" && (
           <CircleDiv
             color={
