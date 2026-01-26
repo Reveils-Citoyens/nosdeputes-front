@@ -52,10 +52,10 @@ export async function searchVote(
   // autres filtres
   if (include) searchParams.set("include", include);
   if (acteurRefUid) searchParams.set("acteurRefUid", acteurRefUid);
-  
+
   // filtre pour les votes solennels (SPS) ou autres
   if (codeTypeVote) searchParams.set("codeTypeVote", codeTypeVote);
-  
+
   if (scrutinRefUid) searchParams.set("scrutinRefUid", scrutinRefUid);
   if (causePositionVote) searchParams.set("causePositionVote", causePositionVote);
   if (positionVote) searchParams.set("positionVote", positionVote);
@@ -67,6 +67,10 @@ export async function searchVote(
 
     const { data } = await rep.json();
 
+    data?.forEach((vote: any) => {
+      if (vote.dateVote) { vote.dateVote = new Date(vote.dateVote); }
+      if (vote.scrutinRef?.dateScrutin) { vote.scrutinRef.dateScrutin = new Date(vote.scrutinRef.dateScrutin); }
+    })
     const pagination = extractPaginationMetadata(rep, page);
 
     return {

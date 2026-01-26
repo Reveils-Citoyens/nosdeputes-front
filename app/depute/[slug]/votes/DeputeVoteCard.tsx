@@ -51,7 +51,7 @@ export function DeputeVoteCard({
   const pctPour = totalVotes > 0 ? (scrutin.pour / totalVotes) * 100 : 0;
   const pctContre = totalVotes > 0 ? (scrutin.contre / totalVotes) * 100 : 0;
   
-  const scrutinMeta = getScrutinStatus(scrutin.sort, scrutin.pour, scrutin.contre);
+  const scrutinMeta = getScrutinStatus(scrutin.annonce, scrutin.pour, scrutin.contre);
   
   const userVoteColor = VOTE_COLOR[vote.positionVote as keyof typeof VOTE_COLOR] || "gray";
   const userVoteLabel = VOTE_LABEL[vote.positionVote as keyof typeof VOTE_LABEL] || vote.positionVote;
@@ -74,7 +74,7 @@ export function DeputeVoteCard({
         <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={1} flexWrap="wrap" useFlexGap>
             <Typography variant="caption" color="text.secondary" fontWeight="bold" sx={{ textTransform: "uppercase" }}>
-              Scrutin n°{scrutin.numero} • {new Date(scrutin.dateScrutin).toLocaleDateString("fr-FR")}
+              Scrutin n°{scrutin.numero} • {scrutin.dateScrutin?.toLocaleDateString("fr-FR") ?? ''}
             </Typography>
             
             {scrutin.dossierRef && (
