@@ -1,5 +1,4 @@
 "use client";
-
 import * as React from "react";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
@@ -20,7 +19,7 @@ type GroupInfo = {
   shortName: string;
   color: string;
   votes: VoteWithActeur[];
-  positionMajoritaire: "pour" | "contre" | "abstention" | undefined; 
+  positionMajoritaire: "pour" | "contre" | "abstention" | undefined;
 };
 
 export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
@@ -31,7 +30,7 @@ export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
       const groupRef = vote.groupeVotantRef;
       const organe = groupRef?.organeRef;
       const groupId = groupRef?.uid ?? "NI";
-      
+
       if (!groups[groupId]) {
         groups[groupId] = {
           groupId,
@@ -56,15 +55,30 @@ export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
     return Object.values(groups)
       .map((group) => {
         if (group.shortName === "NI") {
-            return { ...group, positionMajoritaire: undefined };
+          return { ...group, positionMajoritaire: undefined };
         }
 
         let max = Math.max(group.pour, group.contre, group.abstentions);
         let maj: "pour" | "contre" | "abstention" | undefined = undefined;
 
-        if (group.pour === max && group.pour > group.contre && group.pour > group.abstentions) maj = "pour";
-        else if (group.contre === max && group.contre > group.pour && group.contre > group.abstentions) maj = "contre";
-        else if (group.abstentions === max && group.abstentions > group.pour && group.abstentions > group.contre) maj = "abstention";
+        if (
+          group.pour === max &&
+          group.pour > group.contre &&
+          group.pour > group.abstentions
+        )
+          maj = "pour";
+        else if (
+          group.contre === max &&
+          group.contre > group.pour &&
+          group.contre > group.abstentions
+        )
+          maj = "contre";
+        else if (
+          group.abstentions === max &&
+          group.abstentions > group.pour &&
+          group.abstentions > group.contre
+        )
+          maj = "abstention";
 
         return { ...group, positionMajoritaire: maj };
       })
@@ -72,7 +86,11 @@ export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
   }, [votes]);
 
   if (votesPerGroup.length === 0) {
-    return <Typography variant="body2" sx={{p: 2}}>Aucun détail de vote disponible.</Typography>;
+    return (
+      <Typography variant="body2" sx={{ p: 2 }}>
+        Aucun détail de vote disponible.
+      </Typography>
+    );
   }
 
   return (
@@ -84,14 +102,17 @@ export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
           contre,
           abstentions,
           fullName,
-          shortName,
           color,
           votes,
-          positionMajoritaire
+          positionMajoritaire,
         }) => (
           <React.Fragment key={groupId}>
             <Divider />
-            <Accordion disableGutters elevation={0} sx={{ bgcolor: "transparent" }}>
+            <Accordion
+              disableGutters
+              elevation={0}
+              sx={{ bgcolor: "transparent" }}
+            >
               <AccordionSummary
                 expandIcon={<ExpandMoreIcon />}
                 aria-controls={`panel-group-${groupId}`}
@@ -102,30 +123,54 @@ export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
                     alignItems: "center",
                     justifyContent: "space-between",
                     width: "100%",
-                    pr: 1
+                    pr: 1,
                   },
                 }}
               >
-                <Stack direction="row" alignItems="center" spacing={1} sx={{ overflow: "hidden" }}>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1}
+                  sx={{ overflow: "hidden" }}
+                >
                   <CircleDiv color={color} />
-                  <Typography sx={{ color: "text.primary", fontWeight: "medium", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <Typography
+                    sx={{
+                      color: "text.primary",
+                      fontWeight: "medium",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
                     {fullName}
                   </Typography>
                 </Stack>
-                
-                <Stack direction="row" alignItems="center" spacing={1.5} sx={{ flexShrink: 0, ml: 2 }}>
+
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1.5}
+                  sx={{ flexShrink: 0, ml: 2 }}
+                >
                   {pour > 0 && (
-                    <Typography variant="caption" sx={{ color: "green", fontWeight: "bold" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "green", fontWeight: "bold" }}
+                    >
                       {pour} Pour
                     </Typography>
                   )}
                   {contre > 0 && (
-                    <Typography variant="caption" sx={{ color: "red", fontWeight: "bold" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "red", fontWeight: "bold" }}
+                    >
                       {contre} Contre
                     </Typography>
                   )}
                   {abstentions > 0 && (
-                     <Typography variant="caption" sx={{ color: "grey.600" }}>
+                    <Typography variant="caption" sx={{ color: "grey.600" }}>
                       {abstentions} Abs.
                     </Typography>
                   )}
@@ -141,21 +186,19 @@ export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
                     columnGap: 1.5,
                   }}
                 >
-                  {votes.map(
-                    ({ id, positionVote, acteurRef }) => (
-                      <DeputeCard
-                        key={uid}
-                        slug={acteurRef?.slug ?? ""}
-                        urlImage={acteurRef?.urlImage ?? ""}
-                        prenom={acteurRef?.prenom ?? ""}
-                        nom={acteurRef?.nom ?? ""}
-                        vote={positionVote as any}
-                        showVote
-                        isFullCardLink
-                        groupPosition={positionMajoritaire}
-                      />
-                    ),
-                  )}
+                  {votes.map(({ uid, positionVote, acteurRef }) => (
+                    <DeputeCard
+                      key={uid}
+                      slug={acteurRef?.slug ?? ""}
+                      urlImage={acteurRef?.urlImage ?? ""}
+                      prenom={acteurRef?.prenom ?? ""}
+                      nom={acteurRef?.nom ?? ""}
+                      vote={positionVote}
+                      showVote
+                      isFullCardLink
+                      groupPosition={positionMajoritaire}
+                    />
+                  ))}
                 </Box>
               </AccordionDetails>
             </Accordion>

@@ -51,8 +51,6 @@ export default function DeputeCard<RootComponent extends React.ElementType>(
     ...other
   } = props;
 
-  // const isDissident = groupPosition !== vote && vote !== "nonVotant";
-
   const isDissident = 
     vote && 
     groupPosition && 

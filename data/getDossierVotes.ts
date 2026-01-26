@@ -1,4 +1,3 @@
-// data/getDossierVotes.ts
 import * as React from "react";
 import { ActeLegislatif, Dossier, Scrutin, Vote, Acteur, GroupeVotant, Organe } from "@prisma/client";
 import { parseDossier } from "./parsers/parseDossier";

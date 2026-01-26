@@ -1,4 +1,3 @@
-// Fichier : app/depute/[slug]/votes/page.tsx
 import React from "react";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
 import VotesClient from "./VotesClient"; 
