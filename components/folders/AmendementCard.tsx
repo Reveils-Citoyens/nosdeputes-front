@@ -6,6 +6,7 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Avatar,
   Box,
   Paper,
   useMediaQuery,
@@ -40,6 +41,32 @@ type AmendementCardProps = {
   titre?: string;
 };
 
+function GouvernementAvatar(props: { sx?: React.CSSProperties }) {
+  return (
+    <Box sx={{ display: "flex", minWidth: 0, p: 0.5, ...props.sx }}>
+      <Avatar
+        sx={{ height: 40, width: 40 }}
+        alt="Gouvernement"
+        src="/marianne.png"
+      >
+        Gouv
+      </Avatar>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          px: 1.3,
+          minWidth: 0,
+        }}
+      >
+        <Typography variant="body2" fontWeight="medium" sx={{ mb: "1rem" }}>
+          Gouvernement
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
 export default function AmendementCard(props: AmendementCardProps) {
   const { amendement, acteurUid, titre } = props;
   const nbSignataires = 1 + amendement.nombreCoSignataires;
@@ -115,6 +142,9 @@ export default function AmendementCard(props: AmendementCardProps) {
             >
               {acteurUid && (
                 <ActeurCard id={acteurUid} smallGroupColor link="name" />
+              )}
+              {!acteurUid && amendement.typeAuteur === "Gouvernement" && (
+                <GouvernementAvatar />
               )}
             </Box>
           </Box>
@@ -224,7 +254,11 @@ export default function AmendementCard(props: AmendementCardProps) {
             >
               <MetaItem
                 label="Signataires"
-                value={`${nbSignataires} député${nbSignataires > 1 ? "s" : ""}`}
+                value={
+                  amendement.typeAuteur === "Gouvernement"
+                    ? "Gouvernement"
+                    : `${nbSignataires} député${nbSignataires > 1 ? "s" : ""}`
+                }
               />
               <MetaItem
                 label="Dépôt"

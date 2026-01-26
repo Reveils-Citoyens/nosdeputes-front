@@ -26,8 +26,6 @@ export default function Amendements() {
   const [sortAmendement, setSortAmendement] = React.useState("");
   const [page, setPage] = React.useState(1);
 
-  const [accumulatedData, setAccumulatedData] = React.useState<any[]>([]);
-
   const { data: acteur } = useQuery({
     queryKey: ["acteur", slug],
     queryFn: () => getActeurBySlug(slug),
@@ -65,7 +63,6 @@ export default function Amendements() {
   const handleSortChange = (newSort: string) => {
     setSortAmendement(newSort);
     setPage(1);
-    setAccumulatedData([]);
   };
 
   return (
