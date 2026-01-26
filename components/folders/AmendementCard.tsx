@@ -43,9 +43,9 @@ type AmendementCardProps = {
 
 function GouvernementAvatar(props: { sx?: React.CSSProperties }) {
   return (
-    <Box sx={{ display: "flex", minWidth: 0, ...props.sx }}>
+    <Box sx={{ display: "flex", minWidth: 0, p: 0.5, ...props.sx }}>
       <Avatar
-        sx={{ height: 40, width: 40, px: 1.8 }}
+        sx={{ height: 40, width: 40 }}
         alt="Gouvernement"
         src="/marianne.png"
       >
@@ -60,10 +60,9 @@ function GouvernementAvatar(props: { sx?: React.CSSProperties }) {
           minWidth: 0,
         }}
       >
-        <Typography variant="body2" fontWeight="medium">
+        <Typography variant="body2" fontWeight="medium" sx={{ mb: "1rem" }}>
           Gouvernement
         </Typography>
-        <Typography variant="body2" fontWeight="medium"></Typography>
       </Box>
     </Box>
   );
