@@ -1,18 +1,21 @@
 "use client";
 import * as React from "react";
-
-import Typography from "@mui/material/Typography";
-import Stack from "@mui/material/Stack";
-import Accordion from "@mui/material/Accordion";
-import AccordionDetails from "@mui/material/AccordionDetails";
-import AccordionSummary from "@mui/material/AccordionSummary";
-
+import {
+  Typography,
+  Stack,
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
+  Paper,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import StatusChip from "@/components/StatusChip";
-
-import { Amendement } from "@prisma/client";
-
+import { Amendement, Dossier } from "@prisma/client";
 import ActeurCard from "./ActeurCard";
+import Link from "next/link";
 
 function getStatus(label: string | null) {
   switch (label) {
@@ -30,16 +33,18 @@ function getStatus(label: string | null) {
       return "review";
   }
 }
+
 type AmendementCardProps = {
-  amendement: Amendement;
+  amendement: Amendement & { dossierRef?: Dossier | null };
   acteurUid: null | string;
   titre?: string;
 };
 
 export default function AmendementCard(props: AmendementCardProps) {
   const { amendement, acteurUid, titre } = props;
-
   const nbSignataires = 1 + amendement.nombreCoSignataires;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const pannelId = `${amendement.uid}-pannel`;
   const headerId = `${amendement.uid}-header`;
@@ -47,108 +52,222 @@ export default function AmendementCard(props: AmendementCardProps) {
     <Accordion
       elevation={0}
       disableGutters
-      sx={(theme) => ({
-        borderBottom: `solid ${theme.palette.divider} 1px`,
-        borderRadius: 0,
-      })}
+      sx={{
+        "&:before": { display: "none" },
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        "&.Mui-expanded": {
+          bgcolor: "rgba(0, 0, 0, 0.01)",
+        },
+      }}
     >
       <AccordionSummary
         aria-controls={pannelId}
         id={headerId}
         expandIcon={<ExpandMoreIcon />}
+        sx={{
+          px: 2,
+          minHeight: 60,
+          "& .MuiAccordionSummary-content": {
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 1,
+          },
+        }}
       >
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={1}
-          sx={{ width: "100%", mr: 2 }}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            flexGrow: 1,
+            minWidth: 0,
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 1,
+          }}
         >
-          {acteurUid && (
-            <ActeurCard
-              id={acteurUid}
-              smallGroupColor
-              sx={{ flexGrow: 1 }}
-              link="name"
-            />
-          )}
-          {titre && <Typography>{titre}</Typography>}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+                minWidth: "auto",
+              }}
+            >
+              {titre || `N°${amendement.numeroLong}`}
+            </Typography>
 
-          <StatusChip
-            size="small"
-            label={amendement.sortAmendement}
-            status={getStatus(amendement.sortAmendement)}
-          />
-        </Stack>
+            <Box
+              sx={{
+                flexGrow: 0,
+                minWidth: 0,
+                maxWidth: isMobile ? 150 : "auto",
+              }}
+            >
+              {acteurUid && (
+                <ActeurCard id={acteurUid} smallGroupColor link="name" />
+              )}
+            </Box>
+          </Box>
+
+          <Box sx={{ flexShrink: 0 }}>
+            <StatusChip
+              size="small"
+              label={amendement.sortAmendement}
+              status={getStatus(amendement.sortAmendement)}
+            />
+          </Box>
+        </Box>
       </AccordionSummary>
-      <AccordionDetails>
-        <Stack direction="column" spacing={2}>
-          <Typography variant="caption">N°{amendement.numeroLong}</Typography>
+
+      <AccordionDetails sx={{ px: 3, pt: 0, pb: 3 }}>
+        <Stack spacing={3}>
+          {amendement.dossierRef && (
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: "bold",
+                  mb: 0.5,
+                  display: "block",
+                }}
+              >
+                Dossier :
+              </Typography>
+              <Link
+                href={`/${amendement.dossierRef.legislature}/dossier/${amendement.dossierRef.uid}`}
+                style={{ textDecoration: "none" }}
+              >
+                <Typography
+                  variant="body2"
+                  color="primary"
+                  sx={{
+                    fontWeight: 600,
+                    "&:hover": { textDecoration: "underline" },
+                  }}
+                >
+                  {amendement.dossierRef.titre}
+                </Typography>
+              </Link>
+            </Box>
+          )}
+
           {amendement.dispositif && (
-            <Typography
-              fontWeight="light"
-              variant="body1"
-              flexGrow={1}
-              flexShrink={1}
-              flexBasis={0}
-              component="div"
-              sx={{ bgcolor: "grey.50", p: 1 }}
-              dangerouslySetInnerHTML={{ __html: amendement.dispositif }}
-            />
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: "bold",
+                  mb: 0.5,
+                  display: "block",
+                }}
+              >
+                Dispositif
+              </Typography>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  bgcolor: "grey.50",
+                  borderLeft: "4px solid",
+                  borderColor: "primary.light",
+                  borderRadius: "0 4px 4px 0",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{ lineHeight: 1.7 }}
+                  dangerouslySetInnerHTML={{ __html: amendement.dispositif }}
+                />
+              </Paper>
+            </Box>
           )}
+
           {amendement.exposeSommaire && (
-            <Typography
-              fontWeight="light"
-              variant="body2"
-              flexGrow={1}
-              flexShrink={1}
-              flexBasis={0}
-              component="div"
-              dangerouslySetInnerHTML={{ __html: amendement.exposeSommaire }}
-            />
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: "bold",
+                  mb: 0.5,
+                  display: "block",
+                }}
+              >
+                Exposé Sommaire
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ lineHeight: 1.8, color: "text.primary" }}
+                dangerouslySetInnerHTML={{ __html: amendement.exposeSommaire }}
+              />
+            </Box>
           )}
 
-          {/* <Typography fontWeight="light" variant="body2">
-            Examiné par:&nbsp;
-            <Typography component="a" variant="body2">
-              Le nom d&apos;une commission parlementaire
-            </Typography>
-          </Typography> */}
-          <Stack direction="row" justifyContent="space-between" flexBasis={0}>
-            <Typography fontWeight="light" variant="body2">
-              Déposé par:&nbsp;
-              <Typography component="span" variant="body2">
-                {nbSignataires} député{nbSignataires > 1 ? "s" : ""}
-              </Typography>
-            </Typography>
-
-            <Typography fontWeight="light" variant="body2">
-              Date de dépôt:&nbsp;
-              <Typography component="span" variant="body2">
-                {amendement.dateDepot
-                  ? new Date(amendement.dateDepot).toLocaleDateString("fr-FR", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : "-"}
-              </Typography>
-            </Typography>
-
-            <Typography fontWeight="light" variant="body2">
-              Date d&apos;examen:&nbsp;
-              <Typography component="span" variant="body2">
-                {amendement.dateSort
-                  ? new Date(amendement.dateSort).toLocaleDateString("fr-FR", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : "-"}
-              </Typography>
-            </Typography>
-          </Stack>
+          <Box sx={{ pt: 1 }}>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              justifyContent="space-between"
+              spacing={{ xs: 2, sm: 0 }}
+              sx={{ bgcolor: "grey.100", p: 1.5, borderRadius: 1 }}
+            >
+              <MetaItem
+                label="Signataires"
+                value={`${nbSignataires} député${nbSignataires > 1 ? "s" : ""}`}
+              />
+              <MetaItem
+                label="Dépôt"
+                value={
+                  amendement.dateDepot
+                    ? new Date(amendement.dateDepot).toLocaleDateString("fr-FR")
+                    : "-"
+                }
+              />
+              <MetaItem
+                label="Examen"
+                value={
+                  amendement.dateSort
+                    ? new Date(amendement.dateSort).toLocaleDateString("fr-FR")
+                    : "-"
+                }
+              />
+            </Stack>
+          </Box>
         </Stack>
       </AccordionDetails>
     </Accordion>
+  );
+}
+
+function MetaItem({ label, value }: { label: string; value: string }) {
+  return (
+    <Box>
+      <Typography
+        variant="caption"
+        display="block"
+        sx={{
+          color: "text.secondary",
+          textTransform: "uppercase",
+          fontSize: "0.6rem",
+          fontWeight: 800,
+        }}
+      >
+        {label}
+      </Typography>
+      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.85rem" }}>
+        {value}
+      </Typography>
+    </Box>
   );
 }
