@@ -18,7 +18,7 @@ type DossierCardProps = {
   dateDernierActe: Date | null;
   type: string;
   // etape: null | string; //TODO: use an enum when the type of etape will be clear
-  // thematique: string; // TODO: use an enum latter – pour le moment en attenand Thomas
+  thematique: string; // TODO: use an enum latter – pour le moment en attendant Thomas
   statusType?: Status;
   statusLabel?: string | null;
   interventions?: number;
@@ -111,6 +111,9 @@ const DossierCard = (props: DossierCardProps) => {
             lineHeight: 1.4,
             overflow: "hidden",
             flexGrow: 1,
+            display: "-webkit-box",
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: "vertical",
           }}
         >
           {titre}
