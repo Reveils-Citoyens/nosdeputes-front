@@ -63,7 +63,7 @@ export default function DossierList() {
 
   const dossiers = result?.data ?? [];
   const pagination = result?.pagination;
-  
+
   // Filtrage de secours côté client pour le thème (si l'API ne le gère pas encore)
   // Idéalement, cela devrait être fait côté serveur aussi.
   const displayData = theme
