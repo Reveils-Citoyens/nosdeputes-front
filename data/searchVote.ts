@@ -29,7 +29,7 @@ export async function searchVote(
   const {
     perPage = 10,
     page = 1,
-    sort = "dateVote.asc",
+    sort = "dateVote.desc",
     search = "",
     include,
     acteurRefUid,
@@ -45,19 +45,21 @@ export async function searchVote(
     sort,
   });
 
-  Object.entries({
-    search,
-    include,
-    acteurRefUid,
-    codeTypeVote,
-    scrutinRefUid,
-    causePositionVote,
-    positionVote,
-  }).forEach(([key, value]) => {
-    if (value) {
-      searchParams.set(key, value);
-    }
-  });
+  if (search) {
+    searchParams.set("search", search);
+  }
+
+  // autres filtres
+  if (include) searchParams.set("include", include);
+  if (acteurRefUid) searchParams.set("acteurRefUid", acteurRefUid);
+  
+  // filtre pour les votes solennels (SPS) ou autres
+  if (codeTypeVote) searchParams.set("codeTypeVote", codeTypeVote);
+  
+  if (scrutinRefUid) searchParams.set("scrutinRefUid", scrutinRefUid);
+  if (causePositionVote) searchParams.set("causePositionVote", causePositionVote);
+  if (positionVote) searchParams.set("positionVote", positionVote);
+
   try {
     const rep = await fetch(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/votes?${searchParams}`
@@ -72,7 +74,7 @@ export async function searchVote(
       pagination,
     };
   } catch (error) {
-    console.error("Error fetching dossier:", error);
+    console.error("Error fetching vote:", error);
     return null;
   }
 }

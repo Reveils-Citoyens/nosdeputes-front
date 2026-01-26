@@ -1,15 +1,13 @@
+"use client";
 import * as React from "react";
-
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import Box from "@mui/material/Box";
-
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-
 import { Divider, Stack, Typography } from "@mui/material";
-import DeputeCard from "@/components/folders/DeputeCard";
 import CircleDiv from "@/icons/CircleDiv";
+import DeputeCard from "@/components/folders/DeputeCard";
 import { VoteWithActeur } from "./votes.type";
 
 type GroupInfo = {
@@ -17,43 +15,83 @@ type GroupInfo = {
   pour: number;
   contre: number;
   abstentions: number;
-  nonVotants: number;
-  nonVotantsVolontaires: number;
   fullName: string;
   shortName: string;
   color: string;
   votes: VoteWithActeur[];
+  positionMajoritaire: "pour" | "contre" | "abstention" | undefined;
 };
 
 export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
-  const votesPerGroup: GroupInfo[] = [];
-  // const votesPerGroup: GroupInfo[] = React.useMemo(() => {
-  //   const groups: Record<string, Omit<GroupInfo, "groupId">> = {};
+  const votesPerGroup: GroupInfo[] = React.useMemo(() => {
+    const groups: Record<string, GroupInfo> = {};
 
-  //   votes.forEach((vote) => {
-  //     if (!groups[vote.groupeVotantRefId ?? ""]) {
-  //       groups[vote.groupeVotantRefId ?? ""] = {
-  //         pour: Number.parseInt(vote.groupeVotantRef?.pour ?? "0"),
-  //         contre: Number.parseInt(vote.groupeVotantRef?.contre ?? "0"),
-  //         abstentions: Number.parseInt(
-  //           vote.groupeVotantRef?.abstentions ?? "0"
-  //         ),
-  //         nonVotants: Number.parseInt(vote.groupeVotantRef?.nonVotants ?? "0"),
-  //         nonVotantsVolontaires: Number.parseInt(vote.groupeVotantRef?.nonVotantsVolontaires ?? "0"),
-  //         fullName: vote.groupeVotantRef?.organeRef?.libelle ?? "",
-  //         shortName: vote.groupeVotantRef?.organeRef?.libelleAbrev ?? "",
-  //         color: vote.groupeVotantRef?.organeRef?.couleurAssociee ?? "",
-  //         votes: [],
-  //       };
-  //     }
+    votes.forEach((vote) => {
+      const groupRef = vote.groupeVotantRef;
+      const organe = groupRef?.organeRef;
+      const groupId = groupRef?.uid ?? "NI";
 
-  //     groups[vote.groupeVotantRefId ?? ""].votes.push(vote);
-  //   });
+      if (!groups[groupId]) {
+        groups[groupId] = {
+          groupId,
+          pour: 0,
+          contre: 0,
+          abstentions: 0,
+          fullName: organe?.libelle ?? "Non Inscrits / Inconnu",
+          shortName: organe?.libelleAbrev ?? "NI",
+          color: organe?.couleurAssociee ?? "#888888",
+          votes: [],
+          positionMajoritaire: undefined,
+        };
+      }
 
-  //   return Object.entries(groups)
-  //     .map(([groupId, group]) => ({ groupId, ...group }))
-  //     .sort((a, b) => b.votes.length - a.votes.length);
-  // }, [votes]);
+      if (vote.positionVote === "pour") groups[groupId].pour++;
+      if (vote.positionVote === "contre") groups[groupId].contre++;
+      if (vote.positionVote === "abstention") groups[groupId].abstentions++;
+
+      groups[groupId].votes.push(vote);
+    });
+
+    return Object.values(groups)
+      .map((group) => {
+        if (group.shortName === "NI") {
+          return { ...group, positionMajoritaire: undefined };
+        }
+
+        let max = Math.max(group.pour, group.contre, group.abstentions);
+        let maj: "pour" | "contre" | "abstention" | undefined = undefined;
+
+        if (
+          group.pour === max &&
+          group.pour > group.contre &&
+          group.pour > group.abstentions
+        )
+          maj = "pour";
+        else if (
+          group.contre === max &&
+          group.contre > group.pour &&
+          group.contre > group.abstentions
+        )
+          maj = "contre";
+        else if (
+          group.abstentions === max &&
+          group.abstentions > group.pour &&
+          group.abstentions > group.contre
+        )
+          maj = "abstention";
+
+        return { ...group, positionMajoritaire: maj };
+      })
+      .sort((a, b) => b.votes.length - a.votes.length);
+  }, [votes]);
+
+  if (votesPerGroup.length === 0) {
+    return (
+      <Typography variant="body2" sx={{ p: 2 }}>
+        Aucun détail de vote disponible.
+      </Typography>
+    );
+  }
 
   return (
     <div>
@@ -64,13 +102,17 @@ export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
           contre,
           abstentions,
           fullName,
-          shortName,
           color,
           votes,
+          positionMajoritaire,
         }) => (
           <React.Fragment key={groupId}>
             <Divider />
-            <Accordion disableGutters elevation={0}>
+            <Accordion
+              disableGutters
+              elevation={0}
+              sx={{ bgcolor: "transparent" }}
+            >
               <AccordionSummary
                 expandIcon={<ExpandMoreIcon />}
                 aria-controls={`panel-group-${groupId}`}
@@ -80,28 +122,58 @@ export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
+                    width: "100%",
+                    pr: 1,
                   },
                 }}
               >
-                <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1}
+                  sx={{ overflow: "hidden" }}
+                >
                   <CircleDiv color={color} />
-                  <Typography sx={{ color, mr: 2 }}>
-                    {fullName} ({shortName})
+                  <Typography
+                    sx={{
+                      color: "text.primary",
+                      fontWeight: "medium",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {fullName}
                   </Typography>
                 </Stack>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <CircleDiv color="green" />
-                  <Typography sx={{ color: "green", minWidth: 30 }}>
-                    {pour}
-                  </Typography>
-                  <CircleDiv color="red" />
-                  <Typography sx={{ color: "red", minWidth: 30 }}>
-                    {contre}
-                  </Typography>
-                  <CircleDiv color="gray" />
-                  <Typography sx={{ color: "gray", minWidth: 30 }}>
-                    {abstentions}
-                  </Typography>
+
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1.5}
+                  sx={{ flexShrink: 0, ml: 2 }}
+                >
+                  {pour > 0 && (
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "green", fontWeight: "bold" }}
+                    >
+                      {pour} Pour
+                    </Typography>
+                  )}
+                  {contre > 0 && (
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "red", fontWeight: "bold" }}
+                    >
+                      {contre} Contre
+                    </Typography>
+                  )}
+                  {abstentions > 0 && (
+                    <Typography variant="caption" sx={{ color: "grey.600" }}>
+                      {abstentions} Abs.
+                    </Typography>
+                  )}
                 </Stack>
               </AccordionSummary>
               <AccordionDetails>
@@ -112,25 +184,21 @@ export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
                     gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
                     rowGap: 1.5,
                     columnGap: 1.5,
-                    "& *": { minWidth: 0 },
                   }}
                 >
-                  {votes.map(
-                    ({ uid, positionVote, acteurRef, groupeVotantRef }) => (
-                      <DeputeCard
-                        key={uid}
-                        slug={acteurRef?.slug ?? ""}
-                        urlImage={acteurRef?.urlImage ?? ""}
-                        prenom={acteurRef?.prenom ?? ""}
-                        nom={acteurRef?.nom ?? ""}
-                        vote={positionVote}
-                        showVote
-                        groupPosition={
-                          groupeVotantRef?.positionMajoritaire ?? undefined
-                        }
-                      />
-                    ),
-                  )}
+                  {votes.map(({ uid, positionVote, acteurRef }) => (
+                    <DeputeCard
+                      key={uid}
+                      slug={acteurRef?.slug ?? ""}
+                      urlImage={acteurRef?.urlImage ?? ""}
+                      prenom={acteurRef?.prenom ?? ""}
+                      nom={acteurRef?.nom ?? ""}
+                      vote={positionVote}
+                      showVote
+                      isFullCardLink
+                      groupPosition={positionMajoritaire}
+                    />
+                  ))}
                 </Box>
               </AccordionDetails>
             </Accordion>
