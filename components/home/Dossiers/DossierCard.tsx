@@ -18,7 +18,7 @@ type DossierCardProps = {
   dateDernierActe: Date | null;
   type: string;
   // etape: null | string; //TODO: use an enum when the type of etape will be clear
-  thematique: string; // TODO: use an enum latter – pour le moment en attendant Thomas
+  thematique?: string; // TODO: use an enum latter – pour le moment en attendant Thomas
   statusType?: Status;
   statusLabel?: string | null;
   interventions?: number;
