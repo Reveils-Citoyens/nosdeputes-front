@@ -19,8 +19,8 @@ import { DeputeVoteCard } from "./DeputeVoteCard";
 
 const positionsVotePossible = ["pour", "contre", "nonVotant", "abstention"];
 
-type VoteWithDetails = Vote & { 
-  scrutinRef: Scrutin & { dossierRef?: Dossier | null } 
+type VoteWithDetails = Vote & {
+  scrutinRef: Scrutin & { dossierRef?: Dossier | null };
 };
 
 type VotesClientProps = {
@@ -28,10 +28,9 @@ type VotesClientProps = {
 };
 
 export default function VotesClient({ acteur }: VotesClientProps) {
-
   const [search, setSearch] = React.useState("");
   const [positionVote, setPositionVote] = React.useState("");
-  const [onlySolennel, setOnlySolennel] = React.useState(true); 
+  const [onlySolennel, setOnlySolennel] = React.useState(true);
   const [page, setPage] = React.useState(1);
 
   const debouncedSetSearch = React.useMemo(
@@ -40,7 +39,7 @@ export default function VotesClient({ acteur }: VotesClientProps) {
         setSearch(newSearch);
         setPage(1);
       }, 500),
-    []
+    [],
   );
 
   const { data: result, isPending } = useQuery({
@@ -52,40 +51,39 @@ export default function VotesClient({ acteur }: VotesClientProps) {
         acteurRefUid: acteur.uid,
         positionVote,
         search,
-        include: "scrutinRef.dossierRef", 
-        codeTypeVote: onlySolennel ? "SPS" : undefined, 
+        include: "scrutinRef.dossierRef",
+        codeTypeVote: onlySolennel ? "SPS" : undefined,
       });
       return result;
     },
     placeholderData: keepPreviousData,
   });
 
-  const data = (result?.data ?? []) as VoteWithDetails[];
   const pagination = result?.pagination;
 
   const filteredData = React.useMemo(() => {
-    if (!search) return data;
+    if (!search) return (result?.data as VoteWithDetails[]) || [];
     const lowerSearch = search.toLowerCase();
-    
-    return data.filter((vote) => {
+
+    return ((result?.data ?? []) as VoteWithDetails[]).filter((vote) => {
       const titre = vote.scrutinRef?.titre?.toLowerCase() ?? "";
       const numero = vote.scrutinRef?.numero?.toString() ?? "";
-      const dossierTitre = vote.scrutinRef?.dossierRef?.titre?.toLowerCase() ?? "";
+      const dossierTitre =
+        vote.scrutinRef?.dossierRef?.titre?.toLowerCase() ?? "";
 
       return (
-        titre.includes(lowerSearch) || 
+        titre.includes(lowerSearch) ||
         numero.includes(lowerSearch) ||
         dossierTitre.includes(lowerSearch)
       );
     });
-  }, [data, search]);
+  }, [result?.data, search]);
 
   return (
     <Box sx={{ width: "100%" }}>
-
-      <Stack 
-        direction={{ xs: "column", md: "row" }} 
-        spacing={2} 
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        spacing={2}
         alignItems={{ xs: "stretch", md: "center" }}
         sx={{ mb: 4 }}
       >
@@ -93,19 +91,21 @@ export default function VotesClient({ acteur }: VotesClientProps) {
         <Input
           placeholder="Rechercher par mots-clés (scrutin, dossier...)"
           onChange={(event) => debouncedSetSearch(event.target.value)}
-          startAdornment={<SearchIcon sx={{ mr: 1, color: "text.secondary" }} />}
+          startAdornment={
+            <SearchIcon sx={{ mr: 1, color: "text.secondary" }} />
+          }
           fullWidth
-          sx={{ 
-            bgcolor: "white", 
-            px: 2, 
-            py: 0.5, 
+          sx={{
+            bgcolor: "white",
+            px: 2,
+            py: 0.5,
             borderRadius: 1,
             borderBottom: "none",
-            flexGrow: 1
+            flexGrow: 1,
           }}
           disableUnderline
         />
-        
+
         <Stack direction="row" spacing={2} alignItems="center">
           {/* Menu déroulant Position */}
           <Select
@@ -121,18 +121,32 @@ export default function VotesClient({ acteur }: VotesClientProps) {
           >
             <MenuItem value="">Tous les votes</MenuItem>
             {positionsVotePossible.map((position) => (
-              <MenuItem key={position} value={position} sx={{ textTransform: "capitalize" }}>
+              <MenuItem
+                key={position}
+                value={position}
+                sx={{ textTransform: "capitalize" }}
+              >
                 {position}
               </MenuItem>
             ))}
           </Select>
 
           {/* Switch Solennels */}
-          <Box sx={{ bgcolor: "white", borderRadius: 1, px: 1, height: 40, border: "1px solid #c4c4c4", display: "flex", alignItems: "center" }}>
+          <Box
+            sx={{
+              bgcolor: "white",
+              borderRadius: 1,
+              px: 1,
+              height: 40,
+              border: "1px solid #c4c4c4",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
             <FormControlLabel
               control={
-                <Switch 
-                  checked={onlySolennel} 
+                <Switch
+                  checked={onlySolennel}
                   onChange={(e) => {
                     setOnlySolennel(e.target.checked);
                     setPage(1);
@@ -141,7 +155,10 @@ export default function VotesClient({ acteur }: VotesClientProps) {
                 />
               }
               label={
-                <Typography variant="body2" sx={{ whiteSpace: "nowrap", fontSize: "0.85rem" }}>
+                <Typography
+                  variant="body2"
+                  sx={{ whiteSpace: "nowrap", fontSize: "0.85rem" }}
+                >
                   Solennels
                 </Typography>
               }
@@ -150,29 +167,33 @@ export default function VotesClient({ acteur }: VotesClientProps) {
           </Box>
         </Stack>
       </Stack>
-      
+
       <Stack spacing={2} sx={{ mt: 3 }}>
         {/* Message si vide */}
         {filteredData.length === 0 && !isPending && (
-            <Box sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>
-                <Typography>Aucun vote ne correspond à vos critères.</Typography>
-                {search && <Typography variant="caption">Essayez d'autres mots-clés.</Typography>}
-            </Box>
+          <Box sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>
+            <Typography>Aucun vote ne correspond à vos critères.</Typography>
+            {search && (
+              <Typography variant="caption">
+                Essayez d&apos;autres mots-clés.
+              </Typography>
+            )}
+          </Box>
         )}
-        
+
         {filteredData.map((vote) => {
           if (!vote.scrutinRef) return null;
           return (
-            <DeputeVoteCard 
-              key={vote.id} 
-              vote={vote} 
-              scrutin={vote.scrutinRef} 
+            <DeputeVoteCard
+              key={vote.uid}
+              vote={vote}
+              scrutin={vote.scrutinRef}
             />
           );
         })}
       </Stack>
-      
-       <Pagination
+
+      <Pagination
         {...pagination}
         page={page}
         setPage={setPage}
