@@ -111,6 +111,9 @@ const DossierCard = (props: DossierCardProps) => {
             lineHeight: 1.4,
             overflow: "hidden",
             flexGrow: 1,
+            display: "-webkit-box",
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: "vertical",
           }}
         >
           {titre}
