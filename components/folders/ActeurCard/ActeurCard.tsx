@@ -12,7 +12,7 @@ import Link from "next/link";
 import { getActeur, ReturnedActeur } from "@/data/getActeur";
 
 export type ActeurCardWithDataProps<
-  RootComponent extends React.ElementType = "div"
+  RootComponent extends React.ElementType = "div",
 > = {
   acteur: ReturnedActeur | null;
   smallGroupColor?: boolean;
@@ -37,7 +37,7 @@ export type ActeurCardWithDataProps<
 } & BoxProps<RootComponent>;
 
 export function ActeurCardWithData<RootComponent extends React.ElementType>(
-  props: ActeurCardWithDataProps<RootComponent>
+  props: ActeurCardWithDataProps<RootComponent>,
 ) {
   const {
     acteur,
@@ -52,6 +52,8 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
   if (acteur === null) {
     return null;
   }
+
+  const acteurUrl = acteur.chambre === "AN" ? `/depute/${acteur.slug}` : null;
   return (
     <Box
       sx={[
@@ -61,14 +63,14 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          "&:hover": link === "card" ? { bgcolor: "grey.50" } : {},
+          "&:hover": link === "card" && acteurUrl ? { bgcolor: "grey.50" } : {},
         },
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}
-      {...(link === "card"
+      {...(link === "card" && acteurUrl
         ? {
             component: Link,
-            href: `/depute/${acteur.slug}`,
+            href: acteurUrl,
           }
         : {})}
       // {...other}
@@ -91,13 +93,13 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
             minWidth: 0,
           }}
         >
-          {link === "name" ? (
+          {link === "name" && acteurUrl ? (
             <MuiLink
               variant="body2"
               fontWeight="medium"
               underline="hover"
               component={Link}
-              href={`/depute/${acteur.slug}`}
+              href={acteurUrl}
               onClick={(event) => event.stopPropagation()}
             >
               {acteur.prenom} {acteur.nom}
@@ -109,7 +111,7 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
           )}
           {showCirconscription && acteur.mandatPrincipal && (
             <Typography variant="body2" fontWeight="light">
-              {acteur.mandatPrincipal.numCirco}e Circ $
+              {acteur.mandatPrincipal.numCirco}e Circ{" "}
               {acteur.mandatPrincipal.departement}
             </Typography>
           )}
