@@ -2,18 +2,45 @@ import * as React from "react";
 import Box from "@mui/material/Box";
 import DossierCard from "./DossierCard";
 
-import { Dossier } from "@prisma/client";
+import { Dossier, ActeLegislatif } from "@prisma/client";
+import { getCurrentStatus, statusInfo } from "@/app/[legislature]/dossier/[id]/dataFunctions";
+import { TYPES_DE_DOSSIERS } from "@/components/const";
+import { searchAmendement } from "@/data/searchAmendement";
 
-async function getLastDossiersUnCached(): Promise<Dossier[]> {
+type DossierEnriched = Dossier & {
+  actesLegislatifs: ActeLegislatif[];
+  nbAmendements: number;
+};
+
+async function getLastDossiersUnCached(): Promise<DossierEnriched[]> {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/?dataset=17&sort=dateDernierActe.desc`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/?dataset=17&sort=dateDernierActe.desc&perPage=12&include=actesLegislatifs` 
     );
 
-    const { data } = await rep.json();
+    const { data: dossiers } = await rep.json();
 
-    return data;
+    // 2. Pour chaque dossier, on lance une recherche d'amendements en parallèle
+    // on demande "perPage: 1" car on veut juste le "total" dans la pagination
+    const dossiersAvecCompteurs = await Promise.all(
+      (dossiers as Dossier[]).map(async (dossier) => {
+        const amendementsResult = await searchAmendement({
+          dossierUid: dossier.uid,
+          perPage: 1, 
+        });
+
+        return {
+          ...dossier,
+          nbAmendements: amendementsResult?.pagination.total ?? 0,
+          // On force le typage ici car on sait qu'on a demandé l'include plus haut
+          actesLegislatifs: (dossier as any).actesLegislatifs ?? [] 
+        };
+      })
+    );
+
+    return dossiersAvecCompteurs;
   } catch (error) {
+    console.error("Erreur chargement dossiers home:", error);
     return [];
   }
 }
@@ -27,31 +54,31 @@ export default async function Dossiers() {
     <Box
       sx={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(352px, 1fr))",
-        gridGap: 16,
+        gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
+        gridGap: 24,
       }}
     >
-      {dossiers.map(
-        ({
-          uid,
-          // etape,
-          // _count,
-          titre,
-          // documents
-        }) => (
+    {dossiers.map((dossier) => {
+        const typeInfo = TYPES_DE_DOSSIERS.find(t => t.code === dossier.codeProcedure);
+        const typeLabel = typeInfo ? typeInfo.label : "Dossier";
+        const statusCode = getCurrentStatus(dossier.actesLegislatifs || []);
+        const statusLabel = statusCode ? statusInfo[statusCode]?.label : null;
+        const statusType = statusCode ? statusInfo[statusCode]?.status : undefined;
+
+        return (
           <DossierCard
-            key={uid}
-            titre={titre}
-            href={`/${17}/dossier/${uid}`}
-            etape={null}
-            // amendements={documents
-            //   .map((document) => document._count.amendements)
-            //   .reduce((acc, v) => acc + v, 0)}
-            // interventions={_count?.paragraphes}
-            thematique=""
+            key={dossier.uid}
+            href={`/${dossier.legislature}/dossier/${dossier.uid}`}
+            titre={dossier.titre}
+            dateDernierActe={dossier.dateDernierActe ? new Date(dossier.dateDernierActe) : null}
+            type={typeLabel}
+            statusLabel={statusLabel}
+            statusType={statusType}
+            amendements={dossier.nbAmendements}
+            // thematique={dossier.theme} pour le moment en attendant Thomas 
           />
-        )
-      )}
+        );
+      })}
     </Box>
   );
 }
