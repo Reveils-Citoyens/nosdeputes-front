@@ -53,11 +53,11 @@ const theme = createTheme({
   spacing: 8,
   typography: {
     fontFamily: "var(--font-inter)",
-    fontWeightLight: 300,   // Light
+    fontWeightLight: 300, // Light
     fontWeightRegular: 400, // Regular (Standard)
-    fontWeightMedium: 500,  // Medium
+    fontWeightMedium: 500, // Medium
     // fontWeightSemiBold: 600, // Semi-Bold
-    fontWeightBold: 700,    // Bold
+    fontWeightBold: 700, // Bold
 
     h1: { fontSize: "1.802rem", lineHeight: "2.7rem" },
     h2: { fontSize: "1.602rem", lineHeight: "2.4rem" },
@@ -96,21 +96,33 @@ const theme = createTheme({
     },
     MuiTabs: {
       styleOverrides: {
+        root: {
+          minHeight: 40,
+        },
         indicator: {
           height: 2,
-          backgroundColor: "#171B1E",
+          backgroundColor: "black",
         },
       },
     },
     MuiTab: {
       styleOverrides: {
-        root: {
+        root: ({ theme }) => ({
+          textTransform: "uppercase",
+          minHeight: 40,
+          minWidth: "auto",
+          paddingLeft: theme.spacing(3),
+          paddingRight: theme.spacing(3),
           fontWeight: 600,
-          color: "#171B1E",
+          fontSize: "0.75rem",
+          letterSpacing: "0.15em",
+          color: theme.palette.text.secondary,
+          fontFamily: "inherit",
+
           "&.Mui-selected": {
-            color: "#171B1E",
+            color: "black",
           },
-        },
+        }),
       },
     },
     MuiAccordion: {
@@ -160,10 +172,20 @@ const theme = createTheme({
     },
     MuiTimelineDot: {
       styleOverrides: {
-        root: {
+        root: ({ theme }) => ({
           marginLeft: "auto",
           marginRight: "auto",
-        },
+          backgroundColor: theme.palette.grey[300],
+        }),
+      },
+    },
+    MuiTimelineConnector: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundColor: "transparent",
+          borderLeft: "1px dashed",
+          borderColor: theme.palette.grey[400],
+        }),
       },
     },
   },

@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { Box, Paper, Stack, Typography } from "@mui/material";
+import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
 import { Acteur } from "@prisma/client";
 import { getActeurMandats } from "@/data/getActeurMandats";
 import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
@@ -123,12 +123,22 @@ export default async function InfoPersonelles({
               <InfoDialogIcon category="organe" item="GP" />
             </Box>
           </Typography>
-          <Typography variant="body2" fontWeight="medium">
-            {derniergroupeParlementaire &&
-            derniergroupeParlementaire.dateFin === null
-              ? derniergroupeParlementaire.organeRef?.libelle
-              : "-"}
-          </Typography>
+          <Chip 
+              label={derniergroupeParlementaire.organeRef?.libelle ?? '-'}
+              size="small"
+              sx={{
+                backgroundColor: derniergroupeParlementaire.organeRef?.couleurAssociee || "#e0e0e0",
+                color: derniergroupeParlementaire.organeRef?.couleurAssociee ? "#fff" : "rgba(0, 0, 0, 0.87)",
+                fontWeight: 600,
+                fontSize: "0.8rem",
+                height: "30px",
+                mt: 0.7,
+                "& .MuiChip-label": {
+                    paddingLeft: 1.5,
+                    paddingRight: 1.5
+                }
+              }}
+            />
         </div>
 
         <div>

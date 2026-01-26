@@ -23,23 +23,24 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
     }}
   >
     {paragraphes.map(
-      ({ id, codeGrammaire, acteurRefUid, roleDebat, texte }) => {
+      ({ uid, codeGrammaire, acteurRefUid, roleDebat, texte }, index) => {
         switch (codeGrammaire) {
           case "PAROLE_GENERIQUE":
           case "INTERRUPTION_1_10":
             return (
               <ParoleItem
-                key={id}
+                key={uid}
                 acteurUid={acteurRefUid}
                 roleDebat={roleDebat}
                 texte={texte}
+                isFirst={index === 0}
               />
             );
 
           case "TITRE_TEXTE_DISCUSSION":
             return (
               <Typography
-                key={id}
+                key={uid}
                 variant="h1"
                 component="h2"
                 dangerouslySetInnerHTML={{
@@ -50,7 +51,7 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
           case "SOUS_TITRE_TEXTE_DISCUSSION":
             return (
               <Typography
-                key={id}
+                key={uid}
                 variant="h3"
                 component="h3"
                 dangerouslySetInnerHTML={{
@@ -61,25 +62,25 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
           case "ODJ_APPEL_DISCUSSION":
             return (
               <Typography
-                key={id}
+                key={uid}
                 component="p"
                 dangerouslySetInnerHTML={{ __html: cleanText(texte ?? "") }}
               />
             );
           default:
             if (SUMMARY_CODES.has(codeGrammaire!)) {
-              return <SectionItem key={id} id={id.toString()} title={texte} />;
+              return <SectionItem key={uid} id={uid.toString()} title={texte} />;
             }
             return texte ? (
               <SubSectionItem
-                key={id}
+                key={uid}
                 title={texte}
                 withoutConnector={codeGrammaire === "FIN_SEAN_1_0"}
               />
             ) : null;
           // return (
           //   <div
-          //     key={id}
+          //     key={uid}
           //     onClick={() => {
           //       console.log(other);
           //     }}

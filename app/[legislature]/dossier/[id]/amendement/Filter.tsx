@@ -94,7 +94,7 @@ export const Filter = (props: FilterProps) => {
         size="small"
         variant="outlined"
         label="Document"
-        value={document}
+        value={document ?? ""}
         onChange={(event) => {
           handleDocument(event.target.value);
         }}
@@ -136,7 +136,7 @@ export const Filter = (props: FilterProps) => {
         size="small"
         variant="outlined"
         label="Status"
-        value={status}
+        value={status ?? ""}
         onChange={(event) => {
           handleStatus(event.target.value);
         }}

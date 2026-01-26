@@ -26,7 +26,7 @@ export default function DossiersTabs(props: {
   });
 
   const debatsDisponibles = debats?.filter(
-    (compteRendu: ReturnedDebat) => compteRendu._count.paragraphes > 0
+    (compteRendu: ReturnedDebat) => compteRendu._count.paragraphes > 0,
   );
 
   const rootPathName = `/${legislature}/dossier/${dossierUid}/`;
@@ -63,27 +63,7 @@ export default function DossiersTabs(props: {
         borderColor: "divider",
       }}
     >
-      <Tabs sx={{
-          minHeight: 40,
-          '& .MuiTabs-indicator': {
-            backgroundColor: 'black',
-            height: 2,
-          },
-          '& .MuiTab-root': {
-            textTransform: 'uppercase',
-            minHeight: 40,
-            minWidth: 'auto',
-            px: 3, 
-            fontWeight: 600,
-            fontSize: '0.75rem',
-            letterSpacing: '0.15em', 
-            color: 'text.secondary',
-            fontFamily: 'inherit',
-          },
-          '& .Mui-selected': {
-            color: 'black !important',
-          }
-        }}
+      <Tabs
         value={
           segment &&
           tabs
@@ -105,7 +85,7 @@ export default function DossiersTabs(props: {
               href={tab.href}
               disabled={tab.disabled}
             />
-          ) : null
+          ) : null,
         )}
       </Tabs>
     </Box>

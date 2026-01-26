@@ -14,7 +14,6 @@ import Typography from "@mui/material/Typography";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { Agenda } from "@prisma/client";
 import Link from "next/link";
 import { ReturnedDebat } from "@/data/getDebats";
 
