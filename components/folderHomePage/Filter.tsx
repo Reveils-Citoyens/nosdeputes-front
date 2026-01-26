@@ -32,7 +32,7 @@ export const Filter = () => {
 
       <TextField
         size="small"
-        label="Search"
+        label="Chercher par mot-clef"
         value={search ?? ""}
         onChange={(event) => {
           setSearch(event.target.value);
