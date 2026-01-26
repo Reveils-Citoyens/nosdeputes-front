@@ -6,29 +6,83 @@ import {
 } from "./InfoDialogContext";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
-import { Typography } from "@mui/material";
+import DialogContent from "@mui/material/DialogContent";
+import Typography from "@mui/material/Typography";
+import IconButton from "@mui/material/IconButton";
+import CloseIcon from "@mui/icons-material/Close";
+import Box from "@mui/material/Box";
 import { infoDialogContents } from "../contents";
 
 export default function InfoDialog() {
   const contentKey = React.useContext(InfoDialogContext);
   const setContentKey = React.useContext(InfoDialogDispatchContext);
 
+  const handleClose = () => setContentKey?.(null);
+
   const [cat, key] = contentKey ? contentKey.split(".") : [null, null];
   const info = cat && key ? infoDialogContents[cat][key] : null;
 
+  if (!info) return null;
+
   return (
     <Dialog
-      maxWidth="lg"
-      onClose={() => setContentKey?.(null)}
-      open={info?.dialog ? true : false}
+      maxWidth="md"
+      fullWidth
+      onClose={handleClose}
+      open={!!contentKey}
+      slotProps={{
+        paper: {
+          elevation: 2,
+          sx: {
+            borderRadius: 3,
+            backgroundImage: "none",
+          },
+        },
+      }}
     >
-      <DialogTitle>{info?.translation}</DialogTitle>
-      {contentKey &&
-        info?.dialog?.split("\n").map((line, index) => (
-          <Typography sx={{ p: 2 }} key={index}>
-            {line}
-          </Typography>
-        ))}
+      <DialogTitle
+        sx={{
+          m: 0,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Typography
+          variant="h6"
+          component="div"
+          fontWeight="bold"
+          sx={{ lineHeight: 1.3, mr: 2 }}
+        >
+          {info.translation}
+        </Typography>
+        <IconButton
+          aria-label="close"
+          onClick={handleClose}
+          sx={{
+            color: "grey.500",
+            mr: -1.5,
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent dividers sx={{ p: 3, borderColor: "grey.100" }}>
+        {info.dialog?.split("\n").map((line, index) => {
+          if (!line.trim()) return <Box key={index} sx={{ height: 16 }} />;
+          return (
+            <Typography
+              key={index}
+              variant="body1"
+              color="text.secondary"
+              sx={{ mb: 1.5, lineHeight: 1.6 }}
+            >
+              {line}
+            </Typography>
+          );
+        })}
+      </DialogContent>
     </Dialog>
   );
 }

@@ -10,7 +10,14 @@ export default function DeputeTabs({ slug }: { slug: string }) {
   const segment = useSelectedLayoutSegment();
 
   return (
-    <Tabs value={segment ?? "activites"} variant="scrollable">
+    <Tabs
+      value={segment ?? "activites"}
+      variant="scrollable"
+      sx={{
+        borderBottom: 1,
+        borderColor: "divider",
+      }}
+    >
       <Tab
         value="activites"
         label="Activités"

@@ -1,11 +1,12 @@
 import * as React from "react";
+import Image from "next/image";
+
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
+import Box from "@mui/material/Box";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
-
-import LinkIcon from "@/icons/LinkIcon";
 
 import Link from "next/link";
 
@@ -22,14 +23,28 @@ export const LegislativeDocumentsCard = async (
   );
 
   return (
-    <Accordion elevation={0} disableGutters defaultExpanded color="secondary">
+    <Accordion
+      elevation={0}
+      disableGutters
+      defaultExpanded
+      sx={{
+        bgcolor: "grey.100",
+        borderRadius: "16px",
+        "&.MuiAccordion-root": { borderRadius: "16px" },
+        "&.Mui-expanded": { borderRadius: "16px", margin: 0 },
+        "& .MuiAccordionSummary-root": { borderRadius: "16px" },
+      }}
+    >
       <AccordionSummary
         aria-controls="additional-info-content"
         id="additional-info-header"
+        sx={{ minHeight: 48, "& .MuiAccordionSummary-content": { my: 1 } }}
       >
-        <Typography>Documents législatifs</Typography>
+        <Typography variant="subtitle1" fontWeight={"bold"}>
+          Documents législatifs
+        </Typography>
       </AccordionSummary>
-      <AccordionDetails>
+      <AccordionDetails sx={{ pt: 0, pb: 1.5 }}>
         <Stack direction="column" spacing={2}>
           {Object.values(documents).map((document) => {
             if (!document) {
@@ -41,20 +56,34 @@ export const LegislativeDocumentsCard = async (
                 key={document.uid}
                 direction="row"
                 spacing={1}
-                alignItems="center"
+                alignItems="flex-start"
               >
+                {document.pdfUrl && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      height: "25px",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Image
+                      src="/documents.png"
+                      alt="Icone document"
+                      width={18}
+                      height={18}
+                    />
+                  </Box>
+                )}
                 <Typography
                   variant="body2"
-                  fontWeight="bold"
+                  fontWeight="medium"
                   href={document.pdfUrl ?? undefined}
                   component={document.pdfUrl ? Link : "p"}
                   target="_blank"
                 >
                   {document.titrePrincipalCourt}
                   {document.chambre ? ` (${document.chambre})` : "  "}
-                  {document.pdfUrl && (
-                    <LinkIcon sx={{ ml: 1, fontSize: "14px" }} />
-                  )}
                 </Typography>
               </Stack>
             );

@@ -73,14 +73,14 @@ export default async function Contacts({ acteurUid }: { acteurUid: string }) {
   );
 
   return (
-    <Paper sx={{ p: 2, bgcolor: "grey.50", width: 300 }} elevation={0}>
+    <Paper sx={{ p: 2, bgcolor: "grey.100", width: 300, borderRadius: "16px" }} elevation={0}>
       <Stack direction="column" spacing={1}>
-        <Typography variant="subtitle1">Contacts</Typography>
+        <Typography variant="subtitle1" fontWeight="bold">Contacts</Typography>
 
         {/* Adresses physique */}
         {postalAdresses.length > 0 && (
           <Box>
-            <Typography variant="body2" fontWeight="light">
+            <Typography variant="body2" fontWeight="light" color="grey.600">
               Courier
             </Typography>
             <List>
@@ -103,10 +103,10 @@ export default async function Contacts({ acteurUid }: { acteurUid: string }) {
                       mb: 1,
                     }}
                   >
-                    <Typography variant="body2" fontWeight="light">
+                    <Typography variant="body2" fontWeight="medium">
                       {intitule}
                     </Typography>
-                    <Typography variant="caption">
+                    <Typography variant="body2" fontWeight="medium">
                       {numeroRue} {nomRue}
                       <br />
                       {complementAdresse}
@@ -122,7 +122,7 @@ export default async function Contacts({ acteurUid }: { acteurUid: string }) {
 
         {mailAdresses.length > 0 && (
           <Box>
-            <Typography variant="body2" fontWeight="light">
+            <Typography variant="body2" fontWeight="light" color="grey.600">
               Email
             </Typography>
             <List>
@@ -136,7 +136,7 @@ export default async function Contacts({ acteurUid }: { acteurUid: string }) {
                     mb: 1,
                   }}
                 >
-                  <Typography variant="caption" fontWeight="light">
+                  <Typography variant="body2" fontWeight="medium">
                     {valElec}
                   </Typography>
                 </ListItem>
@@ -147,7 +147,7 @@ export default async function Contacts({ acteurUid }: { acteurUid: string }) {
 
         {phoneAdresses.length > 0 && (
           <Box>
-            <Typography variant="body2" fontWeight="light">
+            <Typography variant="body2" fontWeight="light" color="grey.600">
               Téléphone
             </Typography>
             <List>
@@ -161,7 +161,7 @@ export default async function Contacts({ acteurUid }: { acteurUid: string }) {
                     mb: 1,
                   }}
                 >
-                  <Typography variant="caption" fontWeight="light">
+                  <Typography variant="body2" fontWeight="medium">
                     {valElec}
                   </Typography>
                 </ListItem>
@@ -172,7 +172,7 @@ export default async function Contacts({ acteurUid }: { acteurUid: string }) {
 
         {internetAdresses.length > 0 && (
           <Box>
-            <Typography variant="body2" fontWeight="light">
+            <Typography variant="body2" fontWeight="light" color="grey.600">
               Internet
             </Typography>
             <List>
@@ -202,8 +202,8 @@ export default async function Contacts({ acteurUid }: { acteurUid: string }) {
                     </ListItemIcon>
 
                     <Typography
-                      variant="caption"
-                      fontWeight="light"
+                      variant="body2"
+                      fontWeight="medium"
                       component="a"
                       target="_blank"
                       href={href}

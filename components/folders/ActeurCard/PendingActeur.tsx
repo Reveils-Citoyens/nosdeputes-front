@@ -8,7 +8,7 @@ export function PendingActeur() {
     <Box
       sx={[
         {
-          px: 1.5,
+          px: 0.5,
           py: 0.5,
           display: "flex",
           justifyContent: "space-between",
@@ -16,7 +16,7 @@ export function PendingActeur() {
         },
       ]}
     >
-      <Box sx={{ display: "flex", minWidth: 0 }}>
+      <Box sx={{ display: "flex", minWidth: 0, gap: 0, my: 0 }}>
         <Skeleton variant="circular" width={40} height={40} />
         <Box
           sx={{
@@ -27,12 +27,11 @@ export function PendingActeur() {
             minWidth: 0,
           }}
         >
-          <Skeleton variant="text" sx={{ fontSize: "1rem" }} />
-          <Skeleton variant="text" sx={{ fontSize: "0.5rem" }} />
+          <Skeleton variant="text" sx={{ fontSize: "1rem", minWidth: 80 }} />
 
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Skeleton variant="circular" width={10} height={10} />
-            <Skeleton variant="text" sx={{ fontSize: "0.7rem" }} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Skeleton variant="circular" width={12} height={12} />
+            <Skeleton variant="text" sx={{ fontSize: "0.7rem", minWidth: 30 }} />
           </Box>
         </Box>
       </Box>

@@ -11,10 +11,9 @@ async function getDebatsUnCached(
 
     const pointsOdj = (await rep.json()) as { data: { agendaRef?: { compteRenduRef?: Debat[] } }[] };
 
-
-
     const debatsUids = pointsOdj.data
       .flatMap((pt) => pt.agendaRef?.compteRenduRef ?? [])
+      .filter((deb) => deb.chambre === 'AN')
       .map((deb) => deb.uid);
 
     if (debatsUids.length === 0) {

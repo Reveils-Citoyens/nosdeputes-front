@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Timeline from "@mui/lab/Timeline";
-import TimelineItem from "@mui/lab/TimelineItem";
+import TimelineItem, { timelineItemClasses } from "@mui/lab/TimelineItem";
 import TimelineSeparator from "@mui/lab/TimelineSeparator";
 import TimelineConnector from "@mui/lab/TimelineConnector";
 import TimelineContent from "@mui/lab/TimelineContent";
@@ -11,16 +11,26 @@ import TimelineOppositeContent, {
 } from "@mui/lab/TimelineOppositeContent";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import { useTheme, useMediaQuery } from "@mui/material";
 
 import { CardLayout } from "@/components/folders/CardLayout";
-
 import { ActeLegislatif } from "@prisma/client";
-
 import { groupActs } from "@/repository/Acts";
 import Image from "next/image";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getDebats } from "@/data/getDebats";
+
+// Utilitaire pour formater la date proprement
+const formatDate = (date?: Date | null) => {
+  if (!date) return "?";
+  return date.toLocaleDateString("fr-FR", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
 
 function getLogoPathFromCode(code: string) {
   if (code.startsWith("AN")) {
@@ -39,41 +49,42 @@ const TimelineItemLvl0 = ({
   act,
   groupDate,
   children,
+  isMobile,
 }: React.PropsWithChildren<{
   act: ActeLegislatif;
   groupDate?: Date;
+  isMobile: boolean;
 }>) => {
   const title = act.nomCanonique || act.codeActe;
-  const date = act.dateActe ?? groupDate;
   const logo = getLogoPathFromCode(act.codeActe);
+  const dateStr = formatDate(act.dateActe ?? groupDate);
+
   return (
     <React.Fragment>
       <TimelineItem>
-        <TimelineOppositeContent>
+        {/* Sur Desktop, date à gauche. Sur mobile, on cache. */}
+        {!isMobile && (
+          <TimelineOppositeContent>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+                height: 50,
+              }}
+            >
+              <Typography variant="body2" fontWeight="light">
+                {dateStr}
+              </Typography>
+            </Box>
+          </TimelineOppositeContent>
+        )}
+
+        <TimelineSeparator sx={{ minWidth: isMobile ? 40 : 50 }}>
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              height: 50,
-            }}
-          >
-            <Typography variant="body2" fontWeight="light">
-              {date
-                ? date.toLocaleDateString("fr-FR", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })
-                : "?"}
-            </Typography>
-          </Box>
-        </TimelineOppositeContent>
-        <TimelineSeparator sx={{ minWidth: 50 }}>
-          <Box
-            sx={{
-              width: 44,
-              height: 44,
+              width: isMobile ? 36 : 44,
+              height: isMobile ? 36 : 44,
               my: 1,
               mx: "auto",
               borderColor: "grey.400",
@@ -83,7 +94,8 @@ const TimelineItemLvl0 = ({
               justifyContent: "center",
               alignItems: "center",
               overflow: "hidden",
-              fontSize: 13,
+              bgcolor: "white",
+              zIndex: 1,
             }}
           >
             {logo ? (
@@ -93,27 +105,42 @@ const TimelineItemLvl0 = ({
                 width={logo.size}
                 height={logo.size}
                 style={{
-                  width: logo.size,
-                  height: logo.size,
+                  width: isMobile ? logo.size * 0.8 : logo.size,
+                  height: isMobile ? logo.size * 0.8 : logo.size,
                 }}
               />
             ) : (
               act.codeActe
             )}
           </Box>
-
           <TimelineConnector />
         </TimelineSeparator>
-        <TimelineContent>
+
+        <TimelineContent sx={{ pr: 0 }}>
+          {/* Sur Mobile, date au-dessus du titre */}
+          {isMobile && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+              sx={{ mt: 1 }}
+            >
+              {dateStr}
+            </Typography>
+          )}
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
               justifyContent: "flex-start",
-              height: 50,
+              minHeight: 50,
             }}
           >
-            <Typography variant="body1" fontWeight="bold">
+            <Typography
+              variant="body1"
+              fontWeight="bold"
+              sx={{ lineHeight: 1.2 }}
+            >
               {title}
             </Typography>
           </Box>
@@ -128,14 +155,32 @@ const TimelineItemLvl1 = ({
   act,
   groupDate,
   children,
-}: React.PropsWithChildren<{ act: ActeLegislatif; groupDate?: Date }>) => {
+  isMobile,
+}: React.PropsWithChildren<{
+  act: ActeLegislatif;
+  groupDate?: Date;
+  isMobile: boolean;
+}>) => {
   const title = act.nomCanonique || act.codeActe;
-  const date = act.dateActe ?? groupDate;
+  const dateStr = formatDate(act.dateActe ?? groupDate);
+
   return (
-    <TimelineItem key={act.uid}>
-      <TimelineOppositeContent />
-      <TimelineSeparator sx={{ minWidth: 50 }}>
-        <TimelineConnector sx={{ height: 10, flexGrow: 0 }} />
+    <TimelineItem>
+      {/* Desktop seulement */}
+      {!isMobile && (
+        <TimelineOppositeContent>
+          <Typography
+            variant="caption"
+            fontWeight="light"
+            sx={{ color: "grey.600", display: "block", mt: 1 }}
+          >
+            {dateStr}
+          </Typography>
+        </TimelineOppositeContent>
+      )}
+
+      <TimelineSeparator sx={{ minWidth: isMobile ? 40 : 50 }}>
+        <TimelineConnector sx={{ height: 14, flexGrow: 0 }} />
         <Box
           sx={{
             bgcolor: "black",
@@ -148,25 +193,23 @@ const TimelineItemLvl1 = ({
         />
         <TimelineConnector />
       </TimelineSeparator>
-      <TimelineContent>
-        <Typography variant="body1">{title}</Typography>
-        <Typography
-          variant="caption"
-          component="p"
-          fontWeight="light"
-          sx={{
-            textTransform: "capitalize",
-            color: "grey.600",
-          }}
-        >
-          {date
-            ? date.toLocaleDateString("fr-FR", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })
-            : "?"}
+
+      <TimelineContent sx={{ pb: 2, pr: 0 }}>
+        <Typography variant="body1" sx={{ mb: 1, mt: 0.5, fontWeight: 500 }}>
+          {title}
         </Typography>
+
+        {/* Mobile seulement : Date sous le titre principal de l'étape */}
+        {isMobile && (
+          <Typography
+            variant="caption"
+            fontWeight="light"
+            sx={{ color: "grey.600", display: "block", mb: 2, mt: -0.5 }}
+          >
+            {dateStr}
+          </Typography>
+        )}
+
         {children}
       </TimelineContent>
     </TimelineItem>
@@ -182,7 +225,14 @@ export const TimelineCard = ({
   dossierUid: string;
   legislature: string;
 }) => {
+  const theme = useTheme();
+  // On considère mobile tout ce qui est en dessous de 'sm' (600px)
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const { rootIds, actsLookup } = groupActs(actesLegislatifs);
+  const [expandedLvl2, setExpandedLvl2] = React.useState<
+    Record<string, boolean>
+  >({});
 
   const { data: debats } = useQuery({
     queryKey: ["debats", dossierUid],
@@ -199,82 +249,123 @@ export const TimelineCard = ({
   return (
     <CardLayout title="Chronologie du dossier">
       <Timeline
+        position={isMobile ? "right" : "right"} // 'Right' aligne le contenu à droite de la ligne
         sx={{
-          [`& .${timelineOppositeContentClasses.root}`]: {
-            flex: 0.2,
-          },
+          p: 0,
+          // Hack CSS important pour supprimer l'espace vide à gauche sur mobile
+          [`& .${timelineItemClasses.root}:before`]: isMobile
+            ? { flex: 0, padding: 0 }
+            : { flex: 0.2 },
+          [`& .${timelineOppositeContentClasses.root}`]: isMobile
+            ? { display: "none" }
+            : { flex: 0.2 },
         }}
       >
         {rootIds?.map((rootId) => {
           const act = actsLookup[rootId];
           return (
-            <TimelineItemLvl0 key={act.uid} act={act} groupDate={act.date}>
+            <TimelineItemLvl0
+              key={act.uid}
+              act={act}
+              groupDate={act.date}
+              isMobile={isMobile}
+            >
               {act.children.map((lvl1Uid) => {
                 const lvl1Act = actsLookup[lvl1Uid];
+
                 return (
                   <TimelineItemLvl1
                     key={lvl1Act.uid}
                     act={lvl1Act}
                     groupDate={lvl1Act.date}
+                    isMobile={isMobile}
                   >
                     {lvl1Act.children.map((lvl2Uid) => {
                       const lvl2Act = actsLookup[lvl2Uid];
+                      const allLvl3Uids = lvl2Act.children;
+                      const isExpanded = expandedLvl2[lvl2Uid];
+                      const displayedLvl3Uids = isExpanded
+                        ? allLvl3Uids
+                        : allLvl3Uids.slice(0, 6);
 
                       const debatUid =
                         lvl2Act.reunionRefUid &&
                         agendatsToDebatMap[lvl2Act.reunionRefUid];
-
                       const link = debatUid
                         ? `/${legislature}/dossier/${dossierUid}/debat/${debatUid}`
                         : undefined;
-                      const title = `${lvl2Act.nomCanonique}${
-                        lvl2Act.date
-                          ? ` du ${lvl2Act.date.toLocaleDateString("fr-FR", {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })}`
-                          : ""
+
+                      const dateLvl2 = formatDate(lvl2Act.date);
+                      const lvl2Title = `${lvl2Act.nomCanonique} ${
+                        lvl2Act.date ? `(${dateLvl2})` : ""
                       }`;
 
                       return (
-                        <div key={lvl2Act.uid}>
+                        <Box key={lvl2Act.uid} sx={{ mb: 2 }}>
                           <Typography
-                            variant="caption"
+                            variant="body2"
                             component={link ? Link : "p"}
-                            fontWeight="light"
                             href={link}
-                            sx={{ my: 1.5 }}
+                            sx={{
+                              display: "block",
+                              color: link ? "primary.main" : "text.primary",
+                              fontWeight: 500,
+                              textDecoration: "none",
+                              mb: 0.8,
+                              lineHeight: 1.4,
+                              cursor: link ? "pointer" : "default",
+                              "&:hover": {
+                                textDecoration: link ? "underline" : "none",
+                              },
+                            }}
                           >
-                            {title}
+                            {lvl2Title}
                           </Typography>
 
-                          {lvl2Act.children.map((lvl3Uid) => {
+                          {displayedLvl3Uids.map((lvl3Uid) => {
                             const lvl3Act = actsLookup[lvl3Uid];
-                            const date = lvl3Act.dateActe;
-                            const title = `${lvl3Act.nomCanonique}${
-                              date
-                                ? ` du ${date.toLocaleDateString("fr-FR", {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                  })}`
-                                : ""
-                            }`;
-
+                            const date3Str = formatDate(lvl3Act.dateActe);
                             return (
                               <Typography
+                                key={lvl3Uid}
                                 variant="caption"
                                 component="p"
-                                fontWeight="light"
-                                key={lvl3Act.uid}
-                                sx={{ my: 0, ml: 4 }}
+                                sx={{
+                                  ml: 2,
+                                  color: "grey.600",
+                                  mt: 0.4,
+                                  lineHeight: 1.4,
+                                }}
                               >
-                                {title}
+                                • {lvl3Act.nomCanonique}
+                                {lvl3Act.dateActe && ` (${date3Str})`}
                               </Typography>
                             );
                           })}
-                        </div>
+
+                          {allLvl3Uids.length > 6 && !isExpanded && (
+                            <Button
+                              size="small"
+                              onClick={() =>
+                                setExpandedLvl2((prev) => ({
+                                  ...prev,
+                                  [lvl2Uid]: true,
+                                }))
+                              }
+                              sx={{
+                                textTransform: "none",
+                                fontSize: "0.7rem",
+                                ml: 2,
+                                p: 0,
+                                mt: 1,
+                                minWidth: 0,
+                                display: "block",
+                              }}
+                            >
+                              + {allLvl3Uids.length - 6} autres actes...
+                            </Button>
+                          )}
+                        </Box>
                       );
                     })}
                   </TimelineItemLvl1>

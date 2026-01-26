@@ -26,7 +26,7 @@ export default function DossiersTabs(props: {
   });
 
   const debatsDisponibles = debats?.filter(
-    (compteRendu: ReturnedDebat) => compteRendu._count.paragraphes > 0
+    (compteRendu: ReturnedDebat) => compteRendu._count.paragraphes > 0,
   );
 
   const rootPathName = `/${legislature}/dossier/${dossierUid}/`;
@@ -85,7 +85,7 @@ export default function DossiersTabs(props: {
               href={tab.href}
               disabled={tab.disabled}
             />
-          ) : null
+          ) : null,
         )}
       </Tabs>
     </Box>

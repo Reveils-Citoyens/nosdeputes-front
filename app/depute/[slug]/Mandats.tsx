@@ -50,17 +50,35 @@ export default async function Mandats({ acteurUid }: { acteurUid: string }) {
   );
 
   return (
-    <Paper sx={{ p: 2, bgcolor: "grey.50", width: 300 }} elevation={0}>
+    <Paper sx={{ p: 2, bgcolor: "grey.100", width: 300, borderRadius: "16px" }} elevation={0}>
       <Stack direction="column" spacing={2}>
-        <Typography variant="subtitle1">Responsabilités</Typography>
+        <Typography variant="subtitle1" fontWeight={"bold"}>Responsabilités</Typography>
 
         {types.map((type) => (
           <Box key={type}>
-            <Typography variant="body2" fontWeight="light">
+            <Typography variant="body2" fontWeight="light" color="grey.600">
               {organeTranslations[type] ?? type}{" "}
-              <InfoDialogIcon category="organe" item={type} />
+              <Box component="span" sx={{ 
+                display: 'inline-flex', 
+                ml: 0.5,
+                verticalAlign: 'text-bottom',
+                '& button': { 
+                  p: 0, 
+                  minWidth: 0, 
+                  height: 'auto',
+                  lineHeight: 0
+                },
+                '& svg': { 
+                  fontSize: '1rem',
+                  color: 'grey.400' 
+                }
+              }}>
+                <InfoDialogIcon category="organe" item={type} />
+              </Box>
+
+              
             </Typography>
-            <List>
+            <List sx={{ listStyleType: 'disc', pl: 2.5 }}>
               {mandatsPerType[type]
                 .filter(({ libQualiteSex, organeRefUid }) => {
                   if (libQualiteSex !== "Membre") {
@@ -74,8 +92,10 @@ export default async function Mandats({ acteurUid }: { acteurUid: string }) {
                   );
                 })
                 .map(({ libelle, libQualiteSex }) => (
-                  <ListItem key={libelle} disablePadding>
-                    <Typography variant="body2">
+                  <ListItem key={libelle} 
+                      disablePadding 
+                      sx={{ display: 'list-item', mb: 0.5 }}>
+                    <Typography variant="body2" fontWeight="medium">
                       {libelle}
                       {libQualiteSex && ` (${libQualiteSex})`}
                     </Typography>

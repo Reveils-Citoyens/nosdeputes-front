@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { Paper, Stack, Typography } from "@mui/material";
+import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
 import { Acteur } from "@prisma/client";
 import { getActeurMandats } from "@/data/getActeurMandats";
 import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
@@ -38,24 +38,30 @@ export default async function InfoPersonelles({
     ).getFullYear() - 1970;
 
   return (
-    <Paper sx={{ p: 2, bgcolor: "grey.50", width: 300 }} elevation={0}>
+    <Paper
+      sx={{ p: 2, bgcolor: "grey.100", borderRadius: "16px", width: "100%" }}
+      elevation={0}
+    >
       <Stack direction="column" spacing={2}>
-        <Typography variant="subtitle1">Informations personelles</Typography>
-
+        <Typography variant="subtitle1" fontWeight={"bold"}>
+          Fiche d&apos;identité
+        </Typography>
         {dernierMandatDepute === undefined ? (
           <div>
             <Typography variant="body2" fontWeight="light">
-              Debut de mandat
+              Début de mandat
             </Typography>
-            <Typography variant="body2">Pas de mandat de député·e·s</Typography>
+            <Typography variant="body2" fontWeight="medium">
+              Pas de mandat de député·e
+            </Typography>
           </div>
         ) : (
           <React.Fragment>
             <div>
-              <Typography variant="body2" fontWeight="light">
-                Debut de mandat
+              <Typography variant="body2" fontWeight="light" color="grey.600">
+                Début de mandat
               </Typography>
-              <Typography variant="body2">
+              <Typography variant="body2" fontWeight="medium">
                 Le{" "}
                 {new Date(dernierMandatDepute?.dateDebut).toLocaleDateString(
                   "fr-FR",
@@ -67,10 +73,10 @@ export default async function InfoPersonelles({
 
             {dernierMandatDepute?.dateFin !== null ? (
               <div>
-                <Typography variant="body2" fontWeight="light">
+                <Typography variant="body2" fontWeight="light" color="grey.600">
                   Fin de mandat
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" fontWeight="medium">
                   {`Le ${new Date(
                     dernierMandatDepute?.dateFin
                   ).toLocaleDateString("fr-FR", {
@@ -85,43 +91,138 @@ export default async function InfoPersonelles({
         )}
 
         <div>
-          <Typography variant="body2" fontWeight="light">
-            Group politique <InfoDialogIcon category="organe" item="GP" />
+          <Typography
+            variant="body2"
+            fontWeight="light"
+            color="grey.600"
+            sx={{
+              lineHeight: 1,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            Groupe politique
+            <Box
+              component="span"
+              sx={{
+                display: "inline-flex",
+                ml: 0.5,
+                verticalAlign: "text-bottom",
+                "& button": {
+                  p: 0,
+                  minWidth: 0,
+                  height: "auto",
+                  lineHeight: 0,
+                },
+                "& svg": {
+                  fontSize: "1rem",
+                  color: "grey.400",
+                },
+              }}
+            >
+              <InfoDialogIcon category="organe" item="GP" />
+            </Box>
           </Typography>
-          <Typography variant="body2">
-            {derniergroupeParlementaire &&
-            derniergroupeParlementaire.dateFin === null
-              ? derniergroupeParlementaire.organeRef?.libelleAbrege
-              : "-"}
-          </Typography>
+          <Chip 
+              label={derniergroupeParlementaire.organeRef?.libelle ?? '-'}
+              size="small"
+              sx={{
+                backgroundColor: derniergroupeParlementaire.organeRef?.couleurAssociee || "#e0e0e0",
+                color: derniergroupeParlementaire.organeRef?.couleurAssociee ? "#fff" : "rgba(0, 0, 0, 0.87)",
+                fontWeight: 600,
+                fontSize: "0.8rem",
+                height: "30px",
+                mt: 0.7,
+                "& .MuiChip-label": {
+                    paddingLeft: 1.5,
+                    paddingRight: 1.5
+                }
+              }}
+            />
         </div>
 
         <div>
-          <Typography variant="body2" fontWeight="light">
-            Partis politique <InfoDialogIcon category="organe" item="PARPOL" />
+          <Typography
+            variant="body2"
+            fontWeight="light"
+            color="grey.600"
+            sx={{
+              lineHeight: 1,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            Parti politique
+            <Box
+              component="span"
+              sx={{
+                display: "inline-flex",
+                ml: 0.5,
+                verticalAlign: "text-bottom",
+                "& button": {
+                  p: 0,
+                  minWidth: 0,
+                  height: "auto",
+                  lineHeight: 0,
+                },
+                "& svg": {
+                  fontSize: "1rem",
+                  color: "grey.400",
+                },
+              }}
+            >
+              <InfoDialogIcon category="organe" item="PARPOL" />
+            </Box>
           </Typography>
-          <Typography variant="body2">
+          <Typography variant="body2" fontWeight="medium">
             {dernierPartisPolitique && dernierPartisPolitique.dateFin === null
-              ? dernierPartisPolitique.organeRef?.libelleAbrege
+              ? dernierPartisPolitique.organeRef?.libelle
               : "-"}
           </Typography>
         </div>
 
         <div>
-          <Typography variant="body2" fontWeight="light">
+          <Typography variant="body2" fontWeight="light" color="grey.600">
             Date de naissance
           </Typography>
-          <Typography variant="body2">
+          <Typography variant="body2" fontWeight="medium">
             Le {dateNais && new Date(dateNais).toLocaleDateString("fr-FR")} (
             {age} ans) à {villeNais}
           </Typography>
         </div>
 
         <div>
-          <Typography variant="body2" fontWeight="light">
-            Profession <InfoDialogIcon category="depute" item="profession" />
+          <Typography
+            variant="body2"
+            fontWeight="light"
+            color="grey.600"
+            sx={{ lineHeight: 1, display: "flex", alignItems: "center" }}
+          >
+            Profession
+            <Box
+              component="span"
+              sx={{
+                display: "inline-flex",
+                ml: 0.5,
+                verticalAlign: "text-bottom",
+                "& button": {
+                  p: 0,
+                  minWidth: 0,
+                  height: "auto",
+                  lineHeight: 0,
+                },
+                "& svg": {
+                  fontSize: "1rem",
+                  color: "grey.400",
+                },
+              }}
+            >
+              <InfoDialogIcon category="depute" item="profession" />
+            </Box>
           </Typography>
-          <Typography variant="body2">{profession}</Typography>
+          <Typography variant="body2" fontWeight="medium">
+            {profession}
+          </Typography>
         </div>
       </Stack>
     </Paper>
