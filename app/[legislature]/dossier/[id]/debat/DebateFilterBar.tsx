@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
 
-import { useSelectedLayoutSegment } from "next/navigation";
-import { permanentRedirect } from "next/navigation";
+import { useSelectedLayoutSegment, useRouter, permanentRedirect } from "next/navigation";
+import { formatDateDebat } from "@/utils/formatDateDebat";
 
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
@@ -23,19 +23,15 @@ type DebateFilterBarProps = {
 
 export const DebateFilterBar = (props: DebateFilterBarProps) => {
   const { debats } = props;
+  const router = useRouter();
   const sceanceUid = useSelectedLayoutSegment();
 
   const debatIndex = debats.findIndex((debat) => debat.uid === sceanceUid);
-  if (!sceanceUid || debatIndex < 0) {
-    if (debats.length > 0) {
-      // Si le debat n'existe pas ou est vide, on redirige vers le premier débat disponible
-      if (sceanceUid) {
-        permanentRedirect(`${debats[0].uid}`);
-      } else {
-        permanentRedirect(`debat/${debats[0].uid}`);
-      }
+  React.useEffect(() => {
+    if (debats.length > 0 && (!sceanceUid || debatIndex < 0)) {
+      router.replace(`${debats[0].uid}`);
     }
-  }
+  }, [sceanceUid, debatIndex, debats, router]);
 
   return (
     <Box
@@ -62,15 +58,20 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
           justifyContent="space-between"
           sx={{ width: "100%" }}
         >
-          <Select value={sceanceUid} displayEmpty sx={{ flex: 1 }}>
+          <Select value={sceanceUid || ""} displayEmpty sx={{ flex: 1 }} onChange={(e) => router.push(`${e.target.value}`)} >
             {debats.map((debat) => {
+              const dateStr = debat.dateSeance ? formatDateDebat(debat.dateSeance) : "Date inconnue";
+              const chambre = debat.chambre ?? "AN";
+              const isHemicycle = debat.uid?.startsWith("CRSANR");
+              const lieu = isHemicycle ? "Hémicycle" : "Commission";
+
               return (
                 // @ts-ignore
                 <MenuItem
                   key={debat.uid}
-                  value={debat.uid}
+                  value={debat.uid || ""}
                   component={Link}
-                  href={debat.uid}
+                  href={(debat.uid as string) || "#"}
                 >
                   <Typography
                     variant="caption"
@@ -81,41 +82,22 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
                       },
                     }}
                   >
-                    {debat.dateSeanceJour}
+                    {dateStr} - {chambre} - {lieu}
                   </Typography>
                 </MenuItem>
               );
             })}
           </Select>
-          <Stack
-            justifyContent="flex-end"
-            direction="row"
-            gap={2}
-            flex={3}
-            sx={{
-              display: {
-                xs: "none",
-                md: "flex",
-              },
-            }}
-          >
-            <IconButton
-              size="small"
-              component={Link}
-              href={debatIndex <= 0 ? "" : debats[debatIndex - 1].uid!}
+          <Stack justifyContent="flex-end" direction="row" flex={3} gap={2} sx={{ display: { xs: "none", md: "flex" } }}>
+            <IconButton 
               disabled={debatIndex <= 0}
+              onClick={() => router.push(`${debats[debatIndex - 1].uid}`)}
             >
               <ArrowBackIcon fontSize="small" />
             </IconButton>
-            <IconButton
-              size="small"
-              component={Link}
-              href={
-                debatIndex >= debats.length - 1
-                  ? ""
-                  : debats[debatIndex + 1].uid!
-              }
+            <IconButton 
               disabled={debatIndex >= debats.length - 1}
+              onClick={() => router.push(`${debats[debatIndex + 1].uid}`)}
             >
               <ArrowForwardIcon fontSize="small" />
             </IconButton>

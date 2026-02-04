@@ -15,8 +15,8 @@ import { DebateTimeline } from "@/app/[legislature]/dossier/[id]/debat/[debatUid
 import { ClockMovingIcon } from "@/icons/ClockMovingIcon";
 import { useTheme } from "@mui/material";
 import { WORDS_PER_MINUTES } from "@/components/const";
-import { Acteur, Organe, Paragraphe } from "@prisma/client";
-import { getOrgane } from "@/data/getOrgane";
+import { Paragraphe } from "@prisma/client";
+import { formatDateDebat } from "@/utils/formatDateDebat";
 
 function getWordsPerActeur(paragraphes: Paragraphe[]) {
   const wordsPerActeur: Record<string, number> = {};
@@ -46,10 +46,17 @@ function getWordsPerActeur(paragraphes: Paragraphe[]) {
 type DebateTranscriptProps = {
   paragraphes: Paragraphe[];
   wordsCounts: Record<string, number>;
-  title: string;
+  title: string | Date;
+  debatUid: string;
+  chambre?: string | null;
 };
+
 export const DebateTranscript = (props: DebateTranscriptProps) => {
-  const { paragraphes, wordsCounts, title } = props;
+  const { paragraphes, wordsCounts, title, debatUid, chambre } = props;
+
+  const formattedDate = formatDateDebat(title);
+  const institution = chambre === "SN" ? "Sénat" : "Assemblée nationale";
+  const location = debatUid.includes("CRS") ? "Hémicycle" : "Commission";
 
   const wordsPerActeur = React.useMemo(
     () => getWordsPerActeur(paragraphes),
@@ -64,8 +71,10 @@ export const DebateTranscript = (props: DebateTranscriptProps) => {
 
   return (
     <>
-      <Stack spacing={1} mb={2}>
-        <Typography variant="h4">{title}</Typography>
+      <Stack spacing={1} mb={1}>
+        <Typography variant="h4" sx={{ textTransform: "capitalize" }}>
+          {formattedDate} • {institution} • {location}
+        </Typography>
         <Stack direction="row" alignItems="center" spacing={1}>
           <ClockMovingIcon fontSize="inherit" fill={theme.palette.grey[900]} />
           <Typography

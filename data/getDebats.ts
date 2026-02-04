@@ -29,16 +29,17 @@ async function getDebatsUnCached(
       })
     )
 
+    const sortedItems = items
+      .filter((item): item is ReturnedDebat => item !== null)
+      .sort((a, b) => {
+        const dateA = a.dateSeance || "";
+        const dateB = b.dateSeance || "";
+        return dateA.localeCompare(dateB);
+      });
 
-    items.forEach((item) => {
-      if (item.dateSeance) {
-        item.dateSeance = new Date(item.dateSeance);
-      }
-    });
-
-    return items.filter((item): item is ReturnedDebat => item !== null);
+    return sortedItems;
   } catch (error) {
-    console.error("Error fetching dossier:", error);
+    console.error("Error fetching debats:", error);
     return null;
   }
 }

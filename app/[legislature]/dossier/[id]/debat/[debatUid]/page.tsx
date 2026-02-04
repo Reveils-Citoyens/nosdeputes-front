@@ -25,37 +25,34 @@ export default async function Page({
 
   const wordsCounts: Record<string, number> = interventions.reduce(
     (acc, paragraphe) => {
-      const { codeGrammaire, texte } = paragraphe;
-      if (SUMMARY_CODES.has(codeGrammaire!)) {
-        lastId = paragraphe.uid.toString();
-        return { ...acc, [lastId]: 0 };
+      if (!paragraphe) return acc;
+      
+      const { codeGrammaire, texte, id } = paragraphe;
+
+      if (id && SUMMARY_CODES.has(codeGrammaire!)) {
+        lastId = id.toString();
+        acc[lastId] = 0;
+        return acc;
       }
 
       if (["PAROLE_GENERIQUE", "INTERRUPTION_1_10"].includes(codeGrammaire!)) {
         const texteLength = texte ? texte.split(" ").length : 0;
-        return {
-          ...acc,
-          [lastId]: acc[lastId] + texteLength,
-        };
-      } else {
-        console.log("codeGrammaire: ", codeGrammaire, paragraphe);
+        acc[lastId] = (acc[lastId] || 0) + texteLength;
       }
       return acc;
     },
-    {
-      init: 0,
-    } as Record<string, number>,
+    { init: 0 } as Record<string, number>
   );
 
   const sections = interventions.filter((p) =>
-    SUMMARY_CODES.has(p.codeGrammaire!),
+    p?.id && p?.codeGrammaire && SUMMARY_CODES.has(p.codeGrammaire)
   );
 
   const hasSummary = sections.length > 0;
 
-  return (
+return (
     <>
-      {/* On n'affiche la colonne de gauche que s'il y a un sommaire associé */}
+      { /* On n'affiche la colonne de gauche que s'il y a un sommaire associé */}
       {hasSummary && (
         <div
           style={{
@@ -69,7 +66,6 @@ export default async function Page({
         </div>
       )}
 
-      {/* On adapte le style de la colonne principale */}
       <div
         style={{
           display: "flex",
@@ -81,10 +77,11 @@ export default async function Page({
         }}
       >
         <DebateTranscript
-          title={debat?.dateSeanceJour ?? ""}
+          title={debat?.dateSeance ?? ""}
           paragraphes={interventions}
           wordsCounts={wordsCounts}
-        />
+          debatUid={debatUid}   
+          chambre={debat?.chambre ?? "AN"} />
       </div>
     </>
   );

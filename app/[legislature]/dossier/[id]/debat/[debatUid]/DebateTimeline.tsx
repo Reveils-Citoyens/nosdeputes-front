@@ -10,9 +10,22 @@ import { cleanText } from "@/components/folders/DebatTab/cleanText";
 import { Paragraphe } from "@prisma/client";
 import { SUMMARY_CODES } from "@/components/const";
 
+import TimelineItem from "@mui/lab/TimelineItem"; // Import ajouté
+import TimelineSeparator from "@mui/lab/TimelineSeparator"; // Import ajouté
+import TimelineConnector from "@mui/lab/TimelineConnector"; // Import ajouté
+import TimelineContent from "@mui/lab/TimelineContent"; // Import ajouté
+import TimelineDot from "@mui/lab/TimelineDot"; // Import ajouté
+
 type DebateTimelineProps = {
   paragraphes: Paragraphe[];
 };
+
+const connectorStyle = {
+  bgcolor: "transparent",
+  borderLeft: "1px dashed",
+  borderColor: "grey.400",
+};
+
 export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
   <Timeline
     sx={{
@@ -23,7 +36,11 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
     }}
   >
     {paragraphes.map(
-      ({ uid, codeGrammaire, acteurRefUid, roleDebat, texte }, index) => {
+      ({ id, codeGrammaire, acteurRefUid, roleDebat, texte }, index) => {
+        
+        const safeId = id ? id.toString() : `fallback-id-${index}`;
+        const itemKey = `${safeId}-${index}`;
+
         switch (codeGrammaire) {
           case "PAROLE_GENERIQUE":
           case "INTERRUPTION_1_10":
@@ -39,37 +56,62 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
 
           case "TITRE_TEXTE_DISCUSSION":
             return (
-              <Typography
-                key={uid}
-                variant="h1"
-                component="h2"
-                dangerouslySetInnerHTML={{
-                  __html: cleanText(texte ?? "", true),
-                }}
-              />
+              <TimelineItem key={itemKey}>
+                <TimelineSeparator sx={{ minWidth: 50 }}>
+                  <TimelineConnector sx={connectorStyle} />
+                  <TimelineDot sx={{ bgcolor: "black" }} />
+                  <TimelineConnector sx={connectorStyle} />
+                </TimelineSeparator>
+                <TimelineContent sx={{ my: "auto" }}>
+                  <Typography
+                    variant="h1"
+                    component="h2"
+                    dangerouslySetInnerHTML={{
+                      __html: cleanText(texte ?? "", true),
+                    }}
+                  />
+                </TimelineContent>
+              </TimelineItem>
             );
+
           case "SOUS_TITRE_TEXTE_DISCUSSION":
             return (
-              <Typography
-                key={uid}
-                variant="h3"
-                component="h3"
-                dangerouslySetInnerHTML={{
-                  __html: cleanText(texte ?? "", true),
-                }}
-              />
+              <TimelineItem key={itemKey}>
+                <TimelineSeparator sx={{ minWidth: 50 }}>
+                  <TimelineConnector sx={connectorStyle} />
+                  <TimelineDot variant="outlined" />
+                  <TimelineConnector sx={connectorStyle} />
+                </TimelineSeparator>
+                <TimelineContent sx={{ my: "auto" }}>
+                  <Typography
+                    variant="h3"
+                    component="h3"
+                    dangerouslySetInnerHTML={{
+                      __html: cleanText(texte ?? "", true),
+                    }}
+                  />
+                </TimelineContent>
+              </TimelineItem>
             );
           case "ODJ_APPEL_DISCUSSION":
             return (
-              <Typography
-                key={uid}
-                component="p"
-                dangerouslySetInnerHTML={{ __html: cleanText(texte ?? "") }}
-              />
+              <TimelineItem key={itemKey}>
+                <TimelineSeparator sx={{ minWidth: 50 }}>
+                  <TimelineConnector sx={connectorStyle} />
+                </TimelineSeparator>
+                <TimelineContent>
+                  <Typography
+                    component="p"
+                    variant="body2"
+                    sx={{ fontStyle: "italic", color: "grey.700" }}
+                    dangerouslySetInnerHTML={{ __html: cleanText(texte ?? "") }}
+                  />
+                </TimelineContent>
+              </TimelineItem>
             );
           default:
-            if (SUMMARY_CODES.has(codeGrammaire!)) {
-              return <SectionItem key={uid} id={uid.toString()} title={texte} />;
+            if (codeGrammaire && SUMMARY_CODES.has(codeGrammaire)) {
+              return <SectionItem key={itemKey} id={safeId} title={texte} />;
             }
             return texte ? (
               <SubSectionItem
@@ -78,18 +120,6 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
                 withoutConnector={codeGrammaire === "FIN_SEAN_1_0"}
               />
             ) : null;
-          // return (
-          //   <div
-          //     key={uid}
-          //     onClick={() => {
-          //       console.log(other);
-          //     }}
-          //   >
-          //     <h5>{codeGrammaire}</h5>
-          //     <h6>{other.codeParole}</h6>
-          //     <p dangerouslySetInnerHTML={{ __html: texte }} />
-          //   </div>
-          // );
         }
       }
     )}
