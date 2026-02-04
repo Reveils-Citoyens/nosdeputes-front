@@ -15,24 +15,28 @@ import Typography from "@mui/material/Typography";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import Link from "next/link";
-import { ReturnedDebat } from "@/data/getDebats";
+
+import { Agenda } from "@prisma/client";
 
 type DebateFilterBarProps = {
-  debats: ReturnedDebat[];
+  reunions: Agenda[];
 };
 
 export const DebateFilterBar = (props: DebateFilterBarProps) => {
-  const { debats } = props;
-  const sceanceUid = useSelectedLayoutSegment();
+  // const { debats } = props;
+  const { reunions } = props;
+  const reunionUid = useSelectedLayoutSegment();
 
-  const debatIndex = debats.findIndex((debat) => debat.uid === sceanceUid);
-  if (!sceanceUid || debatIndex < 0) {
-    if (debats.length > 0) {
+  const debatIndex = reunions.findIndex((reu) => reu.uid === reunionUid);
+  
+  // const debatIndex = debats.findIndex((debat) => debat.uid === sceanceUid);
+  if (!reunionUid || debatIndex < 0) {
+    if (reunions.length > 0) {
       // Si le debat n'existe pas ou est vide, on redirige vers le premier débat disponible
-      if (sceanceUid) {
-        permanentRedirect(`${debats[0].uid}`);
+      if (reunionUid) {
+        permanentRedirect(`${reunions[0].uid}`);
       } else {
-        permanentRedirect(`debat/${debats[0].uid}`);
+        permanentRedirect(`debat/${reunions[0].uid}`);
       }
     }
   }
@@ -62,15 +66,26 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
           justifyContent="space-between"
           sx={{ width: "100%" }}
         >
-          <Select value={sceanceUid} displayEmpty sx={{ flex: 1 }}>
-            {debats.map((debat) => {
+          <Select value={reunionUid} displayEmpty sx={{ flex: 1 }}>
+            {reunions.map((reunion) => {
+              const reunuionUid = reunion.uid;
+              // console.log(reunion.dateSeance)
+              console.log(reunion);
+                const dateSeanceJour = reunion.timestampDebut
+                ? new Date(reunion.timestampDebut).toLocaleDateString("fr-FR", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                  })
+                : "Date inconnue";
               return (
                 // @ts-ignore
                 <MenuItem
-                  key={debat.uid}
-                  value={debat.uid}
+                  key={reunuionUid}
+                  value={reunuionUid}
                   component={Link}
-                  href={debat.uid}
+                  href={reunuionUid}
                 >
                   <Typography
                     variant="caption"
@@ -81,7 +96,7 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
                       },
                     }}
                   >
-                    {debat.dateSeanceJour}
+                    {dateSeanceJour}
                   </Typography>
                 </MenuItem>
               );
@@ -102,7 +117,7 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
             <IconButton
               size="small"
               component={Link}
-              href={debatIndex <= 0 ? "" : debats[debatIndex - 1].uid!}
+              href={debatIndex <= 0 ? "" : reunions[debatIndex - 1].uid}
               disabled={debatIndex <= 0}
             >
               <ArrowBackIcon fontSize="small" />
@@ -111,11 +126,11 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
               size="small"
               component={Link}
               href={
-                debatIndex >= debats.length - 1
+                debatIndex >= reunions.length - 1
                   ? ""
-                  : debats[debatIndex + 1].uid!
+                  : reunions[debatIndex + 1].uid
               }
-              disabled={debatIndex >= debats.length - 1}
+              disabled={debatIndex >= reunions.length - 1}
             >
               <ArrowForwardIcon fontSize="small" />
             </IconButton>

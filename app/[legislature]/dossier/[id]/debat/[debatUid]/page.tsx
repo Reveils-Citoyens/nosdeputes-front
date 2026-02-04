@@ -3,19 +3,37 @@ import { DebateSummary } from "./DebateSummary";
 import { SUMMARY_CODES } from "@/components/const";
 import { DebateTranscript } from "./DebateTranscript";
 import { getInterventions } from "@/data/getInterventions";
-import { getDebats } from "@/data/getDebats";
+import { getDossier } from "@/data/getDossier";
 
 export default async function Page({
   params,
 }: {
   params: Promise<{ id: string; debatUid: string }>;
 }) {
-  const { id: dossierUid, debatUid } = await params;
 
-  const interventions = await getInterventions(debatUid);
-  const debats = await getDebats(dossierUid);
+  // url parameter is debatUid but it refers to agendaUid (reunion)
+  const { id: dossierUid, debatUid: agendaUid } = await params;
 
-  const debat = debats?.find((d) => d.uid === debatUid);
+  const dossier = await getDossier(dossierUid);
+  const acteSeance = dossier?.actesLegislatifs.find(
+    (acte) => acte.agendaRef?.uid === agendaUid
+  );
+  const agenda = acteSeance.agendaRef;
+  
+  // Identifier le point d'ordre associé à ce dossier législatif
+  const orderPoint = agenda.pointsOdj.find(
+    (pt) => (pt.dossierLegislatifUid === dossierUid && pt.etat === "Terminé"),
+  )?.valeurPtsOdj;
+  // on récupère les interventions associées à la reunion et à l'ordre du jour
+  const interventions = await getInterventions(agenda.compteRenduRefUid, orderPoint);
+  const dateSeanceJour = agenda.timestampDebut
+      ? new Date(agenda.timestampDebut).toLocaleDateString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        })
+      : "Date inconnue";
 
   if (!interventions || interventions.length === 0) {
     return <p>Aucun débat trouvé pour cette séance.</p>;
@@ -38,7 +56,7 @@ export default async function Page({
           [lastId]: acc[lastId] + texteLength,
         };
       } else {
-        console.log("codeGrammaire: ", codeGrammaire, paragraphe);
+        // console.log("codeGrammaire: ", codeGrammaire, paragraphe);
       }
       return acc;
     },
@@ -81,7 +99,7 @@ export default async function Page({
         }}
       >
         <DebateTranscript
-          title={debat?.dateSeanceJour ?? ""}
+          title={dateSeanceJour}
           paragraphes={interventions}
           wordsCounts={wordsCounts}
         />
