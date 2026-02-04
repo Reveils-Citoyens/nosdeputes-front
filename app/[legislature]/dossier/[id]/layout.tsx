@@ -3,7 +3,7 @@ import React from "react";
 import { HeroSection } from "@/components/folders/HeroSection";
 import Tabs from "./Tabs";
 
-import { getCurrentStatus } from "./dataFunctions";
+import { getCurrentStatus, getReunionsWithCompteRendu } from "./dataFunctions";
 import { getDossier } from "@/data/getDossier";
 import { dossierSettings } from "./dossierSettings";
 
@@ -28,6 +28,8 @@ export default async function Dossier({
     tableVotes = true,
   } = (codeProcedure ? dossierSettings[codeProcedure] : {}) ?? {};
   const status = getCurrentStatus(actesLegislatifs);
+  const reunionsDisponibles = getReunionsWithCompteRendu(dossier);
+  const hasDebats = reunionsDisponibles.length > 0;
 
   return (
     <React.Fragment>
@@ -43,6 +45,7 @@ export default async function Dossier({
         showDebats={tableDebats}
         showAmendements={tableAmendements}
         showVotes={tableVotes}
+        hasDebats={hasDebats}
       />
       {children}
     </React.Fragment>

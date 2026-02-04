@@ -216,30 +216,6 @@ const TimelineItemLvl1 = ({
   );
 };
 
-const debatSeanceActeCodes = new Set([
-  "AN1-DEBATS-SEANCE",
-  "AN2-DEBATS-SEANCE",
-  "AN3-DEBATS-SEANCE",
-  "AN21-DEBATS-SEANCE",
-  "ANLDEF-DEBATS-SEANCE",
-  "ANLUNI-DEBATS-SEANCE",
-  "ANNLEC-DEBATS-SEANCE",
-]);
-
-const comReunionActeCodes = new Set([
-  "AN1-COM-FOND-REUNION",
-  "AN1-COM-AVIS-REUNION",
-  "AN2-COM-FOND-REUNION",
-  "AN2-COM-AVIS-REUNION",
-  "AN3-COM-FOND-REUNION",
-  "AN3-COM-AVIS-REUNION",
-  "ANLDEF-COM-FOND-REUNION",
-  "ANLUNI-COM-CAE-REUNION",
-  "ANLUNI-COM-FOND-REUNION",
-  "ANNLEC-COM-AVIS-REUNION",
-  "ANNLEC-COM-FOND-REUNION",
-]);
-
 
 export const TimelineCard = ({
   actesLegislatifs,
@@ -322,7 +298,7 @@ export const TimelineCard = ({
                       //
                       let link;
                       
-                      if (debatSeanceActeCodes.has(lvl2Act.codeActe)) {
+                      if (lvl2Act.codeActe.includes("SEANCE")) {
                         //
                         const agenda: Agenda = lvl2Act.agendaRef;
                         
@@ -351,10 +327,8 @@ export const TimelineCard = ({
                         }
                         
                         // Pour eviter les "dupliquats" d'acte qui pointent vers la meme reunion"
-                        if (agenda?.uid) {
-                          displayedAgendaUids.add(agenda.uid);
-                        }
-                        
+                        displayedAgendaUids.add(agenda.uid);
+
                         // on utilise l'id de la reunion pour gérer la page debat (plus facile)
                         link = `/${legislature}/dossier/${dossierUid}/debat/${agenda.uid}`;
                       }
