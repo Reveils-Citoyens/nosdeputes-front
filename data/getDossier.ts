@@ -16,7 +16,7 @@ async function getDossierUnCached(uid: string): Promise<
 > {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/${uid}?include=actesLegislatifs,rapporteurs`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/${uid}?include=actesLegislatifs.agendaRef.pointsOdj,rapporteurs`
     );
 
     const { data } = await rep.json();

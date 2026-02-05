@@ -16,6 +16,8 @@ async function getDebatsUnCached(
       .filter((deb) => deb.chambre === 'AN')
       .map((deb) => deb.uid);
 
+    // console.log(debatsUids);
+
     if (debatsUids.length === 0) {
       return [];
     }

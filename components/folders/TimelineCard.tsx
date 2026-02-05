@@ -15,12 +15,10 @@ import Button from "@mui/material/Button";
 import { useTheme, useMediaQuery } from "@mui/material";
 
 import { CardLayout } from "@/components/folders/CardLayout";
-import { ActeLegislatif } from "@prisma/client";
+import { ActeLegislatif, Agenda } from "@prisma/client";
 import { groupActs } from "@/repository/Acts";
 import Image from "next/image";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { getDebats } from "@/data/getDebats";
 
 // Utilitaire pour formater la date proprement
 const formatDate = (date?: Date | null) => {
@@ -216,6 +214,7 @@ const TimelineItemLvl1 = ({
   );
 };
 
+
 export const TimelineCard = ({
   actesLegislatifs,
   dossierUid,
@@ -234,18 +233,6 @@ export const TimelineCard = ({
     Record<string, boolean>
   >({});
 
-  const { data: debats } = useQuery({
-    queryKey: ["debats", dossierUid],
-    queryFn: async () => await getDebats(dossierUid),
-  });
-
-  const agendatsToDebatMap: Record<string, string> = {};
-  debats?.forEach((debat) => {
-    if (debat.reunionRefUid && debat._count.paragraphes > 0) {
-      agendatsToDebatMap[debat.reunionRefUid] = debat.uid;
-    }
-  });
-
   return (
     <CardLayout title="Chronologie du dossier">
       <Timeline
@@ -261,7 +248,11 @@ export const TimelineCard = ({
             : { flex: 0.2 },
         }}
       >
-        {rootIds?.map((rootId) => {
+        {(() => {
+          // Set pour tracker les agendaUids déjà affichés (éviter les duplicats)
+          const displayedAgendaUids = new Set<string>();
+          
+          return rootIds?.map((rootId) => {
           const act = actsLookup[rootId];
           return (
             <TimelineItemLvl0
@@ -288,13 +279,46 @@ export const TimelineCard = ({
                         ? allLvl3Uids
                         : allLvl3Uids.slice(0, 6);
 
-                      const debatUid =
-                        lvl2Act.reunionRefUid &&
-                        agendatsToDebatMap[lvl2Act.reunionRefUid];
-                      const link = debatUid
-                        ? `/${legislature}/dossier/${dossierUid}/debat/${debatUid}`
-                        : undefined;
 
+                      
+                      //
+                      let link;
+                      
+                      if (lvl2Act.codeActe.includes("SEANCE")) {
+                        //
+                        const agenda: Agenda = lvl2Act.agendaRef;
+                        
+                        // Skip si cet agenda a déjà été affiché
+                        if (agenda?.uid && displayedAgendaUids.has(agenda.uid)) {
+                          return null;
+                        }
+                        // on récupère les point odj associés à ce dossier législatif
+                        const matchingPoints = agenda?.pointsOdj?.filter(
+                          (point) => 
+                            point.dossierLegislatifUid === lvl2Act.dossierRefUid
+                        ) || [];
+                        
+                        if (matchingPoints.length === 0) {
+                          console.log("Aucun point d'ordre du jour trouvé pour l'acte: ", lvl2Act.uid);
+                          return null; // Skip cet élément
+                        }
+
+                        const hasTerminePoint = matchingPoints.some(
+                          (point) => point.etat === "Terminé"
+                        );
+
+                        if (!hasTerminePoint) {
+                          console.warn("Aucun point terminé trouvé pour l'acte: ", lvl2Act.uid);
+                          return null; // Skip cet élément
+                        }
+                        
+                        // Pour eviter les "dupliquats" d'acte qui pointent vers la meme reunion"
+                        displayedAgendaUids.add(agenda.uid);
+
+                        // on utilise l'id de la reunion pour gérer la page debat (plus facile)
+                        link = `/${legislature}/dossier/${dossierUid}/debat/${agenda.uid}`;
+                      }
+                      
                       const dateLvl2 = formatDate(lvl2Act.date);
                       const lvl2Title = `${lvl2Act.nomCanonique} ${
                         lvl2Act.date ? `(${dateLvl2})` : ""
@@ -325,11 +349,33 @@ export const TimelineCard = ({
                           {displayedLvl3Uids.map((lvl3Uid) => {
                             const lvl3Act = actsLookup[lvl3Uid];
                             const date3Str = formatDate(lvl3Act.dateActe);
+
+                            // link to CR de reunion de commission
+                            // let link = undefined;
+                            // if (comReunionActeCodes.has(lvl3Act.codeActe)) {
+                            //   // Si acte de réunion de commission
+                            //   // on filtre les point ordre du jour qui sont terminé
+                            //   const finishedPodj = lvl3Act.agendaRef?.pointsOdj?.filter(
+                            //     point => point.etat === "Terminé"
+                            //   ) || [];
+                            //   // on check le nombre de sujet à l'ordre du jour:
+                            //   // const nOjd = finishedPodj.length;
+                            //   // console.log("nOjd:", nOjd);
+                            //   // Si on a un seul point à l'ordre du jour, on peut linker directement vers le débat
+                            //   const debatUid = lvl3Act.agendaRef?.transcriptionRefUid || lvl3Act.agendaRef?.compteRenduRefUid;
+                            //   link =
+                            //     debatUid && (finishedPodj.length === 1)
+                            //       ? `/${legislature}/dossier/${dossierUid}/debat/${debatUid}`
+                            //       : undefined;
+                            // }
+
                             return (
                               <Typography
                                 key={lvl3Uid}
                                 variant="caption"
                                 component="p"
+                                // component={link ? Link : "p"}
+                                // href={link}
                                 sx={{
                                   ml: 2,
                                   color: "grey.600",
@@ -373,7 +419,8 @@ export const TimelineCard = ({
               })}
             </TimelineItemLvl0>
           );
-        })}
+        });
+        })()}
       </Timeline>
     </CardLayout>
   );

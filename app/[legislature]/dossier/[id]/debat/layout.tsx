@@ -1,6 +1,7 @@
 import React from "react";
 import { DebateFilterBar } from "./DebateFilterBar";
-import { getDebats } from "@/data/getDebats";
+import { getDossier } from "@/data/getDossier";
+import { getReunionsWithCompteRendu } from "../dataFunctions";
 
 export default async function Layout({
   params,
@@ -14,18 +15,17 @@ export default async function Layout({
 }) {
   const { id } = await params;
 
-  const debats = await getDebats(id);
+  const dossier = await getDossier(id);
 
-  const debatsDisponibles = debats?.filter(
-    (debat) => debat._count.paragraphes > 0
-  );
-  if (debatsDisponibles == null || debatsDisponibles.length === 0) {
+  const reunionsWithCompteRendu = getReunionsWithCompteRendu(dossier);
+
+  if (reunionsWithCompteRendu.length === 0) {
     return <p>Aucun débat n&apos;a été trouvé pour ce dossier legislatif.</p>;
   }
 
   return (
     <>
-      <DebateFilterBar debats={debatsDisponibles} />
+      <DebateFilterBar reunions={reunionsWithCompteRendu} />
       <div className="container">{children}</div>
     </>
   );

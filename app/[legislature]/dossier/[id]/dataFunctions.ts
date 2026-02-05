@@ -1,6 +1,16 @@
 import * as React from "react";
-import { ActeLegislatif, Dossier, Rapporteur } from "@prisma/client";
+import { ActeLegislatif, Dossier, Rapporteur, Agenda, PointOdj } from "@prisma/client";
 import { Status } from "@/components/StatusChip";
+
+// Type pour un acte avec agendaRef inclus (renvoyé par l'API avec include)
+type ActeWithAgendaRef = ActeLegislatif & {
+  agendaRef?: Agenda & { pointsOdj: PointOdj[] } | null;
+};
+
+// Type pour un dossier avec actesLegislatifs incluant agendaRef
+type DossierWithActes = Dossier & {
+  actesLegislatifs: ActeWithAgendaRef[];
+};
 
 const statusOrder = ["AN1", "SN1", "AN2", "SN2", "AN3", "SN3", "CMP", "PROM"];
 
@@ -44,4 +54,38 @@ export function getCommissionUids(
         .filter((id) => id !== null)
     )
   );
+}
+
+/**
+ * Filtre les réunions (agendaRef) des actes législatifs d'un dossier qui ont :
+ * - Un compte rendu associé (compteRenduRefUid)
+ * - Au moins un point d'ordre du jour lié au dossier et non annulé
+ * - Pas de doublons (même agenda.uid)
+ */
+export function getReunionsWithCompteRendu(dossier: DossierWithActes | null) {
+  if (!dossier) return [];
+  
+  const reunions: (Agenda & { pointsOdj: PointOdj[] })[] = [];
+  const seenAgendaUids = new Set<string>();
+
+  dossier.actesLegislatifs.forEach((acte) => {
+    if (acte.agendaRef && acte.codeActe.includes("SEANCE")) {
+      // Skip si cette réunion a déjà été ajoutée
+      if (seenAgendaUids.has(acte.agendaRef.uid)) {
+        return;
+      }
+
+      if (
+        acte.agendaRef.compteRenduRefUid &&
+        acte.agendaRef.pointsOdj.filter(
+          (pt) => pt.dossierLegislatifUid === dossier.uid && pt.etat !== "Annulé"
+        ).length > 0
+      ) {
+        seenAgendaUids.add(acte.agendaRef.uid);
+        reunions.push(acte.agendaRef);
+      }
+    }
+  });
+
+  return reunions;
 }
