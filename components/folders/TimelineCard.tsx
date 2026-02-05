@@ -19,8 +19,6 @@ import { ActeLegislatif, Agenda } from "@prisma/client";
 import { groupActs } from "@/repository/Acts";
 import Image from "next/image";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { getDebats } from "@/data/getDebats";
 
 // Utilitaire pour formater la date proprement
 const formatDate = (date?: Date | null) => {
@@ -234,18 +232,6 @@ export const TimelineCard = ({
   const [expandedLvl2, setExpandedLvl2] = React.useState<
     Record<string, boolean>
   >({});
-
-  const { data: debats } = useQuery({
-    queryKey: ["debats", dossierUid],
-    queryFn: async () => await getDebats(dossierUid),
-  });
-
-  const agendatsToDebatMap: Record<string, string> = {};
-  debats?.forEach((debat) => {
-    if (debat.reunionRefUid && debat._count.paragraphes > 0) {
-      agendatsToDebatMap[debat.reunionRefUid] = debat.uid;
-    }
-  });
 
   return (
     <CardLayout title="Chronologie du dossier">

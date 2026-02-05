@@ -11,7 +11,7 @@ async function getInterventionsUnCached(debatUid: string, ordrePoint?: string): 
         if (ordrePoint) {
             params.set('valeurPtsOdj', ordrePoint);
         }
-        console.log(`${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/interventions/?${params.toString()}`)
+        // console.log(`${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/interventions/?${params.toString()}`)
         const rep = await fetch(
             `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/interventions/?${params.toString()}`
         );

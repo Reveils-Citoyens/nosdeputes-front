@@ -23,7 +23,8 @@ export default async function Page({
   // Identifier le point d'ordre associé à ce dossier législatif
   const orderPoint = agenda.pointsOdj.find(
     (pt) => (pt.dossierLegislatifUid === dossierUid && pt.etat === "Terminé"),
-  )?.valeurPtsOdj;
+  )?.ordrePoint;
+
   // on récupère les interventions associées à la reunion et à l'ordre du jour
   const interventions = await getInterventions(agenda.compteRenduRefUid, orderPoint);
   const dateSeanceJour = agenda.timestampDebut
