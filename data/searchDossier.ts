@@ -42,6 +42,8 @@ export async function searchDossier(
     page: page.toString(),
     sort,
     dataset: "17",
+    prefixSearch: "true",
+    searchLanguage: "french",
   });
 
   Object.entries({
