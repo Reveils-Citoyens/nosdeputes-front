@@ -9,9 +9,9 @@ import {
   Avatar,
 } from "@mui/material";
 import debounce from "@/utils/debounce";
-import { Dossier, Acteur } from "@prisma/client";
+import { Dossier } from "@prisma/client";
 import { searchDossier } from "@/data/searchDossier";
-import { searchActeur } from "@/data/searchActeur";
+import { searchActeur, ActeurWithGroupe } from "@/data/searchActeur";
 import { useRouter } from "next/navigation";
 import { TYPES_DE_DOSSIERS } from "@/components/const";
 
@@ -35,7 +35,7 @@ import { TYPES_DE_DOSSIERS } from "@/components/const";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const fetchActeursByName = debounce(
-  (search: string, callback: (results: Acteur[]) => void) =>
+  (search: string, callback: (results: ActeurWithGroupe[]) => void) =>
     searchActeur(search).then(callback)
 );
 
@@ -46,9 +46,9 @@ const fetchDossiers = debounce(
 
 const emptyOptions = [] as const;
 
-type SearchOption = Acteur | Dossier;
+type SearchOption = ActeurWithGroupe | Dossier;
 
-function isActeur(item: SearchOption): item is Acteur {
+function isActeur(item: SearchOption): item is ActeurWithGroupe {
   return "prenom" in item;
 }
 
@@ -57,7 +57,7 @@ export default function SearchBar() {
   const [inputValue, setInputValue] = React.useState("");
   const [isSearching, setIsSearching] = React.useState(false);
   const [acteurOptions, setActeurOptions] =
-    React.useState<readonly Acteur[]>(emptyOptions);
+    React.useState<readonly ActeurWithGroupe[]>(emptyOptions);
   const [dossierOptions, setDossierOptions] =
     React.useState<readonly Dossier[]>(emptyOptions);
 
@@ -72,7 +72,7 @@ export default function SearchBar() {
     let active = true;
     setIsSearching(true);
 
-    fetchActeursByName(inputValue, (results: Acteur[]) => {
+    fetchActeursByName(inputValue, (results: ActeurWithGroupe[]) => {
       if (!active) return;
       setActeurOptions(results);
       setIsSearching(false);
@@ -205,7 +205,7 @@ export default function SearchBar() {
   );
 }
 
-function ActeurOption({ acteur }: { acteur: Acteur }) {
+function ActeurOption({ acteur }: { acteur: ActeurWithGroupe }) {
   return (
     <Stack direction="row" spacing={1.5} alignItems="center" sx={{ width: "100%" }}>
       <Avatar
