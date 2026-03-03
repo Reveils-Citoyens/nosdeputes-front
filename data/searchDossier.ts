@@ -29,7 +29,7 @@ export async function searchDossier(
 ): Promise<PaginatedResponse<Dossier> | null> {
   const {
     perPage = 10,
-    page = 0,
+    page = 1,
     sort = "dateDernierActe.desc",
     search = "",
     codeProcedure = "",
