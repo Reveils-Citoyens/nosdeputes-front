@@ -16,7 +16,7 @@ type SearchAmendementParams = {
   sort?: string;
   search?: string;
   sortAmendement?: string;
-  include?: string;
+  include?: string;  
 } & (
   | {
       /**
@@ -96,6 +96,8 @@ export async function searchAmendement(
     page: page.toString(),
     sort,
     chambre: "AN",
+    prefixSearch: "true",
+    searchLanguage: "french",
   });
 
   if (search) {
