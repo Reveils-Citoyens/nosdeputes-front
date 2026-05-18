@@ -15,6 +15,7 @@ import Button from "@mui/material/Button";
 import { useTheme, useMediaQuery } from "@mui/material";
 
 import { CardLayout } from "@/components/folders/CardLayout";
+import TermifiedText from "@/components/TermifiedText";
 import { ActeLegislatif } from "@prisma/client";
 import { groupActs } from "@/repository/Acts";
 import Image from "next/image";
@@ -141,7 +142,7 @@ const TimelineItemLvl0 = ({
               fontWeight="bold"
               sx={{ lineHeight: 1.2 }}
             >
-              {title}
+              <TermifiedText text={title} />
             </Typography>
           </Box>
         </TimelineContent>
@@ -196,7 +197,7 @@ const TimelineItemLvl1 = ({
 
       <TimelineContent sx={{ pb: 2, pr: 0 }}>
         <Typography variant="body1" sx={{ mb: 1, mt: 0.5, fontWeight: 500 }}>
-          {title}
+          <TermifiedText text={title} />
         </Typography>
 
         {/* Mobile seulement : Date sous le titre principal de l'étape */}

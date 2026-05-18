@@ -4,7 +4,7 @@ import React from "react";
 
 import Link from "next/link";
 
-import { useTheme } from "@mui/material";
+import { useTheme, useMediaQuery } from "@mui/material";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
@@ -13,6 +13,9 @@ import Stack from "@mui/material/Stack";
 import EnergyIcon from "@/icons/EnergyIcon";
 import LabelChip from "@/components/LabelChip";
 import StatusChip from "@/components/StatusChip";
+import AlerteButton from "@/components/AlerteButton";
+import Term from "@/components/Term";
+import { getTermForProcedure } from "@/data/glossaire";
 import { statusInfo } from "@/app/[legislature]/dossier/[id]/dataFunctions";
 
 const breadcrumbs = [
@@ -34,6 +37,7 @@ type HeroSectionProps = {
   titre: string | null;
   theme: string | null;
   status?: string;
+  dossierUid?: string;
 };
 
 export const HeroSection = ({
@@ -41,8 +45,11 @@ export const HeroSection = ({
   titre,
   theme: dossierTheme,
   status,
+  dossierUid,
 }: HeroSectionProps) => {
   const theme = useTheme();
+  const procedureTermSlug = getTermForProcedure(libelleProcedure);
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   return (
     <>
@@ -118,8 +125,16 @@ export const HeroSection = ({
                   },
                 }}
               >
-                {libelleProcedure}
-                {/* TODO: info tick */}
+                {procedureTermSlug ? (
+                  <Term
+                    term={procedureTermSlug}
+                    variant={isMobile ? "onDark" : "default"}
+                  >
+                    {libelleProcedure}
+                  </Term>
+                ) : (
+                  libelleProcedure
+                )}
               </Typography>
               <Typography
                 component="h1"
@@ -169,6 +184,14 @@ export const HeroSection = ({
                   size="small"
                   label={dossierTheme}
                   icon={<EnergyIcon />}
+                />
+              )}
+              {dossierUid && titre && (
+                <AlerteButton
+                  subjectType="dossier"
+                  subjectUid={dossierUid}
+                  subjectLabel={titre}
+                  variant="button"
                 />
               )}
               {/* <LabelChip size="small" label="Label" />

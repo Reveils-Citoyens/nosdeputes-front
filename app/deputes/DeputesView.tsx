@@ -29,7 +29,7 @@ function GroupPolitiqueHeader({
 }: {
   itemKey: string;
   nbDeputes: number;
-  group: Organe;
+  group: Organe | undefined;
 }) {
   return (
     <AccordionSummary
@@ -38,10 +38,10 @@ function GroupPolitiqueHeader({
       id={`${itemKey}-header`}
     >
       <Stack direction="row" alignItems="center" spacing={1}>
-        <CircleDiv color={group.couleurAssociee ?? "gray"} />
+        <CircleDiv color={group?.couleurAssociee ?? "gray"} />
         <Typography>
-          {group.libelle} ({group.libelleAbrev}) - {nbDeputes}{" "}
-          {nbDeputes > 1 ? "deputés" : "deputé"}
+          {group ? `${group.libelle} (${group.libelleAbrev})` : "Groupe non renseigné"} -{" "}
+          {nbDeputes} {nbDeputes > 1 ? "deputés" : "deputé"}
         </Typography>
       </Stack>
     </AccordionSummary>
@@ -203,7 +203,7 @@ export default function DeputesView({
             : "Par ordre alphabetique"}
         </Button>
       </Stack>
-      {Object.keys(uidGroup)
+      {Object.keys(uidGroup).filter((key) => key !== "")
         .sort()
         .map((key) => {
           const deputesUids = uidGroup[key];

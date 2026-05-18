@@ -51,6 +51,7 @@ export const metadata: Metadata = {
 const navigation: NavigationItem[] = [
   { name: "Députés", href: "/deputes" },
   { name: "Dossiers", href: "/dossiers" }, // old url is "/dossiers/date"
+  { name: "Comprendre", href: "/comprendre" },
   { name: "À Propos", href: "/about" }
 ];
 

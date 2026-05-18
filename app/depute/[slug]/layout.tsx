@@ -12,8 +12,11 @@ import Mandats from "./Mandats";
 import Contacts from "./Contacts";
 import Tabs from "./Tabs";
 import InfoPersonelles from "./InfoPersonelles";
+import AlerteButton from "@/components/AlerteButton";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
 import { getActeurAdressesElectroniques } from "@/data/getActeurContacts";
+import { getActeurCollaborateurs } from "@/data/getActeurCollaborateurs";
+import CollaborateursSection from "./CollaborateursSection";
 
 const SocialLink = ({
   Icon,
@@ -110,6 +113,7 @@ export default async function Page({
   const email = emailAN || emails[0]?.valElec;
 
   const circonscription = depute.mandatPrincipal;
+  const collaborateurs = await getActeurCollaborateurs(depute.uid);
 
   return (
     <Box
@@ -216,6 +220,13 @@ export default async function Page({
               <Box sx={contactButtonStyle}>Contacter</Box>
             </Link>
           )}
+
+          <AlerteButton
+            subjectType="depute"
+            subjectUid={depute.uid}
+            subjectLabel={`${depute.prenom} ${depute.nom}`}
+            variant="icon"
+          />
         </Stack>
       </Stack>
 
@@ -246,6 +257,7 @@ export default async function Page({
           <InfoPersonelles acteurUid={depute.uid} depute={depute} />
           <Mandats acteurUid={depute.uid} />
           <Contacts acteurUid={depute.uid} />
+          <CollaborateursSection collaborateurs={collaborateurs} />
         </Stack>
 
         {/* Colonne de Droite (Tabs et Contenu principal) */}

@@ -1,6 +1,7 @@
 import React from "react";
 
 import { HeroSection } from "@/components/folders/HeroSection";
+import ComprendreBanner from "@/components/folders/ComprendreBanner";
 import Tabs from "./Tabs";
 
 import { getCurrentStatus } from "./dataFunctions";
@@ -36,7 +37,9 @@ export default async function Dossier({
         titre={titre}
         theme={theme}
         status={status}
+        dossierUid={id}
       />
+      <ComprendreBanner />
       <Tabs
         legislature={legislature}
         dossierUid={id}

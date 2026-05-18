@@ -1,97 +1,98 @@
 "use client";
 import * as React from "react";
-import Image from "next/image";
 import {
   Autocomplete,
   TextField,
   Typography,
   Box,
-  CircularProgress,
   Stack,
   Avatar,
 } from "@mui/material";
 import debounce from "@/utils/debounce";
-import { Dossier } from "@prisma/client";
-import { searchDossier } from "@/data/searchDossier";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-import {
-  type CirconscriptionLegislativeSuggestion,
-  deputeAutocompletions,
-} from "@/data/autocomplet/suggestions";
-import { useQuery } from "@tanstack/react-query";
-import { getActeur } from "@/data/getActeur";
+import type { ActeurSearchResult } from "@/data/mongo/searchActeurParNom";
+import type { DossierSearchResult } from "@/data/mongo/searchDossierParTitre";
+
+function toSlug(prenom: string, nom: string): string {
+  return `${prenom}-${nom}`
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+// ─── Fetchers ────────────────────────────────────────────────────────────────
 
 const fetchActeurs = debounce(
-  (
-    search: string,
-    callback: (results: readonly CirconscriptionLegislativeSuggestion[]) => void
-  ) => deputeAutocompletions(search).then(callback)
+  (query: string, cb: (r: ActeurSearchResult[]) => void) =>
+    fetch(`/api/search/acteurs?q=${encodeURIComponent(query)}`)
+      .then((r) => r.json())
+      .then(cb)
 );
 
 const fetchDossiers = debounce(
-  (search: string, callback: (results: null | readonly Dossier[]) => void) =>
-    searchDossier({ search }).then((result) => callback(result?.data ?? null))
+  (query: string, cb: (r: DossierSearchResult[]) => void) =>
+    fetch(`/api/search/dossiers?q=${encodeURIComponent(query)}`)
+      .then((r) => r.json())
+      .then(cb)
 );
-const emptyOptions = [] as const;
+
+// ─── Type guard ───────────────────────────────────────────────────────────────
 
 function isActeur(
-  item: Dossier | CirconscriptionLegislativeSuggestion
-): item is CirconscriptionLegislativeSuggestion {
-  return (item as CirconscriptionLegislativeSuggestion).depute !== undefined;
+  item: ActeurSearchResult | DossierSearchResult
+): item is ActeurSearchResult {
+  return "nom" in item;
 }
 
-type Require<T, K extends keyof T> = T & { [P in K]-?: T[P] };
+// ─── SearchBar ────────────────────────────────────────────────────────────────
 
-type Circonscription = Require<CirconscriptionLegislativeSuggestion, "depute">;
+const emptyOptions = [] as const;
+
+const MIN_CHARS = 3;
+
 export default function SearchBar() {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [value, setValue] = React.useState<Circonscription | Dossier | null>(
-    null
-  );
+  const [value, setValue] = React.useState<
+    ActeurSearchResult | DossierSearchResult | null
+  >(null);
   const [inputValue, setInputValue] = React.useState("");
-  const [deputesOptions, setDeputesOptions] =
-    React.useState<readonly Circonscription[]>(emptyOptions);
-  const [dossierOptions, setDossierOptions] =
-    React.useState<readonly Dossier[]>(emptyOptions);
+  const [actuersOptions, setActeursOptions] = React.useState<
+    readonly ActeurSearchResult[]
+  >(emptyOptions);
+  const [dossierOptions, setDossierOptions] = React.useState<
+    readonly DossierSearchResult[]
+  >(emptyOptions);
+  const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (inputValue === "") {
-      setDeputesOptions(value && isActeur(value) ? [value] : emptyOptions);
+    if (inputValue.length < MIN_CHARS) {
+      setActeursOptions(value && isActeur(value) ? [value] : emptyOptions);
       setDossierOptions(value && !isActeur(value) ? [value] : emptyOptions);
-      return undefined;
+      setLoading(false);
+      return;
     }
 
-    // Allow to resolve the out of order request resolution.
     let active = true;
+    setLoading(true);
 
-    fetchActeurs(
-      inputValue,
-      (results: readonly CirconscriptionLegislativeSuggestion[]) => {
-        if (!active) {
-          return;
-        }
+    let acteursSettled = false;
+    let dossiersSettled = false;
 
-        setDeputesOptions(
-          results.filter(
-            (suggestion): suggestion is Circonscription =>
-              suggestion.depute !== undefined && suggestion.score > 0.5
-          )
-        );
-      }
-    );
-    fetchDossiers(inputValue, (results: null | readonly Dossier[]) => {
-      if (!active) {
-        return;
-      }
+    const checkDone = () => {
+      if (acteursSettled && dossiersSettled && active) setLoading(false);
+    };
 
-      if (results === null) {
-        setDossierOptions(emptyOptions);
-        return;
-      }
-      setDossierOptions(results);
+    fetchActeurs(inputValue, (results) => {
+      if (active) setActeursOptions(results ?? emptyOptions);
+      acteursSettled = true;
+      checkDone();
+    });
+    fetchDossiers(inputValue, (results) => {
+      if (active) setDossierOptions(results ?? emptyOptions);
+      dossiersSettled = true;
+      checkDone();
     });
 
     return () => {
@@ -99,33 +100,30 @@ export default function SearchBar() {
     };
   }, [value, inputValue]);
 
-  const options: (Circonscription | Dossier)[] = React.useMemo(
-    () => [...deputesOptions.slice(0, 5), ...dossierOptions.slice(0, 5)],
-    [deputesOptions, dossierOptions]
-  );
+  const options: (ActeurSearchResult | DossierSearchResult)[] =
+    React.useMemo(
+      () => [...actuersOptions.slice(0, 5), ...dossierOptions.slice(0, 5)],
+      [actuersOptions, dossierOptions]
+    );
 
   return (
     <Box sx={{ maxWidth: 709, width: "100%" }}>
       <Autocomplete
         getOptionLabel={(option) => {
-          if (typeof option === "string") {
-            return option;
-          }
-          if (isActeur(option)) {
-            return `${option.depute.etatCivil.ident.prenom} ${option.depute.etatCivil.ident.nom}`;
-          }
-          return option.titre!;
+          if (typeof option === "string") return option;
+          if (isActeur(option)) return `${option.prenom} ${option.nom}`;
+          return option.titre ?? "";
         }}
         slotProps={{
-            paper: {
-              sx: {
-                marginTop: "8px",
-                borderRadius: "20px",
-                boxShadow: "0px 4px 20px rgba(0,0,0,0.08)",
-                "&:empty": { display: "none" }
-              },
+          paper: {
+            sx: {
+              marginTop: "8px",
+              borderRadius: "20px",
+              boxShadow: "0px 4px 20px rgba(0,0,0,0.08)",
+              "&:empty": { display: "none" },
             },
-          }}
+          },
+        }}
         filterOptions={(x) => x}
         options={options}
         autoComplete
@@ -134,13 +132,13 @@ export default function SearchBar() {
         popupIcon={null}
         value={value}
         inputValue={inputValue}
-        noOptionsText={isPending ? "Recherche en cours..." : "Aucun résultat"}
+        loading={loading}
+        loadingText="Recherche en cours…"
+        noOptionsText="Aucun résultat"
         openOnFocus={false}
-        open={inputValue.length > 2}
-        
-        onInputChange={(event, newInputValue) => {
-          setInputValue(newInputValue);
-        }}
+        open={inputValue.length >= MIN_CHARS}
+        onChange={(_e, newValue) => setValue(newValue)}
+        onInputChange={(_e, newInputValue) => setInputValue(newInputValue)}
         renderInput={(params) => (
           <TextField
             {...params}
@@ -154,39 +152,39 @@ export default function SearchBar() {
                 boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.08)",
                 "&:hover": {
                   boxShadow: "0px 6px 25px rgba(0, 0, 0, 0.12)",
-                }
+                },
               },
             }}
             fullWidth
             placeholder="Entrez un code postal, un nom de député ou un nom de dossier législatif"
-            inputProps={{
-              ...params.inputProps,
-            }}
             InputProps={{
               ...params.InputProps,
-              endAdornment: isPending ? (
-                <CircularProgress size={20} />
-              ) : (
-                params.InputProps.endAdornment
-              ),
+              endAdornment: params.InputProps.endAdornment,
             }}
           />
         )}
         renderOption={({ key, ...props }, option) => {
           if (isActeur(option)) {
             return (
-              <li key={key} {...props} style={{ padding: '12px 10px' }}>
-                <ActeurOption {...option} />
+              <li key={key} {...props} style={{ padding: "12px 10px" }}>
+                <ActeurOption acteur={option} />
               </li>
             );
           }
           return (
-            <li key={key} {...props} style={{ padding: '12px 10px' }}>
+            <li key={key} {...props} style={{ padding: "12px 10px" }}>
               <Link
-                href={`/17/dossier/${option.uid}`}
-                style={{ width: "100%" }}
+                href={`/${option.legislature}/dossier/${option.uid}`}
+                style={{ width: "100%", textDecoration: "none", color: "inherit" }}
               >
-                {option.titre}
+                <Typography variant="body2" fontWeight="bold" noWrap>
+                  {option.titre}
+                </Typography>
+                {option.typeLibelle && (
+                  <Typography variant="caption" color="text.secondary">
+                    {option.typeLibelle}
+                  </Typography>
+                )}
               </Link>
             </li>
           );
@@ -199,49 +197,33 @@ export default function SearchBar() {
   );
 }
 
-export function ActeurOption(props: Circonscription) {
-  const { data: acteur } = useQuery({
-    queryKey: ["acteur", props.depute.uid],
-    queryFn: async () =>
-      props.depute.uid == null ? null : await getActeur(props.depute.uid),
-    enabled: !!props.depute.uid,
-  });
+// ─── ActeurOption ─────────────────────────────────────────────────────────────
 
-  const { nom, prenom } = props.depute.etatCivil.ident;
+function deputePhotoUrl(uid: string): string {
+  return `https://tricoteuses-assets.s3.fr-par.scw.cloud/photos/${uid.replace(/^PA/, "")}_124x124.jpg`;
+}
 
-  if (!acteur) {
-    return null;
-  }
+function ActeurOption({ acteur }: { acteur: ActeurSearchResult }) {
+  const { uid, prenom, nom, departement, numCirco } = acteur;
+  const href = `/depute/${toSlug(prenom, nom)}`;
+
   return (
-    <Link href={`/depute/${acteur.slug}`}>
-      <Stack direction="row" spacing={1.5}>
-        <Avatar
-          sx={{ height: 46, width: 46 }}
-          alt={"photo de " + prenom + " " + nom}
-          src={acteur?.urlImage ?? ""}
-        >
-          {prenom[0].toUpperCase()}
-          {nom[0].toUpperCase()}
+    <Link href={href} style={{ textDecoration: "none", color: "inherit", width: "100%" }}>
+      <Stack direction="row" spacing={1.5} alignItems="center">
+        <Avatar src={deputePhotoUrl(uid)} sx={{ height: 46, width: 46, flexShrink: 0 }}>
+          {prenom[0]?.toUpperCase()}
+          {nom[0]?.toUpperCase()}
         </Avatar>
-        <div style={{ flexGrow: 1 }}>
-          <Typography variant="body1" fontWeight="bold">
-            {props.depute.etatCivil.ident.prenom}{" "}
-            {props.depute.etatCivil.ident.nom}
-            
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="body1" fontWeight="bold" noWrap>
+            {prenom} {nom}
           </Typography>
-          <Stack direction="row" spacing={1} justifyContent="space-between">
-            {props.circonscription_legislative && (
-              <Typography variant="body1" fontWeight="light">
-                {props.circonscription_legislative.libelle}
-              </Typography>
-            )}
-            {props.role !== "député" && (
-              <Typography variant="body1" fontWeight="light" textAlign="end">
-                {props.autocompletion}
-              </Typography>
-            )}
-          </Stack>
-        </div>
+          {departement && numCirco && (
+            <Typography variant="body2" color="text.secondary" noWrap>
+              {numCirco}e circ. — {departement}
+            </Typography>
+          )}
+        </Box>
       </Stack>
     </Link>
   );

@@ -42,6 +42,7 @@ export async function searchDossier(
     page: page.toString(),
     sort,
     dataset: "17",
+    chambre: "AN",
   });
 
   Object.entries({
@@ -60,7 +61,15 @@ export async function searchDossier(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/?${searchParams}`
     );
 
-    const { data } = await rep.json();
+    if (!rep.ok) {
+      console.error(
+        `searchDossier: HTTP ${rep.status} ${rep.statusText} for ${rep.url}`
+      );
+      return null;
+    }
+
+    const body = await rep.json();
+    const data: Dossier[] = Array.isArray(body?.data) ? body.data : [];
 
     // Transforms all the "yyy-mm-dd" string into Date objects.
     data.forEach(parseDossier);

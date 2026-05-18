@@ -15,7 +15,7 @@ type DossierEnriched = Dossier & {
 async function getLastDossiersUnCached(): Promise<DossierEnriched[]> {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/?dataset=17&sort=dateDernierActe.desc&perPage=12&include=actesLegislatifs` 
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/?dataset=17&chambre=AN&sort=dateDernierActe.desc&perPage=12&include=actesLegislatifs`
     );
 
     const { data: dossiers } = await rep.json();

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Menu as MenuIcon, Close as CloseIcon } from "@mui/icons-material";
+import NavSearchBar from "./NavSearchBar";
 
 export interface NavigationItem {
   name: string;
@@ -80,8 +81,10 @@ export function NavBar({ navigation }: NavBarProps) {
               </button>
             </div>
 
-            {/* --- DROITE : Desktop (Placeholder pour équilibre ou boutons futurs) --- */}
-            <div className="hidden md:flex w-[140px] justify-end"></div>
+            {/* --- DROITE : Mini Search Desktop --- */}
+            <div className="hidden md:flex items-center justify-end w-[260px]">
+              <NavSearchBar />
+            </div>
           </div>
         </div>
       </nav>
@@ -96,6 +99,11 @@ export function NavBar({ navigation }: NavBarProps) {
         style={{ top: "80px" }}
       >
         <div className="flex flex-col items-center pt-8 px-6 space-y-4">
+          {/* Search mobile */}
+          <div className="w-full pb-2">
+            <NavSearchBar mobile />
+          </div>
+
           {navigation.map((item) => (
             <Link
               key={item.name}
