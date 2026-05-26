@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 
-export type AlertSubjectType = "dossier" | "depute";
+export type AlertSubjectType = "dossier" | "depute" | "recherche";
 
 export type AlertSubject = {
   type: AlertSubjectType;

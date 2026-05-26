@@ -13,6 +13,7 @@ import Contacts from "./Contacts";
 import Tabs from "./Tabs";
 import InfoPersonelles from "./InfoPersonelles";
 import AlerteButton from "@/components/AlerteButton";
+import MonDeputeButton from "@/components/MonDepute/MonDeputeButton";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
 import { getActeurAdressesElectroniques } from "@/data/getActeurContacts";
 import { getActeurCollaborateurs } from "@/data/getActeurCollaborateurs";
@@ -86,9 +87,10 @@ export default async function Page({
     return <p>Deputé non trouvé</p>;
   }
 
-  const adressesElectroniques = await getActeurAdressesElectroniques(
-    depute.uid
-  );
+  const [adressesElectroniques, collaborateurs] = await Promise.all([
+    getActeurAdressesElectroniques(depute.uid),
+    getActeurCollaborateurs(depute.uid),
+  ]);
 
   const twitter = adressesElectroniques.find(
     (c) => c.typeLibelle === "Twitter"
@@ -113,7 +115,6 @@ export default async function Page({
   const email = emailAN || emails[0]?.valElec;
 
   const circonscription = depute.mandatPrincipal;
-  const collaborateurs = await getActeurCollaborateurs(depute.uid);
 
   return (
     <Box
@@ -220,6 +221,13 @@ export default async function Page({
               <Box sx={contactButtonStyle}>Contacter</Box>
             </Link>
           )}
+
+          <MonDeputeButton
+            uid={depute.uid}
+            slug={slug}
+            prenom={depute.prenom}
+            nom={depute.nom}
+          />
 
           <AlerteButton
             subjectType="depute"

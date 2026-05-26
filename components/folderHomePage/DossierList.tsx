@@ -1,149 +1,260 @@
 "use client";
 
 import * as React from "react";
-import { Box, Typography, CircularProgress } from "@mui/material";
-import { useQueryState } from "nuqs";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-
-import Pagination from "../Pagination";
-import DossierCard from "@/components/home/Dossiers/DossierCard";
-import { searchDossier } from "@/data/searchDossier";
+import Link from "next/link";
 import {
-  getCurrentStatus,
-  statusInfo,
-} from "@/app/[legislature]/dossier/[id]/dataFunctions";
-import { TYPES_DE_DOSSIERS } from "@/components/const";
+  Box,
+  Button,
+  CircularProgress,
+  Stack,
+  Typography,
+} from "@mui/material";
+import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
+import { useQueryState } from "nuqs";
+import DossierBadge from "@/components/folders/DossierBadge";
+import type { DossierSearchResult } from "@/data/mongo/searchDossierParTitre";
 
-export default function DossierList() {
-  const [theme] = useQueryState("theme");
-  const [search] = useQueryState("search");
-  const [codeProcedure] = useQueryState("codeProcedure");
-  const [page, setPage] = React.useState(1);
+const PAGE_SIZE = 20;
+const MIN_SEARCH_CHARS = 5;
 
-  React.useEffect(() => {
-    setPage(1);
-  }, [search, theme, codeProcedure]);
+// ─── Card row (identique à DossiersSection dans /recherche) ──────────────────
 
-  const {
-    data: result,
-    isPending,
-    isError,
-  } = useQuery({
-    queryKey: ["dossiers_server_search", page, search, theme, codeProcedure],
-    queryFn: async () => {
-      const response = await searchDossier({
-        page: page,
-        perPage: 20,
-        search: search ?? "",
-        codeProcedure: codeProcedure ?? "",
-        include: "actesLegislatifs",
-      });
-      return response;
-    },
-    placeholderData: keepPreviousData,
-  });
-
-  if (isPending) {
-    return (
-      <Box
-        sx={{ display: "flex", justifyContent: "center", width: "100%", mt: 8 }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Typography color="error" sx={{ mt: 4, textAlign: "center" }}>
-        Impossible de récupérer les dossiers.
-      </Typography>
-    );
-  }
-
-  const dossiers = result?.data ?? [];
-  const pagination = result?.pagination;
-
-  // Filtrage de secours côté client pour le thème (si l'API ne le gère pas encore)
-  // Idéalement, cela devrait être fait côté serveur aussi.
-  const displayData = theme
-    ? dossiers.filter((d: any) => d.theme === theme)
-    : dossiers;
-
+function DossierRow({ d }: { d: DossierSearchResult }) {
   return (
-    <div>
-      <Pagination
-        totalPage={pagination?.totalPage ?? 1}
-        page={page}
-        setPage={setPage}
-        isPending={isPending}
-      />
-
-      <Box
+    <Link
+      href={`/${d.legislature}/dossier/${d.uid}`}
+      style={{ textDecoration: "none", color: "inherit" }}
+    >
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1.5}
         sx={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
-          gridGap: 24,
-          mt: 3,
-          mb: 3,
+          p: 1.25,
+          borderRadius: "10px",
+          "&:hover": { bgcolor: "grey.50" },
         }}
       >
-        {displayData.map((dossier: any) => {
-          // Logique d'affichage (Type & Statut)
-          const typeInfo = TYPES_DE_DOSSIERS.find(
-            (t) => t.code === dossier.codeProcedure,
-          );
-          const typeLabel = typeInfo ? typeInfo.label : "Dossier";
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography variant="body2" fontWeight="bold" noWrap>
+            {d.titre}
+          </Typography>
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            flexWrap="wrap"
+            sx={{ mt: 0.25 }}
+          >
+            {d.typeLibelle && (
+              <Typography variant="caption" color="text.secondary">
+                {d.typeLibelle}
+              </Typography>
+            )}
+            {d.amendementsTotal > 0 && (
+              <Typography variant="caption" color="text.secondary">
+                · {d.amendementsTotal} amendement
+                {d.amendementsTotal > 1 ? "s" : ""}
+              </Typography>
+            )}
+          </Stack>
+        </Box>
+        <DossierBadge badge={d.badge} />
+      </Stack>
+    </Link>
+  );
+}
 
-          const actes = dossier.actesLegislatifs || [];
-          const statusCode = actes.length > 0 ? getCurrentStatus(actes) : null;
-          const statusLabel = statusCode ? statusInfo[statusCode]?.label : null;
-          const statusType = statusCode
-            ? statusInfo[statusCode]?.status
-            : undefined;
+// ─── DossierList ──────────────────────────────────────────────────────────────
 
-          return (
-            <DossierCard
-              key={dossier.uid}
-              href={`/${dossier.legislature}/dossier/${dossier.uid}`}
-              titre={dossier.titre}
-              dateDernierActe={
-                dossier.dateDernierActe
-                  ? new Date(dossier.dateDernierActe)
-                  : null
-              }
-              type={typeLabel}
-              statusLabel={statusLabel}
-              statusType={statusType}
-              thematique={dossier.theme}
-              // On ne passe plus 'amendements' car vous n'en avez pas besoin ici
-            />
-          );
-        })}
+export default function DossierList() {
+  const [search] = useQueryState("search");
+  const [codeProcedure] = useQueryState("codeProcedure");
 
-        {displayData.length === 0 && (
-          <Typography
+  const [items, setItems] = React.useState<DossierSearchResult[]>([]);
+  const seenUids = React.useRef(new Set<string>());
+  const [total, setTotal] = React.useState(0);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const isSearchMode = (search ?? "").trim().length >= MIN_SEARCH_CHARS;
+
+  // Reset quand les filtres changent
+  React.useEffect(() => {
+    setItems([]);
+    seenUids.current = new Set();
+    setTotal(0);
+    setLoading(true);
+    setError(null);
+
+    const q = (search ?? "").trim();
+    const params = new URLSearchParams({ limit: String(PAGE_SIZE), skip: "0" });
+
+    let url: string;
+    if (q.length >= MIN_SEARCH_CHARS) {
+      params.set("q", q);
+      if (codeProcedure) params.set("codeProcedure", codeProcedure);
+      url = `/api/search/dossiers?${params}`;
+    } else {
+      if (codeProcedure) params.set("codeProcedure", codeProcedure);
+      url = `/api/dossiers?${params}`;
+    }
+
+    let cancelled = false;
+    fetch(url)
+      .then((r) => r.json())
+      .then((data: { items: DossierSearchResult[]; total: number }) => {
+        if (cancelled) return;
+        const fresh = data.items.filter((d) => {
+          if (seenUids.current.has(d.uid)) return false;
+          seenUids.current.add(d.uid);
+          return true;
+        });
+        setItems(fresh);
+        setTotal(data.total);
+        setLoading(false);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        console.error(e);
+        setError("Impossible de charger les dossiers.");
+        setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [search, codeProcedure]);
+
+  const loadMore = async () => {
+    setLoading(true);
+    setError(null);
+    const q = (search ?? "").trim();
+    const params = new URLSearchParams({
+      limit: String(PAGE_SIZE),
+      skip: String(items.length),
+    });
+
+    let url: string;
+    if (q.length >= MIN_SEARCH_CHARS) {
+      params.set("q", q);
+      if (codeProcedure) params.set("codeProcedure", codeProcedure);
+      url = `/api/search/dossiers?${params}`;
+    } else {
+      if (codeProcedure) params.set("codeProcedure", codeProcedure);
+      url = `/api/dossiers?${params}`;
+    }
+
+    try {
+      const res = await fetch(url);
+      const data: { items: DossierSearchResult[]; total: number } = await res.json();
+      const fresh = data.items.filter((d) => {
+        if (seenUids.current.has(d.uid)) return false;
+        seenUids.current.add(d.uid);
+        return true;
+      });
+      setItems((prev) => [...prev, ...fresh]);
+      setTotal(data.total);
+    } catch (e) {
+      console.error(e);
+      setError("Erreur de chargement. Réessayer ?");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const remaining = Math.max(0, total - items.length);
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  return (
+    <Box>
+      {/* En-tête : titre de section + compteur */}
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
+        <Typography variant="h6" fontWeight="bold" sx={{ color: "#1A1A1B" }}>
+          {isSearchMode ? "Résultats de recherche" : "Dossiers en cours"}
+        </Typography>
+        {!loading && total > 0 && (
+          <Box
             sx={{
-              gridColumn: "1 / -1",
-              textAlign: "center",
-              mt: 4,
-              fontStyle: "italic",
-              color: "text.secondary",
+              bgcolor: "grey.100",
+              color: "grey.700",
+              fontWeight: "bold",
+              fontSize: "0.7rem",
+              px: 1,
+              py: 0.25,
+              borderRadius: "6px",
             }}
           >
-            Aucun dossier trouvé pour &quot;{search}&quot;.
-          </Typography>
+            {total}
+          </Box>
         )}
-      </Box>
+      </Stack>
 
-      {displayData.length > 0 && (
-        <Pagination
-          totalPage={pagination?.totalPage ?? 1}
-          page={page}
-          setPage={setPage}
-          isPending={isPending}
-        />
+      {/* Hint si saisie trop courte en mode search partiel */}
+      {!isSearchMode && (search ?? "").trim().length > 0 && (search ?? "").trim().length < MIN_SEARCH_CHARS && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Saisissez au moins {MIN_SEARCH_CHARS} caractères pour lancer une recherche.
+        </Typography>
       )}
-    </div>
+
+      {/* Liste */}
+      {items.length > 0 && (
+        <Stack spacing={0.5}>
+          {items.map((d) => (
+            <DossierRow key={d.uid} d={d} />
+          ))}
+        </Stack>
+      )}
+
+      {/* État vide */}
+      {!loading && items.length === 0 && (
+        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+          {isSearchMode
+            ? `Aucun dossier trouvé pour « ${(search ?? "").trim()} ».`
+            : "Aucun dossier trouvé."}
+        </Typography>
+      )}
+
+      {/* Loader initial */}
+      {loading && items.length === 0 && (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+          <CircularProgress size={32} />
+        </Box>
+      )}
+
+      {/* Bouton load-more */}
+      {remaining > 0 && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+          <Button
+            onClick={loadMore}
+            disabled={loading}
+            variant="outlined"
+            size="small"
+            startIcon={
+              loading ? (
+                <CircularProgress size={14} />
+              ) : (
+                <ExpandMoreIcon sx={{ fontSize: 18 }} />
+              )
+            }
+            sx={{
+              borderRadius: "20px",
+              textTransform: "none",
+              fontWeight: "bold",
+              px: 2.5,
+            }}
+          >
+            {loading
+              ? "Chargement…"
+              : `Voir plus de dossiers (${remaining} restant${remaining > 1 ? "s" : ""})`}
+          </Button>
+        </Box>
+      )}
+
+      {error && (
+        <Box sx={{ textAlign: "center", color: "error.main", mt: 1, fontSize: "0.85rem" }}>
+          {error}
+        </Box>
+      )}
+    </Box>
   );
 }

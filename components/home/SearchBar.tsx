@@ -8,8 +8,11 @@ import {
   Stack,
   Avatar,
 } from "@mui/material";
+import { ArrowForward as ArrowForwardIcon } from "@mui/icons-material";
+import DossierBadge from "@/components/folders/DossierBadge";
 import debounce from "@/utils/debounce";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { ActeurSearchResult } from "@/data/mongo/searchActeurParNom";
 import type { DossierSearchResult } from "@/data/mongo/searchDossierParTitre";
 
@@ -51,9 +54,10 @@ function isActeur(
 
 const emptyOptions = [] as const;
 
-const MIN_CHARS = 3;
+const MIN_CHARS = 5;
 
 export default function SearchBar() {
+  const router = useRouter();
   const [value, setValue] = React.useState<
     ActeurSearchResult | DossierSearchResult | null
   >(null);
@@ -142,6 +146,12 @@ export default function SearchBar() {
         renderInput={(params) => (
           <TextField
             {...params}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && inputValue.trim().length >= MIN_CHARS) {
+                e.preventDefault();
+                router.push(`/recherche?q=${encodeURIComponent(inputValue.trim())}`);
+              }
+            }}
             sx={{
               "&&& .MuiInputBase-root": {
                 bgcolor: "#fff",
@@ -163,6 +173,43 @@ export default function SearchBar() {
             }}
           />
         )}
+        PaperComponent={({ children, ...paperProps }) => (
+          <Box
+            {...paperProps}
+            sx={{
+              ...((paperProps as { sx?: object }).sx ?? {}),
+              bgcolor: "white",
+              borderRadius: "20px",
+              boxShadow: "0px 4px 20px rgba(0,0,0,0.08)",
+              overflow: "hidden",
+            }}
+          >
+            {children}
+            {inputValue.trim().length >= MIN_CHARS && (
+              <Box
+                onMouseDown={(e) => e.preventDefault()}
+                sx={{ borderTop: "1px solid", borderColor: "grey.100" }}
+              >
+                <Link
+                  href={`/recherche?q=${encodeURIComponent(inputValue.trim())}`}
+                  style={{ textDecoration: "none", color: "inherit", display: "block" }}
+                >
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    sx={{ p: 1.75, "&:hover": { bgcolor: "grey.50" } }}
+                  >
+                    <Typography variant="body2" fontWeight="bold" sx={{ color: "#1A1A1B" }}>
+                      Voir tous les résultats pour « {inputValue.trim()} »
+                    </Typography>
+                    <ArrowForwardIcon sx={{ fontSize: 18, color: "grey.600" }} />
+                  </Stack>
+                </Link>
+              </Box>
+            )}
+          </Box>
+        )}
         renderOption={({ key, ...props }, option) => {
           if (isActeur(option)) {
             return (
@@ -177,14 +224,7 @@ export default function SearchBar() {
                 href={`/${option.legislature}/dossier/${option.uid}`}
                 style={{ width: "100%", textDecoration: "none", color: "inherit" }}
               >
-                <Typography variant="body2" fontWeight="bold" noWrap>
-                  {option.titre}
-                </Typography>
-                {option.typeLibelle && (
-                  <Typography variant="caption" color="text.secondary">
-                    {option.typeLibelle}
-                  </Typography>
-                )}
+                <DossierOption dossier={option} />
               </Link>
             </li>
           );
@@ -201,6 +241,38 @@ export default function SearchBar() {
 
 function deputePhotoUrl(uid: string): string {
   return `https://tricoteuses-assets.s3.fr-par.scw.cloud/photos/${uid.replace(/^PA/, "")}_124x124.jpg`;
+}
+
+function DossierOption({ dossier }: { dossier: DossierSearchResult }) {
+  const statBits: string[] = [];
+  if (dossier.amendementsTotal > 0) {
+    statBits.push(`${dossier.amendementsTotal} amendement${dossier.amendementsTotal > 1 ? "s" : ""}`);
+  }
+
+  return (
+    <Box sx={{ width: "100%", minWidth: 0 }}>
+      <Stack direction="row" alignItems="center" spacing={1.5}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography variant="body2" fontWeight="bold" noWrap>
+            {dossier.titre}
+          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mt: 0.25 }}>
+            {dossier.typeLibelle && (
+              <Typography variant="caption" color="text.secondary">
+                {dossier.typeLibelle}
+              </Typography>
+            )}
+            {statBits.length > 0 && (
+              <Typography variant="caption" color="text.secondary">
+                {dossier.typeLibelle ? "· " : ""}{statBits.join(" · ")}
+              </Typography>
+            )}
+          </Stack>
+        </Box>
+        <DossierBadge badge={dossier.badge} />
+      </Stack>
+    </Box>
+  );
 }
 
 function ActeurOption({ acteur }: { acteur: ActeurSearchResult }) {

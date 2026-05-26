@@ -16,6 +16,8 @@ async function getActeurUnCached(uid: string): Promise<
 
     const { data } = await rep.json();
 
+    if (!data) return null;
+
     data.groupeParlementaire = null;
     if (data.groupeParlementaireUid) {
       data.groupeParlementaire = await getOrgane(data.groupeParlementaireUid);

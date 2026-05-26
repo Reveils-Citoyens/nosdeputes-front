@@ -11,9 +11,11 @@ import Paper from "@mui/material/Paper";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Organe, Question } from "@prisma/client";
 import StatusChip from "@/components/StatusChip";
+import { capitalizeFirst } from "@/lib/strings";
 
 type QuestionCardProps = {
   question: Question & { ministerInteroge: Organe | null };
+  defaultExpanded?: boolean;
 };
 
 export default function QuestionCard(props: QuestionCardProps) {
@@ -31,6 +33,7 @@ export default function QuestionCard(props: QuestionCardProps) {
       erratumReponse,
       ministerInteroge,
     },
+    defaultExpanded = false,
   } = props;
 
   const pannelId = `${uid}-pannel`;
@@ -38,6 +41,8 @@ export default function QuestionCard(props: QuestionCardProps) {
 
   return (
     <Accordion
+      id={`question-${uid}`}
+      defaultExpanded={defaultExpanded}
       elevation={0}
       disableGutters
       sx={{
@@ -72,9 +77,15 @@ export default function QuestionCard(props: QuestionCardProps) {
             {titre || `Question N°${numero}`}
           </Typography>
 
-          <Stack direction="row" spacing={1}>
-            {rubrique && <StatusChip size="small" label={rubrique} />}
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+            {rubrique && (
+              <StatusChip size="small" label={capitalizeFirst(rubrique)} />
+            )}
             {type && <StatusChip size="small" label={type} />}
+            {/* Badge "Répondue" pour les QE qui ont une réponse */}
+            {type === "QE" && texteReponse && (
+              <StatusChip size="small" status="validated" label="Répondue" />
+            )}
           </Stack>
         </Stack>
       </AccordionSummary>
@@ -105,6 +116,7 @@ export default function QuestionCard(props: QuestionCardProps) {
                 }}
               >
                 <Typography
+                  component="div"
                   variant="body2"
                   sx={{ lineHeight: 1.8 }}
                   dangerouslySetInnerHTML={{ __html: texteQuestion }}
@@ -141,6 +153,7 @@ export default function QuestionCard(props: QuestionCardProps) {
                 Réponse du Ministère {erratumReponse && "(avec Erratum)"}
               </Typography>
               <Typography
+                component="div"
                 variant="body2"
                 sx={{
                   lineHeight: 1.8,

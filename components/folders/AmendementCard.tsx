@@ -216,6 +216,7 @@ export default function AmendementCard(props: AmendementCardProps) {
                 }}
               >
                 <Typography
+                  component="div"
                   variant="body2"
                   sx={{ lineHeight: 1.7 }}
                   dangerouslySetInnerHTML={{ __html: amendement.dispositif }}
@@ -238,6 +239,7 @@ export default function AmendementCard(props: AmendementCardProps) {
                 Exposé Sommaire
               </Typography>
               <Typography
+                component="div"
                 variant="body2"
                 sx={{ lineHeight: 1.8, color: "text.primary" }}
                 dangerouslySetInnerHTML={{ __html: amendement.exposeSommaire }}

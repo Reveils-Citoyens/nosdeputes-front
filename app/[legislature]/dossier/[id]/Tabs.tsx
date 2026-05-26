@@ -15,8 +15,10 @@ export default function DossiersTabs(props: {
   showDebats: boolean;
   showAmendements: boolean;
   showVotes: boolean;
+  hasAmendements: boolean;
+  hasVotes: boolean;
 }) {
-  const { legislature, dossierUid, showDebats, showAmendements, showVotes } =
+  const { legislature, dossierUid, showDebats, showAmendements, showVotes, hasAmendements, hasVotes } =
     props;
   const segment = useSelectedLayoutSegment();
 
@@ -25,8 +27,11 @@ export default function DossiersTabs(props: {
     queryFn: async () => await getDebats(dossierUid),
   });
 
-  const debatsDisponibles = debats?.filter(
-    (compteRendu: ReturnedDebat) => compteRendu._count.paragraphes > 0,
+  const seanceDebats = debats?.filter(
+    (d: ReturnedDebat) => d.debateType === "seance" && d._count.paragraphes > 0,
+  );
+  const commissionDebats = debats?.filter(
+    (d: ReturnedDebat) => d.debateType === "commission" && d._count.paragraphes > 0,
   );
 
   const rootPathName = `/${legislature}/dossier/${dossierUid}/`;
@@ -34,23 +39,32 @@ export default function DossiersTabs(props: {
   const tabs = [
     { value: "", label: "Aperçu", href: rootPathName, visible: true },
     {
-      value: "debat",
-      label: "Débats",
-      href: `${rootPathName}debat`,
+      value: "commission",
+      label: "Commission",
+      href: `${rootPathName}commission`,
       visible: showDebats,
-      disabled: debatsDisponibles != null && debatsDisponibles.length === 0,
+      disabled: commissionDebats != null && commissionDebats.length === 0,
     },
     {
       value: "amendement",
       label: "Amendements",
       href: `${rootPathName}amendement`,
       visible: showAmendements,
+      disabled: !hasAmendements,
+    },
+    {
+      value: "debat",
+      label: "Séance",
+      href: `${rootPathName}debat`,
+      visible: showDebats,
+      disabled: seanceDebats != null && seanceDebats.length === 0,
     },
     {
       value: "votes",
       label: "Votes",
       href: `${rootPathName}votes`,
       visible: showVotes,
+      disabled: !hasVotes,
     },
   ];
 

@@ -176,8 +176,9 @@ export const DebateSummary = (props: DebateSummaryProps) => {
                   color="#fff"
                   component="a"
                   href={`#${uid}`}
-                  dangerouslySetInnerHTML={{ __html: cleanText(texte!) }}
-                />
+                >
+                  {cleanText(texte!, true)}
+                </Typography>
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <ClockMovingIcon sx={{ fontSize: "12px" }} fill="white" />
                   {wordsCounts && (
@@ -197,10 +198,11 @@ export const DebateSummary = (props: DebateSummaryProps) => {
                 key={uid}
                 component="a"
                 href={`#${uid}`}
-                dangerouslySetInnerHTML={{ __html: cleanText(texte!) }}
                 variant="body2"
                 onClick={handleClick(uid)}
-              />
+              >
+                {cleanText(texte!, true)}
+              </Typography>
             ),
           )}
         </Stack>

@@ -19,10 +19,12 @@ import { ReturnedDebat } from "@/data/getDebats";
 
 type DebateFilterBarProps = {
   debats: ReturnedDebat[];
+  /** Segment de base pour les liens (défaut: "debat") */
+  basePath?: string;
 };
 
 export const DebateFilterBar = (props: DebateFilterBarProps) => {
-  const { debats } = props;
+  const { debats, basePath = "debat" } = props;
   const sceanceUid = useSelectedLayoutSegment();
 
   const debatIndex = debats.findIndex((debat) => debat.uid === sceanceUid);
@@ -32,7 +34,7 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
       if (sceanceUid) {
         permanentRedirect(`${debats[0].uid}`);
       } else {
-        permanentRedirect(`debat/${debats[0].uid}`);
+        permanentRedirect(`${basePath}/${debats[0].uid}`);
       }
     }
   }

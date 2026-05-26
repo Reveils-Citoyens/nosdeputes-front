@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   if (!subjectType || !subjectUid || !subjectLabel) {
     return NextResponse.json({ error: "Sujet manquant." }, { status: 400 });
   }
-  if (subjectType !== "dossier" && subjectType !== "depute") {
+  if (subjectType !== "dossier" && subjectType !== "depute" && subjectType !== "recherche") {
     return NextResponse.json({ error: "Type de sujet invalide." }, { status: 400 });
   }
 

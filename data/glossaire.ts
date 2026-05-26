@@ -18,7 +18,7 @@ export const GLOSSAIRE: Record<string, GlossaireEntry> = {
     slug: "proposition-de-loi",
     titre: "Proposition de loi",
     definitionCourte:
-      "Texte de loi déposé par un ou plusieurs parlementaires (députés ou sénateurs). Plus rare qu'un projet de loi gouvernemental.",
+      "Texte de loi déposé par un ou plusieurs parlementaires (députés ou sénateurs).",
   },
   amendement: {
     slug: "amendement",

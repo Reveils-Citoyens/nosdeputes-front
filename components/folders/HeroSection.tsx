@@ -142,9 +142,11 @@ export const HeroSection = ({
                   color: "#fff",
                   fontSize: "body1.fontSize",
                   fontWeight: "fontWeightBold",
+                  lineHeight: 1.3,
                   [theme.breakpoints.up("md")]: {
                     color: "grey.900",
                     fontSize: "h2.fontSize",
+                    lineHeight: 1.25,
                   },
                 }}
               >

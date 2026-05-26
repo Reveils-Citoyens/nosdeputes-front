@@ -10,6 +10,7 @@ import {
   Avatar,
 } from "@mui/material";
 import { Search as SearchIcon } from "@mui/icons-material";
+import DossierBadge from "@/components/folders/DossierBadge";
 import debounce from "@/utils/debounce";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -50,7 +51,7 @@ const fetchDossiers = debounce(
       .then(cb)
 );
 
-const MIN_CHARS = 3;
+const MIN_CHARS = 5;
 const emptyOptions = [] as const;
 
 // Height matches the nav pill container (p-1 + py-2.5 + text ≈ 44px outer)
@@ -235,11 +236,56 @@ export default function NavSearchBar({ mobile = false }: { mobile?: boolean }) {
             closeSearch();
           }}
           onInputChange={(_e, v) => setInputValue(v)}
+          PaperComponent={({ children, ...paperProps }) => (
+            <Box
+              {...paperProps}
+              sx={{
+                ...((paperProps as { sx?: object }).sx ?? {}),
+                bgcolor: "white",
+                borderRadius: "16px",
+                boxShadow: "0px 4px 20px rgba(0,0,0,0.10)",
+                overflow: "hidden",
+              }}
+            >
+              {children}
+              {inputValue.trim().length >= MIN_CHARS && (
+                <Box
+                  onMouseDown={(e) => e.preventDefault()}
+                  sx={{ borderTop: "1px solid", borderColor: "grey.100" }}
+                >
+                  <Link
+                    href={`/recherche?q=${encodeURIComponent(inputValue.trim())}`}
+                    onClick={closeSearch}
+                    style={{ textDecoration: "none", color: "inherit", display: "block" }}
+                  >
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      sx={{ p: 1.25, "&:hover": { bgcolor: "grey.50" } }}
+                    >
+                      <Typography variant="body2" fontWeight="bold" sx={{ color: "#1A1A1B", fontSize: "0.8rem" }}>
+                        Voir tous les résultats
+                      </Typography>
+                      <Box sx={{ fontSize: 12, color: "grey.600" }}>→</Box>
+                    </Stack>
+                  </Link>
+                </Box>
+              )}
+            </Box>
+          )}
           renderInput={(params) => (
             <TextField
               {...params}
               inputRef={inputRef}
               onBlur={handleBlur}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && inputValue.trim().length >= MIN_CHARS) {
+                  e.preventDefault();
+                  router.push(`/recherche?q=${encodeURIComponent(inputValue.trim())}`);
+                  closeSearch();
+                }
+              }}
               sx={{
                 "&&& .MuiInputBase-root": {
                   height: PILL_HEIGHT,
@@ -312,14 +358,7 @@ export default function NavSearchBar({ mobile = false }: { mobile?: boolean }) {
                     color: "inherit",
                   }}
                 >
-                  <Typography variant="body2" fontWeight="bold" noWrap>
-                    {option.titre}
-                  </Typography>
-                  {option.typeLibelle && (
-                    <Typography variant="caption" color="text.secondary">
-                      {option.typeLibelle}
-                    </Typography>
-                  )}
+                  <DossierOptionRow dossier={option} />
                 </Link>
               </li>
             );
@@ -436,14 +475,39 @@ function MobileSearch({
         return (
           <li key={key} {...props} style={{ padding: "8px 10px" }}>
             <Link href={`/${option.legislature}/dossier/${option.uid}`} style={{ width: "100%", textDecoration: "none", color: "inherit" }}>
-              <Typography variant="body2" fontWeight="bold" noWrap>{option.titre}</Typography>
-              {option.typeLibelle && (
-                <Typography variant="caption" color="text.secondary">{option.typeLibelle}</Typography>
-              )}
+              <DossierOptionRow dossier={option} />
             </Link>
           </li>
         );
       }}
     />
+  );
+}
+
+function DossierOptionRow({ dossier }: { dossier: DossierSearchResult }) {
+  const statBits: string[] = [];
+  if (dossier.amendementsTotal > 0) {
+    statBits.push(`${dossier.amendementsTotal} amd.`);
+  }
+
+  return (
+    <Stack direction="row" alignItems="center" spacing={1.25} sx={{ width: "100%", minWidth: 0 }}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography variant="body2" fontWeight="bold" noWrap>{dossier.titre}</Typography>
+        <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" sx={{ mt: 0.25 }}>
+          {dossier.typeLibelle && (
+            <Typography variant="caption" color="text.secondary" noWrap>
+              {dossier.typeLibelle}
+            </Typography>
+          )}
+          {statBits.length > 0 && (
+            <Typography variant="caption" color="text.secondary" noWrap>
+              {dossier.typeLibelle ? "· " : ""}{statBits.join(" · ")}
+            </Typography>
+          )}
+        </Stack>
+      </Box>
+      <DossierBadge badge={dossier.badge} />
+    </Stack>
   );
 }

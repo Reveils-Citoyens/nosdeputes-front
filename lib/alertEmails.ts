@@ -8,7 +8,10 @@ export async function sendConfirmationEmail(
 ) {
   const confirmUrl = `${BASE_URL}/api/alerts/confirm?token=${confirmToken}`;
   const subjectLines = subjects
-    .map((s) => `<li>${s.type === "depute" ? "👤" : "📄"} ${s.label}</li>`)
+    .map((s) => {
+      const icon = s.type === "depute" ? "👤" : s.type === "recherche" ? "🔍" : "📄";
+      return `<li>${icon} ${s.label}</li>`;
+    })
     .join("");
 
   const result = await resend.emails.send({
@@ -50,7 +53,7 @@ export async function sendSubjectAddedEmail(
 ) {
   const manageUrl = `${BASE_URL}/alertes/gerer?token=${manageToken}`;
   const unsubUrl = `${BASE_URL}/api/alerts/unsubscribe?token=${manageToken}&uid=${newSubject.uid}`;
-  const icon = newSubject.type === "depute" ? "👤" : "📄";
+  const icon = newSubject.type === "depute" ? "👤" : newSubject.type === "recherche" ? "🔍" : "📄";
 
   const result = await resend.emails.send({
     from: FROM,

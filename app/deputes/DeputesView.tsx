@@ -7,10 +7,13 @@ import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Input from "@mui/material/Input";
+import TextField from "@mui/material/TextField";
+import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
 
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import SortOutlinedIcon from "@mui/icons-material/SortOutlined";
+import ClearIcon from "@mui/icons-material/Close";
 
 import Link from "next/link";
 
@@ -182,12 +185,46 @@ export default function DeputesView({
         plus {deputesMandatFinit} députés hors mandat
       </Typography>
       <Stack direction="row" spacing={2} sx={{ my: 2 }}>
-        <Input
+        <TextField
           fullWidth
-          startAdornment={<SearchOutlinedIcon />}
-          placeholder="Recherche"
+          size="small"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
+          placeholder="Rechercher un député…"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchOutlinedIcon sx={{ color: "grey.500", fontSize: 20 }} />
+              </InputAdornment>
+            ),
+            endAdornment: search ? (
+              <InputAdornment position="end">
+                <IconButton
+                  size="small"
+                  aria-label="Effacer la recherche"
+                  onClick={() => setSearch("")}
+                  edge="end"
+                >
+                  <ClearIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </InputAdornment>
+            ) : null,
+            sx: {
+              borderRadius: "30px",
+              bgcolor: "white",
+              px: 1,
+              "& fieldset": {
+                borderColor: "grey.200",
+              },
+              "&:hover fieldset": {
+                borderColor: "grey.300 !important",
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: "grey.700 !important",
+                borderWidth: "1px !important",
+              },
+            },
+          }}
         />
         <Button
           startIcon={<SortOutlinedIcon />}
