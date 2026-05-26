@@ -74,24 +74,28 @@ export async function searchQuestion(
     };
   }
 
+  // On exige que le terme soit présent dans le titre (analyse) ou la rubrique.
+  // Autoriser le texte intégral de la question/réponse produisait trop de faux positifs
+  // pour des requêtes génériques (ex. "retraite" dans chaque réponse gouvernementale).
   const matchStage = {
     "identifiant.legislature": legislature,
     $or: [
       { "indexationAN.analyses.analyse": regex },
       { "indexationAN.rubrique": regex },
-      { "textesQuestion.texteQuestion.texte": regex },
-      { "textesReponse.texteReponse.texte": regex },
     ],
   };
 
   // Total
   const total = await db.collection("questions").countDocuments(matchStage);
 
-  // Date pour tri (peut venir de cloture ou infoJO)
+  // Date pour tri : même priorité que la date affichée sur la carte
+  // (infoJO.dateJO = date de dépôt/publication, dateCloture = date de réponse).
+  // On prend la date de dépôt en priorité pour que le tri "Plus récent" corresponde
+  // à ce que l'utilisateur voit affiché.
   const dateExpr = {
     $ifNull: [
-      "$cloture.dateCloture",
       "$textesQuestion.texteQuestion.infoJO.dateJO",
+      "$cloture.dateCloture",
     ],
   };
 

@@ -17,10 +17,10 @@ import { VotesGroups } from "./VotesGroups";
 function getScrutinStatus(code: string | null) {
   if (code) {
     const s = code.toLowerCase().trim();
-    if (s === "adopté" || s === "adopte")
-      return { status: "validated" as const, label: "Adopté" };
-    if (s === "rejeté" || s === "rejete")
-      return { status: "refused" as const, label: "Rejeté" };
+    if (s.includes("n'a pas adopté") || s.includes("na pas adopté") || s.includes("rejeté") || s === "rejete")
+      return { status: "error" as const, label: code };
+    if (s.includes("adopté") || s === "adopte")
+      return { status: "validated" as const, label: code };
   }
   return { status: "review" as const, label: "Résultat non communiqué" };
 }
@@ -90,7 +90,7 @@ export function ScrutinCard({ scrutin }: { scrutin: ScrutinComplet }) {
           <StatusChip
             label={label}
             status={status}
-            sx={{ flexShrink: 0, fontWeight: "bold" }}
+            sx={{ flexShrink: 0, fontWeight: "bold", mr: 1 }}
           />
         </Box>
 

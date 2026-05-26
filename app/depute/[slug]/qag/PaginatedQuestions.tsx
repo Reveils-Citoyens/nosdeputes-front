@@ -3,9 +3,11 @@ import * as React from "react";
 import { getQuestions } from "@/data/getQuestion";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { Alert } from "@mui/material";
+import { Alert, Box, Stack, Typography } from "@mui/material";
 import Pagination from "@/components/Pagination";
 import QuestionCard from "./QuestionCard";
+import SearchInput from "@/components/SearchInput";
+import debounce from "@/utils/debounce";
 
 export default function PaginatedQuestions({
   acteurUid,
@@ -15,13 +17,30 @@ export default function PaginatedQuestions({
   const searchParams = useSearchParams();
   const targetUid = searchParams.get("question");
 
+  const [value, setValue] = React.useState("");
+  const [search, setSearch] = React.useState("");
   const [page, setPage] = React.useState(1);
 
+  const debouncedSetSearch = React.useMemo(
+    () =>
+      debounce((next: string) => {
+        setSearch(next);
+        setPage(1);
+      }, 400),
+    [],
+  );
+
+  const handleSearchChange = (next: string) => {
+    setValue(next);
+    debouncedSetSearch(next);
+  };
+
   const { data: result, isPending } = useQuery({
-    queryKey: ["questions", acteurUid, page],
+    queryKey: ["questions", acteurUid, page, search],
     queryFn: async () =>
       getQuestions(acteurUid, {
         page,
+        search,
       }),
     placeholderData: keepPreviousData,
   });
@@ -48,32 +67,48 @@ export default function PaginatedQuestions({
     return () => clearTimeout(t);
   }, [isOnCurrentPage, targetUid]);
 
-  if (!isPending && data.length === 0) {
-    return <p>Aucune question enregistrée pour ce député.</p>;
-  }
   return (
-    <div>
+    <Stack spacing={2}>
+      <SearchInput
+        value={value}
+        onChange={handleSearchChange}
+        placeholder="Rechercher dans les questions…"
+      />
+
       {targetUid && !isOnCurrentPage && !isPending && (
-        <Alert severity="info" sx={{ mb: 2 }}>
+        <Alert severity="info">
           La question demandée n&apos;est pas sur cette page. Utilisez la
           pagination pour la retrouver.
         </Alert>
       )}
-      <Pagination
-        {...pagination}
-        page={page}
-        setPage={setPage}
-        isPending={isPending}
-      />
-      <div>
-        {data?.map((question) => (
-          <QuestionCard
-            key={question.uid}
-            question={question}
-            defaultExpanded={question.uid === targetUid}
+
+      {!isPending && data.length === 0 ? (
+        <Box sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>
+          <Typography>
+            {search
+              ? `Aucune question ne correspond à « ${search} ».`
+              : "Aucune question enregistrée pour ce député."}
+          </Typography>
+        </Box>
+      ) : (
+        <>
+          <Pagination
+            {...pagination}
+            page={page}
+            setPage={setPage}
+            isPending={isPending}
           />
-        ))}
-      </div>
-    </div>
+          <div>
+            {data?.map((question) => (
+              <QuestionCard
+                key={question.uid}
+                question={question}
+                defaultExpanded={question.uid === targetUid}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </Stack>
   );
 }

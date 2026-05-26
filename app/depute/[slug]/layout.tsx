@@ -1,5 +1,5 @@
 import React from "react";
-import { Avatar, Box, Container, Stack, Typography } from "@mui/material";
+import { Avatar, Box, Chip, Container, Stack, Tooltip, Typography } from "@mui/material";
 import {
   X as XIcon,
   Facebook as FacebookIcon,
@@ -92,6 +92,11 @@ export default async function Page({
     getActeurCollaborateurs(depute.uid),
   ]);
 
+  // Mandat de député achevé : signal canonique = `actif: false` sur l'acteur
+  // (démissionnaires, défunts, fin de législature, etc.).
+  const mandatAcheve = depute.chambre === "AN" && depute.actif === false;
+  const auGouvernement = depute.auGouvernement === true;
+
   const twitter = adressesElectroniques.find(
     (c) => c.typeLibelle === "Twitter"
   )?.valElec;
@@ -148,16 +153,52 @@ export default async function Page({
             {depute.nom[0]}
           </Avatar>
           <Box>
-            <Typography
-              variant="h3"
-              fontWeight="bold"
-              sx={{
-                color: "#1A1A1B",
-                fontSize: { xs: "1.5rem", md: "1.7rem" },
-              }}
-            >
-              {depute.prenom} {depute.nom}
-            </Typography>
+            <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap">
+              <Typography
+                variant="h3"
+                fontWeight="bold"
+                sx={{
+                  color: "#1A1A1B",
+                  fontSize: { xs: "1.5rem", md: "1.7rem" },
+                }}
+              >
+                {depute.prenom} {depute.nom}
+              </Typography>
+              {mandatAcheve && (
+                <Chip
+                  label="Mandat achevé"
+                  size="small"
+                  sx={{
+                    bgcolor: "grey.200",
+                    color: "grey.800",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    height: 22,
+                    "& .MuiChip-label": { px: 1 },
+                  }}
+                />
+              )}
+              {auGouvernement && (
+                <Tooltip title="Membre du gouvernement (mandat de député suspendu)">
+                  <Chip
+                    label="Gouv."
+                    size="small"
+                    sx={{
+                      bgcolor: "#dbeafe",
+                      color: "#1e40af",
+                      fontWeight: 600,
+                      fontSize: "0.7rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      height: 22,
+                      "& .MuiChip-label": { px: 1 },
+                    }}
+                  />
+                </Tooltip>
+              )}
+            </Stack>
 
             {circonscription && (
               <Typography

@@ -4,10 +4,8 @@ import React from "react";
 import { Vote, Scrutin, Acteur, Dossier } from "@prisma/client";
 import { searchVote } from "@/data/searchVote";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import SearchIcon from "@mui/icons-material/Search";
 import Stack from "@mui/material/Stack";
 import Select from "@mui/material/Select";
-import Input from "@mui/material/Input";
 import MenuItem from "@mui/material/MenuItem";
 import Box from "@mui/material/Box";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -16,6 +14,7 @@ import Typography from "@mui/material/Typography";
 import debounce from "@/utils/debounce";
 import Pagination from "@/components/Pagination";
 import { DeputeVoteCard } from "./DeputeVoteCard";
+import SearchInput from "@/components/SearchInput";
 
 const positionsVotePossible = ["pour", "contre", "nonVotant", "abstention"];
 
@@ -28,6 +27,7 @@ type VotesClientProps = {
 };
 
 export default function VotesClient({ acteur }: VotesClientProps) {
+  const [value, setValue] = React.useState("");
   const [search, setSearch] = React.useState("");
   const [positionVote, setPositionVote] = React.useState("");
   const [onlySolennel, setOnlySolennel] = React.useState(true);
@@ -41,6 +41,11 @@ export default function VotesClient({ acteur }: VotesClientProps) {
       }, 500),
     [],
   );
+
+  const handleSearchChange = (next: string) => {
+    setValue(next);
+    debouncedSetSearch(next);
+  };
 
   const { data: result, isPending } = useQuery({
     queryKey: ["votes", page, acteur.uid, positionVote, search, onlySolennel],
@@ -88,22 +93,10 @@ export default function VotesClient({ acteur }: VotesClientProps) {
         sx={{ mb: 4 }}
       >
         {/* Champ de recherche */}
-        <Input
-          placeholder="Rechercher par mots-clés (scrutin, dossier...)"
-          onChange={(event) => debouncedSetSearch(event.target.value)}
-          startAdornment={
-            <SearchIcon sx={{ mr: 1, color: "text.secondary" }} />
-          }
-          fullWidth
-          sx={{
-            bgcolor: "white",
-            px: 2,
-            py: 0.5,
-            borderRadius: 1,
-            borderBottom: "none",
-            flexGrow: 1,
-          }}
-          disableUnderline
+        <SearchInput
+          value={value}
+          onChange={handleSearchChange}
+          placeholder="Rechercher par mots-clés (scrutin, dossier…)"
         />
 
         <Stack direction="row" spacing={2} alignItems="center">

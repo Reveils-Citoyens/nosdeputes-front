@@ -34,7 +34,12 @@ const ACTE_LABELS: Record<string, string> = {
   // Lecture définitive
   "ANLDEF-DEBATS-SEANCE": "Lecture définitive - Séance (AN)",
   "ANLDEF-DEBATS-DEC": "Lecture définitive - Vote final",
-  
+
+  // Lecture unique (résolutions, motions, etc.)
+  "ANLUNI-DEBATS-SEANCE": "Lecture unique - Séance publique (AN)",
+  "ANLUNI-DEBATS-DEC": "Lecture unique - Vote (AN)",
+  "ANLUNI-COM": "Lecture unique - Commission (AN)",
+
   // Motions
   "MOTION-CENSURE": "Motion de censure",
   "MOTION-REFERENDAIRE": "Motion référendaire"
@@ -48,6 +53,7 @@ function formatActeLabel(code: string, nomCanonique?: string | null) {
   }
   
   if (code.includes("ANLDEF")) return "Lecture définitive";
+  if (code.includes("ANLUNI")) return "Lecture unique (AN)";
   if (code.includes("CMP")) return "Commission Mixte Paritaire";
   if (code.includes("AN1")) return "1ère lecture (AN)";
   if (code.includes("SN1")) return "1ère lecture (Sénat)";

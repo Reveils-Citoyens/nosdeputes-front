@@ -134,15 +134,69 @@ function DeputesSection({ items }: { items: ActeurSearchResult[] }) {
                   {d.prenom[0]}
                   {d.nom[0]}
                 </Avatar>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" fontWeight="bold" noWrap>
-                    {d.prenom} {d.nom}
-                  </Typography>
-                  {d.departement && d.numCirco && (
-                    <Typography variant="caption" color="text.secondary" noWrap>
-                      {d.numCirco}e circ. — {d.departement}
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography variant="body2" fontWeight="bold" noWrap>
+                      {d.prenom} {d.nom}
                     </Typography>
-                  )}
+                    {d.mandatAcheve && (
+                      <Chip
+                        label="Mandat achevé"
+                        size="small"
+                        sx={{
+                          bgcolor: "grey.200",
+                          color: "grey.800",
+                          fontWeight: 600,
+                          fontSize: "0.65rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          height: 18,
+                          "& .MuiChip-label": { px: 0.8 },
+                        }}
+                      />
+                    )}
+                  </Stack>
+                  <Stack
+                    direction="row"
+                    spacing={0.8}
+                    alignItems="center"
+                    flexWrap="wrap"
+                    sx={{ mt: 0.25 }}
+                  >
+                    {d.groupeParlementaire && (
+                      <>
+                        <Box
+                          component="span"
+                          sx={{
+                            display: "inline-block",
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            bgcolor:
+                              d.groupeParlementaire.couleurAssociee ?? "grey.400",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          noWrap
+                          sx={{ fontWeight: 500 }}
+                        >
+                          {d.groupeParlementaire.libelleAbrev ??
+                            d.groupeParlementaire.libelle}
+                        </Typography>
+                      </>
+                    )}
+                    {d.groupeParlementaire && d.departement && d.numCirco && (
+                      <Typography variant="caption" color="text.secondary">·</Typography>
+                    )}
+                    {d.departement && d.numCirco && (
+                      <Typography variant="caption" color="text.secondary" noWrap>
+                        {d.numCirco}e circ. — {d.departement}
+                      </Typography>
+                    )}
+                  </Stack>
                 </Box>
               </Stack>
             </Link>

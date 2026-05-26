@@ -66,7 +66,7 @@ export default function DossiersLoadMore({
   return (
     <>
       {items.length > 0 && (
-        <Stack spacing={1.5}>
+        <Stack spacing={1.5} sx={{ mt: 1.5 }}>
           {items.map((d) => (
             <Link
               key={d.uid}

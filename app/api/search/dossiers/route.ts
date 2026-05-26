@@ -15,14 +15,20 @@ export async function GET(request: NextRequest) {
   const sort = sp.get("sort") === "date" ? "date" : "relevance";
   const codeProcedure = sp.get("codeProcedure") ?? undefined;
 
-  // Pour la navbar/home (pas de skip), on continue de renvoyer juste le tableau
-  // pour rétrocompatibilité. Avec skip/limit explicites on renvoie { items, total }.
-  const result = await searchDossierParTitre(q, { limit, skip, legislature, sort, codeProcedure });
+  try {
+    // Pour la navbar/home (pas de skip), on continue de renvoyer juste le tableau
+    // pour rétrocompatibilité. Avec skip/limit explicites on renvoie { items, total }.
+    const result = await searchDossierParTitre(q, { limit, skip, legislature, sort, codeProcedure });
 
-  if (skip === 0 && !sp.has("skip")) {
-    // Rétrocompatibilité : navbar et SearchBar attendent un tableau plat
-    return NextResponse.json(result.items);
+    if (skip === 0 && !sp.has("skip")) {
+      // Rétrocompatibilité : navbar et SearchBar attendent un tableau plat
+      return NextResponse.json(result.items);
+    }
+
+    return NextResponse.json(result);
+  } catch (err) {
+    console.error("searchDossiers error:", err);
+    if (skip === 0 && !sp.has("skip")) return NextResponse.json([]);
+    return NextResponse.json({ items: [], total: 0 }, { status: 500 });
   }
-
-  return NextResponse.json(result);
 }

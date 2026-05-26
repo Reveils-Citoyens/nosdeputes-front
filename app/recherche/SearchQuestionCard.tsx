@@ -47,6 +47,7 @@ export default function SearchQuestionCard({
         "&:before": { display: "none" },
         borderBottom: "1px solid",
         borderColor: "divider",
+        "&:last-child": { borderBottom: "none" },
         "&.Mui-expanded": { bgcolor: "rgba(0, 0, 0, 0.01)" },
       }}
     >
@@ -62,6 +63,7 @@ export default function SearchQuestionCard({
             my: 0,
             minWidth: 0,
             overflow: "hidden",
+            pr: 1.5,
           },
         }}
       >
@@ -86,7 +88,7 @@ export default function SearchQuestionCard({
           >
             <Box
               onClick={(e) => e.stopPropagation()}
-              sx={{ minWidth: 0, flex: "1 1 auto" }}
+              sx={{ minWidth: 0, flex: "0 0 auto" }}
             >
               {q.acteurRefUid && (
                 <ActeurCard

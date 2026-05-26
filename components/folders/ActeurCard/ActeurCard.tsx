@@ -2,6 +2,8 @@ import * as React from "react";
 
 import Avatar from "@mui/material/Avatar";
 import Box, { BoxProps } from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
+import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
 
@@ -54,6 +56,9 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
   }
 
   const acteurUrl = acteur.chambre === "AN" ? `/depute/${acteur.slug}` : null;
+  // Mandat AN achevé : signal canonique = `actif: false` sur l'acteur.
+  const mandatAcheve = acteur.chambre === "AN" && acteur.actif === false;
+  const auGouvernement = acteur.auGouvernement === true;
   return (
     <Box
       sx={[
@@ -93,22 +98,58 @@ export function ActeurCardWithData<RootComponent extends React.ElementType>(
             minWidth: 0,
           }}
         >
-          {link === "name" && acteurUrl ? (
-            <MuiLink
-              variant="body2"
-              fontWeight="medium"
-              underline="hover"
-              component={Link}
-              href={acteurUrl}
-              onClick={(event) => event.stopPropagation()}
-            >
-              {acteur.prenom} {acteur.nom}
-            </MuiLink>
-          ) : (
-            <Typography variant="body2" fontWeight="medium">
-              {acteur.prenom} {acteur.nom}
-            </Typography>
-          )}
+          <Stack direction="row" alignItems="center" spacing={0.8}>
+            {link === "name" && acteurUrl ? (
+              <MuiLink
+                variant="body2"
+                fontWeight="medium"
+                underline="hover"
+                component={Link}
+                href={acteurUrl}
+                onClick={(event) => event.stopPropagation()}
+              >
+                {acteur.prenom} {acteur.nom}
+              </MuiLink>
+            ) : (
+              <Typography variant="body2" fontWeight="medium">
+                {acteur.prenom} {acteur.nom}
+              </Typography>
+            )}
+            {mandatAcheve && (
+              <Chip
+                label="Mandat achevé"
+                size="small"
+                sx={{
+                  bgcolor: "grey.200",
+                  color: "grey.800",
+                  fontWeight: 600,
+                  fontSize: "0.6rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  height: 16,
+                  "& .MuiChip-label": { px: 0.7 },
+                }}
+              />
+            )}
+            {auGouvernement && (
+              <Tooltip title="Membre du gouvernement (mandat de député suspendu)">
+                <Chip
+                  label="Gouv."
+                  size="small"
+                  sx={{
+                    bgcolor: "#dbeafe",
+                    color: "#1e40af",
+                    fontWeight: 600,
+                    fontSize: "0.6rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    height: 16,
+                    "& .MuiChip-label": { px: 0.7 },
+                  }}
+                />
+              </Tooltip>
+            )}
+          </Stack>
           {showCirconscription && acteur.mandatPrincipal && (
             <Typography variant="body2" fontWeight="light">
               {acteur.mandatPrincipal.numCirco}e Circ{" "}

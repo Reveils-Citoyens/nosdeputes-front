@@ -11,9 +11,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json([]);
   }
 
-  const results = CODE_POSTAL_RE.test(q)
-    ? await searchActeurParCodePostalTricoteuses(q)
-    : await searchActeurParNom(q, 5);
-
-  return NextResponse.json(results);
+  try {
+    const results = CODE_POSTAL_RE.test(q)
+      ? await searchActeurParCodePostalTricoteuses(q)
+      : await searchActeurParNom(q, 5);
+    return NextResponse.json(results);
+  } catch (err) {
+    console.error("searchActeurs error:", err);
+    return NextResponse.json([], { status: 500 });
+  }
 }

@@ -13,9 +13,17 @@ export const statusInfo: Record<string, { label: string; status: Status }> = {
   SN3: { label: "3e lecture SN", status: "review" },
   CMP: { label: "Commission Mixte Paritaire", status: "review" },
   PROM: { label: "Promulguée", status: "validated" },
+  ADOPTEE: { label: "Adoptée", status: "validated" },
+  ANLUNI: { label: "Lecture unique", status: "review" },
 };
 
 export function getCurrentStatus(acts: ActeLegislatif[]) {
+  // Adoption en lecture unique (résolutions) : signal final positif
+  const adopted = acts.some(
+    (act) => act.codeActe === "ANLUNI-DEBATS-DEC" && act.adoption === true,
+  );
+  if (adopted) return "ADOPTEE";
+
   const codes = acts.map((act) => act.codeActe);
 
   for (let i = 0; i < statusOrder.length; i += 1) {
@@ -23,6 +31,11 @@ export function getCurrentStatus(acts: ActeLegislatif[]) {
     if (codes.some((code) => code.startsWith(status))) {
       return status;
     }
+  }
+
+  // Fallback : lecture unique en cours (pas encore adoptée/rejetée)
+  if (codes.some((code) => code.startsWith("ANLUNI"))) {
+    return "ANLUNI";
   }
 }
 

@@ -5,6 +5,7 @@ import {
   TextField,
   Typography,
   Box,
+  Chip,
   Stack,
   Avatar,
 } from "@mui/material";
@@ -31,15 +32,17 @@ function toSlug(prenom: string, nom: string): string {
 const fetchActeurs = debounce(
   (query: string, cb: (r: ActeurSearchResult[]) => void) =>
     fetch(`/api/search/acteurs?q=${encodeURIComponent(query)}`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : []))
       .then(cb)
+      .catch(() => cb([]))
 );
 
 const fetchDossiers = debounce(
   (query: string, cb: (r: DossierSearchResult[]) => void) =>
     fetch(`/api/search/dossiers?q=${encodeURIComponent(query)}`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : []))
       .then(cb)
+      .catch(() => cb([]))
 );
 
 // ─── Type guard ───────────────────────────────────────────────────────────────
@@ -276,8 +279,18 @@ function DossierOption({ dossier }: { dossier: DossierSearchResult }) {
 }
 
 function ActeurOption({ acteur }: { acteur: ActeurSearchResult }) {
-  const { uid, prenom, nom, departement, numCirco } = acteur;
+  const {
+    uid,
+    prenom,
+    nom,
+    departement,
+    numCirco,
+    mandatAcheve,
+    groupeParlementaire,
+  } = acteur;
   const href = `/depute/${toSlug(prenom, nom)}`;
+  const hasGp = !!groupeParlementaire;
+  const hasCirco = !!(departement && numCirco);
 
   return (
     <Link href={href} style={{ textDecoration: "none", color: "inherit", width: "100%" }}>
@@ -287,13 +300,69 @@ function ActeurOption({ acteur }: { acteur: ActeurSearchResult }) {
           {nom[0]?.toUpperCase()}
         </Avatar>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="body1" fontWeight="bold" noWrap>
-            {prenom} {nom}
-          </Typography>
-          {departement && numCirco && (
-            <Typography variant="body2" color="text.secondary" noWrap>
-              {numCirco}e circ. — {departement}
+          <Stack direction="row" alignItems="center" spacing={0.8}>
+            <Typography variant="body1" fontWeight="bold" noWrap>
+              {prenom} {nom}
             </Typography>
+            {mandatAcheve && (
+              <Chip
+                label="Mandat achevé"
+                size="small"
+                sx={{
+                  bgcolor: "grey.200",
+                  color: "grey.800",
+                  fontWeight: 600,
+                  fontSize: "0.6rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  height: 16,
+                  "& .MuiChip-label": { px: 0.7 },
+                }}
+              />
+            )}
+          </Stack>
+          {(hasGp || hasCirco) && (
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={0.7}
+              flexWrap="wrap"
+              sx={{ mt: 0.15 }}
+            >
+              {groupeParlementaire && (
+                <>
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "inline-block",
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      bgcolor:
+                        groupeParlementaire.couleurAssociee ?? "#9ca3af",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    noWrap
+                    sx={{ fontWeight: 500 }}
+                  >
+                    {groupeParlementaire.libelleAbrev ??
+                      groupeParlementaire.libelle}
+                  </Typography>
+                </>
+              )}
+              {hasGp && hasCirco && (
+                <Typography variant="body2" color="text.secondary">·</Typography>
+              )}
+              {hasCirco && (
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  {numCirco}e circ. — {departement}
+                </Typography>
+              )}
+            </Stack>
           )}
         </Box>
       </Stack>

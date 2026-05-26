@@ -9,7 +9,15 @@ export type ActeurSearchResult = {
   numDepartement: string | null;
   departement: string | null;
   groupeParlementaireUid: string | null;
+  /** Infos affichables du groupe parlementaire (libellé, abrev, couleur) */
+  groupeParlementaire: {
+    libelle: string | null;
+    libelleAbrev: string | null;
+    couleurAssociee: string | null;
+  } | null;
   score: number;
+  /** Vrai si tous les mandats ASSEMBLEE (L17) ont une dateFin → ex-député */
+  mandatAcheve: boolean;
 };
 
 /**
@@ -87,13 +95,39 @@ export async function searchActeurParNom(
                 $filter: {
                   input: "$mandats.mandat",
                   as: "m",
-                  cond: { $eq: ["$$m.typeOrgane", "GP"] },
+                  cond: {
+                    $and: [
+                      { $eq: ["$$m.typeOrgane", "GP"] },
+                      { $eq: ["$$m.dateFin", null] },
+                    ],
+                  },
                 },
               },
               as: "gp",
               in: "$$gp.organes.organeRef",
             },
           },
+        },
+        // Vrai s'il n'existe AUCUN mandat ASSEMBLEE L17 actif (dateFin null).
+        mandatAcheve: {
+          $eq: [
+            {
+              $size: {
+                $filter: {
+                  input: "$mandats.mandat",
+                  as: "m",
+                  cond: {
+                    $and: [
+                      { $eq: ["$$m.legislature", "17"] },
+                      { $eq: ["$$m.typeOrgane", "ASSEMBLEE"] },
+                      { $eq: ["$$m.dateFin", null] },
+                    ],
+                  },
+                },
+              },
+            },
+            0,
+          ],
         },
       },
     },
@@ -104,11 +138,39 @@ export async function searchActeurParNom(
         nom: 1,
         score: 1,
         groupeParlementaireUid: 1,
+        mandatAcheve: 1,
         numCirco: "$mandatAN.election.lieu.numCirco",
         numDepartement: "$mandatAN.election.lieu.numDepartement",
         departement: "$mandatAN.election.lieu.departement",
       },
     },
+    // Lookup du groupe parlementaire pour récupérer libellé, abrev, couleur.
+    {
+      $lookup: {
+        from: "organes",
+        localField: "groupeParlementaireUid",
+        foreignField: "uid",
+        as: "_gp",
+        pipeline: [
+          {
+            $project: {
+              _id: 0,
+              libelle: 1,
+              libelleAbrev: 1,
+              couleurAssociee: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        groupeParlementaire: {
+          $ifNull: [{ $arrayElemAt: ["$_gp", 0] }, null],
+        },
+      },
+    },
+    { $project: { _gp: 0 } },
   ];
 
   const results = await db

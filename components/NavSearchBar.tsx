@@ -6,6 +6,7 @@ import {
   TextField,
   Typography,
   Box,
+  Chip,
   Stack,
   Avatar,
 } from "@mui/material";
@@ -40,15 +41,17 @@ function isActeur(
 const fetchActeurs = debounce(
   (query: string, cb: (r: ActeurSearchResult[]) => void) =>
     fetch(`/api/search/acteurs?q=${encodeURIComponent(query)}`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : []))
       .then(cb)
+      .catch(() => cb([]))
 );
 
 const fetchDossiers = debounce(
   (query: string, cb: (r: DossierSearchResult[]) => void) =>
     fetch(`/api/search/dossiers?q=${encodeURIComponent(query)}`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : []))
       .then(cb)
+      .catch(() => cb([]))
 );
 
 const MIN_CHARS = 5;
@@ -329,18 +332,13 @@ export default function NavSearchBar({ mobile = false }: { mobile?: boolean }) {
                         {option.nom[0]?.toUpperCase()}
                       </Avatar>
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="body2" fontWeight="bold" noWrap>
-                          {option.prenom} {option.nom}
-                        </Typography>
-                        {option.departement && option.numCirco && (
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            noWrap
-                          >
-                            {option.numCirco}e circ. — {option.departement}
+                        <Stack direction="row" alignItems="center" spacing={0.8}>
+                          <Typography variant="body2" fontWeight="bold" noWrap>
+                            {option.prenom} {option.nom}
                           </Typography>
-                        )}
+                          {option.mandatAcheve && <MandatAcheveChip />}
+                        </Stack>
+                        <DeputeSubline option={option} />
                       </Box>
                     </Stack>
                   </Link>
@@ -458,14 +456,13 @@ function MobileSearch({
                     {option.prenom[0]?.toUpperCase()}{option.nom[0]?.toUpperCase()}
                   </Avatar>
                   <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="body2" fontWeight="bold" noWrap>
-                      {option.prenom} {option.nom}
-                    </Typography>
-                    {option.departement && option.numCirco && (
-                      <Typography variant="caption" color="text.secondary" noWrap>
-                        {option.numCirco}e circ. — {option.departement}
+                    <Stack direction="row" alignItems="center" spacing={0.8}>
+                      <Typography variant="body2" fontWeight="bold" noWrap>
+                        {option.prenom} {option.nom}
                       </Typography>
-                    )}
+                      {option.mandatAcheve && <MandatAcheveChip />}
+                    </Stack>
+                    <DeputeSubline option={option} />
                   </Box>
                 </Stack>
               </Link>
@@ -508,6 +505,73 @@ function DossierOptionRow({ dossier }: { dossier: DossierSearchResult }) {
         </Stack>
       </Box>
       <DossierBadge badge={dossier.badge} />
+    </Stack>
+  );
+}
+
+function MandatAcheveChip() {
+  return (
+    <Chip
+      label="Mandat achevé"
+      size="small"
+      sx={{
+        bgcolor: "grey.200",
+        color: "grey.800",
+        fontWeight: 600,
+        fontSize: "0.6rem",
+        textTransform: "uppercase",
+        letterSpacing: "0.05em",
+        height: 16,
+        "& .MuiChip-label": { px: 0.7 },
+      }}
+    />
+  );
+}
+
+function DeputeSubline({ option }: { option: ActeurSearchResult }) {
+  const gp = option.groupeParlementaire;
+  const hasGp = !!gp;
+  const hasCirco = !!(option.departement && option.numCirco);
+  if (!hasGp && !hasCirco) return null;
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      spacing={0.7}
+      flexWrap="wrap"
+      sx={{ mt: 0.1 }}
+    >
+      {gp && (
+        <>
+          <Box
+            component="span"
+            sx={{
+              display: "inline-block",
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              bgcolor: gp.couleurAssociee ?? "#9ca3af",
+              flexShrink: 0,
+            }}
+          />
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            noWrap
+            sx={{ fontWeight: 500 }}
+          >
+            {gp.libelleAbrev ?? gp.libelle}
+          </Typography>
+        </>
+      )}
+      {hasGp && hasCirco && (
+        <Typography variant="caption" color="text.secondary">·</Typography>
+      )}
+      {hasCirco && (
+        <Typography variant="caption" color="text.secondary" noWrap>
+          {option.numCirco}e circ. — {option.departement}
+        </Typography>
+      )}
     </Stack>
   );
 }

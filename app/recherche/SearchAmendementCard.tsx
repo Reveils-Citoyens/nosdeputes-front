@@ -48,11 +48,33 @@ function getStatus(label: string | null): Status {
   }
 }
 
+function getAmendementTooltip(label: string | null): string {
+  switch (label) {
+    case "Adopté":
+      return "L'amendement a été mis aux voix et adopté par l'assemblée.";
+    case "Rejeté":
+      return "L'amendement a été mis aux voix et rejeté par l'assemblée.";
+    case "Irrecevable":
+      return "L'amendement a été déclaré irrecevable avant examen, pour non-conformité aux règles de procédure.";
+    case "Irrecevable 40":
+      return "Irrecevable au titre de l'article 40 de la Constitution : l'amendement augmenterait les dépenses publiques ou réduirait les recettes.";
+    case "Tombé":
+      return "L'amendement est devenu sans objet suite à l'adoption ou au rejet d'un amendement incompatible.";
+    case "Non soutenu":
+      return "L'auteur n'était pas présent en séance pour défendre son amendement ; il n'a pas été mis aux voix.";
+    case "Retiré":
+      return "L'auteur a retiré son amendement avant qu'il soit mis aux voix.";
+    default:
+      return "L'amendement a été déposé et attend d'être examiné en séance.";
+  }
+}
+
 export default function SearchAmendementCard({
   amendement: a,
 }: {
   amendement: AmendementSearchResult;
 }) {
+  const [expanded, setExpanded] = React.useState(false);
   const teaser = htmlToPreview(a.exposeSommaire, 220);
   const nbSignataires = 1 + a.nombreCoSignataires;
   const dossierHref =
@@ -68,12 +90,15 @@ export default function SearchAmendementCard({
 
   return (
     <Accordion
+      expanded={expanded}
+      onChange={(_, v) => setExpanded(v)}
       elevation={0}
       disableGutters
       sx={{
         "&:before": { display: "none" },
         borderBottom: "1px solid",
         borderColor: "divider",
+        "&:last-child": { borderBottom: "none" },
         "&.Mui-expanded": { bgcolor: "rgba(0, 0, 0, 0.01)" },
       }}
     >
@@ -89,77 +114,60 @@ export default function SearchAmendementCard({
             my: 0,
             minWidth: 0,
             overflow: "hidden",
+            pr: 1.5,
           },
         }}
       >
-        {/* Ligne 1 : titre dossier (lien) seul, tronqué si long */}
-        {dossierHref && a.dossierTitre ? (
-          <Box
-            component={Link}
-            href={dossierHref}
-            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            sx={{
-              display: "block",
-              minWidth: 0,
-              textDecoration: "none",
-              color: "primary.main",
-              "&:hover .dossier-title": { textDecoration: "underline" },
-            }}
-          >
-            <Typography
-              className="dossier-title"
-              variant="body2"
-              fontWeight="bold"
-              noWrap
-              sx={{ color: "inherit" }}
-            >
+        {/* Ligne 1 : titre dossier — seul le texte est un lien, pas toute la ligne */}
+        <Typography variant="body2" fontWeight="bold" noWrap sx={{
+          minWidth: 0,
+          "& a": { color: "inherit", textDecoration: "none", "&:hover": { textDecoration: "underline" } },
+        }}>
+          {dossierHref && a.dossierTitre ? (
+            <Link href={dossierHref} onClick={(e) => e.stopPropagation()}>
               {a.dossierTitre}
-            </Typography>
-          </Box>
-        ) : (
-          <Typography variant="body2" fontWeight="bold" noWrap>
-            {a.dossierTitre ?? "—"}
-          </Typography>
-        )}
+            </Link>
+          ) : (
+            a.dossierTitre ?? "—"
+          )}
+        </Typography>
 
-        {/* Ligne 2 : auteur (gauche) + sort chip (droite, aligné) */}
-        {(a.acteurRefUid || a.typeAuteur === "Gouvernement" || a.sortAmendement) && (
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            spacing={1}
-            sx={{ minWidth: 0 }}
+        {/* Ligne 2 : auteur (gauche) + statut chip (droite, toujours visible) */}
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          spacing={1}
+          sx={{ minWidth: 0 }}
+        >
+          <Box
+            onClick={(e) => e.stopPropagation()}
+            sx={{ minWidth: 0, flex: "0 0 auto" }}
           >
-            <Box
-              onClick={(e) => e.stopPropagation()}
-              sx={{ minWidth: 0, flex: "1 1 auto" }}
-            >
-              {a.acteurRefUid ? (
-                <ActeurCard
-                  id={a.acteurRefUid}
-                  link="name"
-                  smallGroupColor
-                  groupColorSize="small"
-                />
-              ) : a.typeAuteur === "Gouvernement" ? (
-                <GouvernementCard />
-              ) : null}
-            </Box>
-            {a.sortAmendement && (
-              <Box sx={{ flexShrink: 0 }}>
-                <StatusChip
-                  size="small"
-                  label={a.sortAmendement}
-                  status={getStatus(a.sortAmendement)}
-                />
-              </Box>
-            )}
-          </Stack>
-        )}
+            {a.acteurRefUid ? (
+              <ActeurCard
+                id={a.acteurRefUid}
+                link="name"
+                smallGroupColor
+                groupColorSize="small"
+              />
+            ) : a.typeAuteur === "Gouvernement" ? (
+              <GouvernementCard />
+            ) : null}
+          </Box>
+          <Box sx={{ flexShrink: 0 }}>
+            <StatusChip
+              size="small"
+              label={a.sortAmendement ?? "À discuter"}
+              status={getStatus(a.sortAmendement)}
+              tooltip={getAmendementTooltip(a.sortAmendement)}
+            />
+          </Box>
+        </Stack>
 
-        {/* Ligne 3 : teaser de l'exposé sommaire */}
-        {teaser && (
+        {/* Ligne 3 : teaser de l'exposé sommaire — masqué quand la carte est ouverte
+            (le texte complet apparaît dans les détails, évite la répétition) */}
+        {!expanded && teaser && (
           <Typography
             variant="body2"
             color="text.secondary"
@@ -238,7 +246,7 @@ export default function SearchAmendementCard({
               }
             />
             <MetaItem label="Dépôt" value={dateDepot ?? "-"} />
-            <MetaItem label="Examen" value={dateSort ?? "-"} />
+            {dateSort && <MetaItem label="Examen" value={dateSort} />}
           </Stack>
         </Stack>
       </AccordionDetails>

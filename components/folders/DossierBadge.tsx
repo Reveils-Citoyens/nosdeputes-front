@@ -3,6 +3,7 @@ import { Box } from "@mui/material";
 
 export type DossierBadgeCode =
   | "promulgue"
+  | "adopte"
   | "rejete"
   | "retire"
   | "caduc"
@@ -25,6 +26,12 @@ const STYLES: Record<DossierBadgeCode, BadgeStyle | null> = {
     bg: "#dcfce7",
     text: "#166534",
     dot: "#16a34a",
+  },
+  adopte: {
+    label: "Adoptée",
+    bg: "#ccfbf1",
+    text: "#115e59",
+    dot: "#0d9488",
   },
   rejete: {
     label: "Rejeté",

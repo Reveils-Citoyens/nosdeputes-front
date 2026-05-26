@@ -6,10 +6,11 @@ import { CommissionsCard } from "./CommissionsCard";
 import { LegislativeDocumentsCard } from "@/app/[legislature]/dossier/[id]/LegislativeDocumentsCard";
 import { TextStructureCard } from "@/components/folders/TextStructureCard";
 import { TimelineCard } from "@/components/folders/TimelineCard";
+import { DocumentInlineCard } from "./DocumentInlineCard";
 
 import { getCommissionUids } from "@/app/[legislature]/dossier/[id]/dataFunctions";
 import { getDossier } from "@/data/getDossier";
-import { dossierSettings } from "./dossierSettings";
+import { dossierSettings, type ApercuVariant } from "./dossierSettings";
 
 type PreviewTabProps = {
   dossier?: Awaited<ReturnType<typeof getDossier>>;
@@ -23,6 +24,7 @@ export const PreviewTab = ({ dossier }: PreviewTabProps) => {
     carteAmendements = true,
     carteCoSignataires = true,
     carteDocuments = true,
+    apercuVariant = "chronologie" as ApercuVariant,
   } = (codeProcedure ? dossierSettings[codeProcedure] : {}) ?? {};
 
   const commissionFondIds = getCommissionUids(actesLegislatifs, "FOND");
@@ -100,16 +102,15 @@ export const PreviewTab = ({ dossier }: PreviewTabProps) => {
           flex: 5,
         }}
       >
-        {/* <CardLayout title="Temps de parole par groupe">
-          <SpeakingTime />
-          </CardLayout> */}
-        <TimelineCard
-          actesLegislatifs={actesLegislatifs}
-          // documents={documents}
-          dossierUid={dossier!.uid}
-          legislature={dossier!.legislature?.toString() ?? ""}
-        />
-        {/* <TextStructureCard /> */}
+        {apercuVariant === "document" ? (
+          <DocumentInlineCard documentUid={dossier!.documentDeposeRefUid} />
+        ) : (
+          <TimelineCard
+            actesLegislatifs={actesLegislatifs}
+            dossierUid={dossier!.uid}
+            legislature={dossier!.legislature?.toString() ?? ""}
+          />
+        )}
       </div>
     </div>
   );

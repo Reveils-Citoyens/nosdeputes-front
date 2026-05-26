@@ -21,6 +21,13 @@ export type DossierSearchResult = {
 const HEAT_BOOST_FACTOR = 4;
 
 /**
+ * Score Atlas Search minimal en dessous duquel un dossier est écarté.
+ * Les scores < 1.5 correspondent typiquement à des matchs très partiels
+ * (wildcard seul, 1 mot sur N, faute tolérée sur un mot court).
+ */
+const MIN_SEARCH_SCORE = 1.5;
+
+/**
  * Recherche de dossiers législatifs par titre via Atlas Search.
  * Ne retourne que les dossiers racines (dossierRef: null), donc un seul
  * résultat distinct par dossier.
@@ -74,6 +81,10 @@ export async function searchDossierParTitre(
     },
     {
       $match: {
+        // Tous les types de dossier — exclut les documents enfants (texteLoi_Type, etc.)
+        // Les docs enfants ont par ailleurs tous un dossierRef non-null, donc
+        // le filtre suivant les exclut aussi : ceinture + bretelles.
+        "@xsi:type": { $regex: /^Dossier/ },
         legislature,
         dossierRef: null,
         chambre: { $ne: "SN" }, // les dossiers AN n'ont pas de champ chambre; seuls les dossiers SN l'ont
@@ -97,12 +108,21 @@ export async function searchDossierParTitre(
         },
       },
     },
-    // En mode "date", on tri par dateDernierActe (s'il existe), sinon on garde
-    // la pertinence Atlas + heatScore comme avant.
+    // Seuil de pertinence : on écarte les matchs trop faibles (wildcard seul, faute
+    // tolérée sur mot court, 1 mot sur 5…). Affecte également le total retourné.
+    { $match: { _searchScore: { $gte: MIN_SEARCH_SCORE } } },
+    // En mode "date", tri par date du dernier acte législatif (heatComponents.last_acte_date),
+    // tie-breaker sur _finalScore. Les dossiers sans date remontent en dernier ($ifNull → "").
+    {
+      $addFields:
+        sort === "date"
+          ? { _lastActeDate: { $ifNull: ["$heatComponents.last_acte_date", ""] } }
+          : {},
+    },
     {
       $sort:
         sort === "date"
-          ? { dateDernierActe: -1, _finalScore: -1 }
+          ? { _lastActeDate: -1, _finalScore: -1 }
           : { _finalScore: -1 },
     },
     {

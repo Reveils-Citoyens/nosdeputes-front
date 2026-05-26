@@ -8,7 +8,8 @@ interface SearchDossierParams {
    */
   perPage?: number;
   /**
-   * @default 0
+   * @default 1
+   * L'API Tricoteuses utilise une pagination 1-based : page=0 renvoie HTTP 400.
    */
   page?: number;
   /**
@@ -29,7 +30,7 @@ export async function searchDossier(
 ): Promise<PaginatedResponse<Dossier> | null> {
   const {
     perPage = 10,
-    page = 0,
+    page = 1,
     sort = "dateDernierActe.desc",
     search = "",
     codeProcedure = "",

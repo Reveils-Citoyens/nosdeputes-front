@@ -49,6 +49,7 @@ export default function QuestionCard(props: QuestionCardProps) {
         "&:before": { display: "none" },
         borderBottom: "1px solid",
         borderColor: "divider",
+        "&:last-child": { borderBottom: "none" },
         "&.Mui-expanded": {
           bgcolor: "rgba(0, 0, 0, 0.01)",
         },

@@ -12,13 +12,14 @@ import { getDebats, ReturnedDebat } from "@/data/getDebats";
 export default function DossiersTabs(props: {
   legislature: string;
   dossierUid: string;
+  showApercu: boolean;
   showDebats: boolean;
   showAmendements: boolean;
   showVotes: boolean;
   hasAmendements: boolean;
   hasVotes: boolean;
 }) {
-  const { legislature, dossierUid, showDebats, showAmendements, showVotes, hasAmendements, hasVotes } =
+  const { legislature, dossierUid, showApercu, showDebats, showAmendements, showVotes, hasAmendements, hasVotes } =
     props;
   const segment = useSelectedLayoutSegment();
 
@@ -37,7 +38,7 @@ export default function DossiersTabs(props: {
   const rootPathName = `/${legislature}/dossier/${dossierUid}/`;
 
   const tabs = [
-    { value: "", label: "Aperçu", href: rootPathName, visible: true },
+    { value: "", label: "Aperçu", href: rootPathName, visible: showApercu },
     {
       value: "commission",
       label: "Commission",

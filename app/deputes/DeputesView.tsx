@@ -41,10 +41,15 @@ function GroupPolitiqueHeader({
       id={`${itemKey}-header`}
     >
       <Stack direction="row" alignItems="center" spacing={1}>
-        <CircleDiv color={group?.couleurAssociee ?? "gray"} />
+        <CircleDiv color={group?.couleurAssociee ?? "gray"} size={11} />
         <Typography>
-          {group ? `${group.libelle} (${group.libelleAbrev})` : "Groupe non renseigné"} -{" "}
-          {nbDeputes} {nbDeputes > 1 ? "deputés" : "deputé"}
+          {group ? (
+            <>
+              {group.libelle}{" "}
+              (<strong>{group.libelleAbrev}</strong>)
+            </>
+          ) : "Groupe non renseigné"}{" "}
+          — {nbDeputes} {nbDeputes > 1 ? "deputés" : "deputé"}
         </Typography>
       </Stack>
     </AccordionSummary>
@@ -104,6 +109,8 @@ function Deputes({
             groupeParlementaireUid,
             mandatPrincipal,
           } = depute;
+          const auGouvernement =
+            "auGouvernement" in depute && depute.auGouvernement === true;
 
           const groupeParlementaire =
             groupeParlementaireUid && groups[groupeParlementaireUid];
@@ -114,6 +121,7 @@ function Deputes({
               prenom={prenom}
               nom={nom}
               urlImage={urlImage}
+              auGouvernement={auGouvernement}
               secondaryText={
                 grouping === "groupPolitique"
                   ? `${mandatPrincipal?.numCirco}e Circ ${mandatPrincipal?.departement}`
@@ -166,10 +174,38 @@ export default function DeputesView({
   const AccordionHeader =
     grouping === "groupPolitique" ? GroupPolitiqueHeader : NameHeader;
 
-  const deputesActifs = Object.values(deputes).filter(
-    (depute) =>
-      depute.mandatPrincipal && depute.mandatPrincipal.dateFin === null
-  ).length;
+  // Compte cohérent avec ce qui est réellement affiché :
+  // - en mode "par groupe", les non-inscrits (sans groupeParlementaireUid) ne
+  //   sont pas affichés car la liste filtre les clés vides (cf. plus bas).
+  // - on applique aussi les filtres search / département pour que le compteur
+  //   se mette à jour en temps réel.
+  const visibleDeputes = Object.values(deputes).filter((depute) => {
+    const { nom, prenom, mandatPrincipal, groupeParlementaireUid } = depute;
+
+    if (!mandatPrincipal || mandatPrincipal.dateFin !== null) return false;
+
+    if (grouping === "groupPolitique" && !groupeParlementaireUid) return false;
+
+    if (
+      search &&
+      !`${nom} ${prenom} ${mandatPrincipal?.departement ?? ""}`
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    ) {
+      return false;
+    }
+
+    if (
+      numeroDepartement !== null &&
+      mandatPrincipal?.numDepartement !==
+        Number.parseInt(numeroDepartement, 10)
+    ) {
+      return false;
+    }
+
+    return true;
+  }).length;
+
   const deputesMandatFinit = Object.values(deputes).filter(
     (depute) =>
       !depute.mandatPrincipal || depute.mandatPrincipal.dateFin !== null
@@ -179,7 +215,7 @@ export default function DeputesView({
   return (
     <Stack direction="column">
       <Typography variant="h3" component="h1" fontWeight="bold">
-        {deputesActifs} Députés
+        {visibleDeputes} Députés
       </Typography>
       <Typography fontWeight="light">
         plus {deputesMandatFinit} députés hors mandat

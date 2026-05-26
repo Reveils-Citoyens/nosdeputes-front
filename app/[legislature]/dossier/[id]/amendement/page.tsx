@@ -6,11 +6,7 @@ import Stack from "@mui/material/Stack";
 import { FilterContainer } from "@/components/FilterContainer";
 import { Filter } from "./Filter";
 import Container from "@mui/material/Container";
-import TextField from "@mui/material/TextField";
-import InputAdornment from "@mui/material/InputAdornment";
-import IconButton from "@mui/material/IconButton";
-import SearchIcon from "@mui/icons-material/Search";
-import ClearIcon from "@mui/icons-material/Close";
+import SearchInput from "@/components/SearchInput";
 import { useQueryState } from "nuqs";
 
 export default function Page() {
@@ -47,46 +43,10 @@ export default function Page() {
         </FilterContainer>
       </Stack>
       <Stack spacing={3} useFlexGap flex={8} sx={{ minWidth: 0 }}>
-        <TextField
+        <SearchInput
           value={value}
-          onChange={(event) => handleChange(event.target.value)}
+          onChange={handleChange}
           placeholder="Rechercher dans les amendements…"
-          fullWidth
-          size="small"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: "grey.500", fontSize: 20 }} />
-              </InputAdornment>
-            ),
-            endAdornment: value ? (
-              <InputAdornment position="end">
-                <IconButton
-                  size="small"
-                  aria-label="Effacer la recherche"
-                  onClick={() => handleChange("")}
-                  edge="end"
-                >
-                  <ClearIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </InputAdornment>
-            ) : null,
-            sx: {
-              borderRadius: "30px",
-              bgcolor: "white",
-              px: 1,
-              "& fieldset": {
-                borderColor: "grey.200",
-              },
-              "&:hover fieldset": {
-                borderColor: "grey.300 !important",
-              },
-              "&.Mui-focused fieldset": {
-                borderColor: "grey.700 !important",
-                borderWidth: "1px !important",
-              },
-            },
-          }}
         />
         <AmendementList dossierUid={dossierUid} />
       </Stack>

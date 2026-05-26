@@ -2,6 +2,12 @@ import * as React from "react";
 import { Acteur, Mandat, Organe } from "@prisma/client";
 import { unique } from "@/utils/unique";
 import { getOrgane } from "./getOrgane";
+import { resolveAuGouvernementBatch } from "./helpers/resolveAuGouvernement";
+
+export type ActeurDepute = Acteur & {
+  mandatPrincipal: Mandat;
+  auGouvernement: boolean;
+};
 
 /**
  *
@@ -9,7 +15,7 @@ import { getOrgane } from "./getOrgane";
  * @returns
  */
 async function getDeputesUnCached(legislature: number): Promise<{
-  acteurs: Record<string, Acteur & { mandatPrincipal: Mandat }>;
+  acteurs: Record<string, ActeurDepute>;
   groups: Record<string, Organe>;
 } | null> {
   try {
@@ -21,13 +27,17 @@ async function getDeputesUnCached(legislature: number): Promise<{
       data: (Acteur & { mandatPrincipal: Mandat })[];
     };
 
-    const groupsUid = unique(data.map((item) => item.groupeParlementaireUid));
+    // Enrichit les députés au gouvernement (récupère leur vrai mandat ASSEMBLEE
+    // et la photo standard à la place de la marianne).
+    const enriched = (await resolveAuGouvernementBatch(data)) as ActeurDepute[];
+
+    const groupsUid = unique(enriched.map((item) => item.groupeParlementaireUid));
 
     const groupsArray = await Promise.all(
       groupsUid.map(async (uid) => (uid === null ? null : await getOrgane(uid)))
     );
 
-    const acteurs = Object.fromEntries(data.map((item) => [item.uid, item]));
+    const acteurs = Object.fromEntries(enriched.map((item) => [item.uid, item]));
     const groups = Object.fromEntries(
       groupsArray
         .filter((item) => item !== null)

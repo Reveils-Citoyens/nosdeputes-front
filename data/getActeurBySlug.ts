@@ -1,11 +1,13 @@
 import * as React from "react";
 import { Acteur, Mandat, Organe } from "@prisma/client";
 import { getOrgane } from "./getOrgane";
+import { resolveAuGouvernement } from "./helpers/resolveAuGouvernement";
 
 async function getActeurBySlugUnCached(slug: string): Promise<
   | (Acteur & {
       groupeParlementaire: Organe | null;
       mandatPrincipal: Mandat | null;
+      auGouvernement: boolean;
     })
   | null
 > {
@@ -28,7 +30,7 @@ async function getActeurBySlugUnCached(slug: string): Promise<
         acteur.groupeParlementaireUid
       );
     }
-    return acteur;
+    return await resolveAuGouvernement(acteur);
   } catch (error) {
     console.error("Error fetching dossier:", error);
     return null;
@@ -38,5 +40,6 @@ async function getActeurBySlugUnCached(slug: string): Promise<
 export type ReturnedActeur = Acteur & {
   groupeParlementaire: Organe | null;
   mandatPrincipal: Mandat | null;
+  auGouvernement: boolean;
 };
 export const getActeurBySlug = React.cache(getActeurBySlugUnCached);

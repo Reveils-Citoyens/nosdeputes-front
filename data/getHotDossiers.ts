@@ -32,7 +32,10 @@ async function getHotDossiersUnCached(
 
   const cursor = db.collection("dossiers").find(
     {
-      "@xsi:type": "DossierLegislatif_Type",
+      // Tous les types de dossier (DossierLegislatif_Type, DossierResolutionAN,
+      // DossierMissionControle_Type, etc.) — exclut les documents enfants
+      // (texteLoi_Type, rapportParlementaire_Type, accordInternational_Type, …).
+      "@xsi:type": { $regex: /^Dossier/ },
       legislature,
       heatScore: { $gt: 0 },
     },

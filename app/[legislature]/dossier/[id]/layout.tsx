@@ -7,6 +7,7 @@ import Tabs from "./Tabs";
 
 import { getCurrentStatus } from "./dataFunctions";
 import { getDossier } from "@/data/getDossier";
+import { getDebats } from "@/data/getDebats";
 import { dossierSettings } from "./dossierSettings";
 import { getAmendementCount, getScrutinCount } from "@/data/getDossierCounts";
 
@@ -29,14 +30,24 @@ export default async function Dossier({
     tableDebats = true,
     tableAmendements = true,
     tableVotes = true,
+    apercuVariant = "chronologie",
   } = (codeProcedure ? dossierSettings[codeProcedure] : {}) ?? {};
   const status = getCurrentStatus(actesLegislatifs);
 
   // Comptes légers pour activer/désactiver les tabs sans données
-  const [amendementCount, scrutinCount] = await Promise.all([
+  const [amendementCount, scrutinCount, debats] = await Promise.all([
     tableAmendements ? getAmendementCount(id) : Promise.resolve(0),
     tableVotes ? getScrutinCount(id) : Promise.resolve(0),
+    // getDebats est cached via React.cache, donc partagé avec page.tsx
+    apercuVariant === "redirect-commission" ? getDebats(id) : Promise.resolve(null),
   ]);
+
+  // Le redirect vers /commission ne s'applique que si des travaux en commission existent.
+  // Sans ça, on garde la tab Aperçu visible et on rend l'aperçu standard.
+  const hasCommissionDebats = (debats ?? []).some(
+    (d) => d.debateType === "commission" && d._count.paragraphes > 0,
+  );
+  const showApercu = !(apercuVariant === "redirect-commission" && hasCommissionDebats);
 
   return (
     <React.Fragment>
@@ -52,6 +63,7 @@ export default async function Dossier({
       <Tabs
         legislature={legislature}
         dossierUid={id}
+        showApercu={showApercu}
         showDebats={tableDebats}
         showAmendements={tableAmendements}
         showVotes={tableVotes}
