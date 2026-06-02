@@ -1,29 +1,11 @@
 import * as React from "react";
 
 import Container from "@mui/material/Container";
-import Stack from "@mui/material/Stack";
 
-import { groupDeputes } from "./groupDeputes";
-import DeputesView from "./DeputesView";
+import DeputesContent from "./DeputesContent";
+import DeputesSkeleton from "./DeputesSkeleton";
 
-import { FilterContainer } from "@/components/FilterContainer";
-import { Filter } from "./Filter";
-import DeputesFilter from "./DeputesFilter";
-import { getDeputes } from "@/data/getDeputes";
-// import { connection } from "next/server";
-
-export default async function DeputesList() {
-  // await connection(); // I don't know why dock build precess returns 0 deputes
-
-  const data = await getDeputes(17);
-
-  if (data === null) {
-    return null;
-  }
-
-  const { acteurs, groups } = data;
-  const { uidPerNom, uidPerGroup, uidPerCirco } = groupDeputes(acteurs);
-
+export default function DeputesList() {
   return (
     <Container
       sx={{
@@ -36,13 +18,9 @@ export default async function DeputesList() {
         gap: 5,
       }}
     >
-      <DeputesFilter
-        deputes={acteurs}
-        uidPerNom={uidPerNom}
-        uidPerGroup={uidPerGroup}
-        uidPerCirco={uidPerCirco}
-        groups={groups}
-      />
+      <React.Suspense fallback={<DeputesSkeleton />}>
+        <DeputesContent />
+      </React.Suspense>
     </Container>
   );
 }

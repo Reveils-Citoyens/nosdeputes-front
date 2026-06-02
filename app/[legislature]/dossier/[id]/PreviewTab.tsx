@@ -11,6 +11,7 @@ import { DocumentInlineCard } from "./DocumentInlineCard";
 import { getCommissionUids } from "@/app/[legislature]/dossier/[id]/dataFunctions";
 import { getDossier } from "@/data/getDossier";
 import { dossierSettings, type ApercuVariant } from "./dossierSettings";
+import { EnrichmentCard } from "./EnrichmentCard";
 
 type PreviewTabProps = {
   dossier?: Awaited<ReturnType<typeof getDossier>>;
@@ -102,6 +103,7 @@ export const PreviewTab = ({ dossier }: PreviewTabProps) => {
           flex: 5,
         }}
       >
+        <EnrichmentCard dossierUid={dossier!.uid} />
         {apercuVariant === "document" ? (
           <DocumentInlineCard documentUid={dossier!.documentDeposeRefUid} />
         ) : (

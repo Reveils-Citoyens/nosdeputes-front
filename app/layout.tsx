@@ -50,9 +50,10 @@ export const metadata: Metadata = {
 
 const navigation: NavigationItem[] = [
   { name: "Députés", href: "/deputes" },
-  { name: "Dossiers", href: "/dossiers" }, // old url is "/dossiers/date"
+  { name: "Dossiers", href: "/dossiers" },
+  { name: "Thèmes", href: "/themes" },
   { name: "Comprendre", href: "/comprendre" },
-  { name: "À Propos", href: "/about" }
+  { name: "À Propos", href: "/about" },
 ];
 
 export default function RootLayout({

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { unstable_cache } from "next/cache";
 import { Acteur, Mandat, Organe } from "@prisma/client";
 import { unique } from "@/utils/unique";
 import { getOrgane } from "./getOrgane";
@@ -51,4 +52,11 @@ async function getDeputesUnCached(legislature: number): Promise<{
   }
 }
 
-export const getDeputes = React.cache(getDeputesUnCached);
+// unstable_cache persiste le résultat entre les requêtes (contrairement à React.cache
+// qui ne déduplique qu'au sein d'une même requête). La page reste dynamique — l'API
+// Tricoteuses n'est appelée qu'une fois par heure au lieu d'une fois par visiteur.
+const getDeputesCached = unstable_cache(getDeputesUnCached, ["deputes-list"], {
+  revalidate: 3600,
+});
+
+export const getDeputes = React.cache(getDeputesCached);

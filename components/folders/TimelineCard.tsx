@@ -27,12 +27,13 @@ import { getDebats } from "@/data/getDebats";
 import { getDocument } from "@/data/getDocument";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import RemoveIcon from "@mui/icons-material/Remove";
 
 type Outcome = {
   label: string;
   date: Date | null;
-  /** "positive" → adoptée/promulguée (vert) ; "negative" → rejetée (rouge) */
-  variant: "positive" | "negative";
+  /** "positive" → adoptée/promulguée (vert) ; "negative" → rejetée (rouge) ; "neutral" → retrait (gris) */
+  variant: "positive" | "negative" | "neutral";
 };
 
 function detectOutcome(acts: ActeLegislatif[]): Outcome | null {
@@ -62,6 +63,16 @@ function detectOutcome(acts: ActeLegislatif[]): Outcome | null {
       : { label: "Rejetée", date: decisionDef.dateActe ?? null, variant: "negative" };
   }
 
+  // Retrait d'une initiative
+  const retrait = acts.find(
+    (a) =>
+      a.codeActe?.toUpperCase().includes("RETRAIT") ||
+      a.nomCanonique?.toLowerCase().includes("retrait"),
+  );
+  if (retrait) {
+    return { label: "Retrait de l'initiative", date: retrait.dateActe ?? null, variant: "neutral" };
+  }
+
   return null;
 }
 
@@ -73,9 +84,10 @@ const OutcomeTimelineItem = ({
   isMobile: boolean;
 }) => {
   const isPositive = outcome.variant === "positive";
-  const color = isPositive ? "#16a34a" : "#dc2626";
-  const bg = isPositive ? "#dcfce7" : "#fee2e2";
-  const textColor = isPositive ? "#166534" : "#991b1b";
+  const isNeutral = outcome.variant === "neutral";
+  const color = isPositive ? "#16a34a" : isNeutral ? "#6b7280" : "#dc2626";
+  const bg = isPositive ? "#dcfce7" : isNeutral ? "#f3f4f6" : "#fee2e2";
+  const textColor = isPositive ? "#166534" : isNeutral ? "#374151" : "#991b1b";
 
   return (
     <TimelineItem>
@@ -114,6 +126,8 @@ const OutcomeTimelineItem = ({
         >
           {isPositive ? (
             <CheckIcon sx={{ fontSize: isMobile ? 22 : 26 }} />
+          ) : isNeutral ? (
+            <RemoveIcon sx={{ fontSize: isMobile ? 22 : 26 }} />
           ) : (
             <CloseIcon sx={{ fontSize: isMobile ? 22 : 26 }} />
           )}

@@ -15,6 +15,7 @@ export const statusInfo: Record<string, { label: string; status: Status }> = {
   PROM: { label: "Promulguée", status: "validated" },
   ADOPTEE: { label: "Adoptée", status: "validated" },
   ANLUNI: { label: "Lecture unique", status: "review" },
+  RETIRE: { label: "Retrait de l'initiative", status: "dropped" },
 };
 
 export function getCurrentStatus(acts: ActeLegislatif[]) {
@@ -25,6 +26,15 @@ export function getCurrentStatus(acts: ActeLegislatif[]) {
   if (adopted) return "ADOPTEE";
 
   const codes = acts.map((act) => act.codeActe);
+
+  // Retrait : prioritaire sur la position dans la navette
+  // On vérifie à la fois codeActe et nomCanonique car le code peut être générique (ex. AN1-TEXTEDEP)
+  const hasRetrait = acts.some(
+    (act) =>
+      act.codeActe?.toUpperCase().includes("RETRAIT") ||
+      act.nomCanonique?.toLowerCase().includes("retrait"),
+  );
+  if (hasRetrait) return "RETIRE";
 
   for (let i = 0; i < statusOrder.length; i += 1) {
     const status = statusOrder[statusOrder.length - 1 - i];
