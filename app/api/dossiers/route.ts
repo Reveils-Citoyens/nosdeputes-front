@@ -5,35 +5,37 @@ import type { DossierSearchResult } from "@/data/mongo/searchDossierParTitre";
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
 
-/**
- * GET /api/dossiers
- * Listing paginé de dossiers législatifs depuis MongoDB, triés par heatScore desc.
- * Paramètres :
- *   - legislature (défaut : "17")
- *   - codeProcedure (optionnel, filtre sur procedureParlementaire.code)
- *   - skip (défaut : 0)
- *   - limit (défaut : 20, max 50)
- */
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const legislature = sp.get("legislature") ?? "17";
   const codeProcedure = sp.get("codeProcedure") ?? "";
+  const badge = sp.get("badge") ?? "";
+  const theme = sp.get("theme") ?? "";
+  const sort = sp.get("sort") === "popular" ? "popular" : "recent";
   const skip = Math.max(parseInt(sp.get("skip") ?? "0", 10) || 0, 0);
   const limit = Math.min(parseInt(sp.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT, MAX_LIMIT);
 
   const db = await getParlementDb();
 
-  // Inclut tous les types de dossier (DossierLegislatif_Type, DossierResolutionAN,
-  // DossierMissionControle_Type, DossierMissionInformation_Type, etc.)
-  // mais exclut les documents annexes (texteLoi_Type, rapportParlementaire_Type, …).
   const matchFilter: Record<string, unknown> = {
     "@xsi:type": { $regex: /^Dossier/ },
     legislature,
     dossierRef: null,
     chambre: { $ne: "SN" },
   };
-  if (codeProcedure) {
-    matchFilter["procedureParlementaire.code"] = codeProcedure;
+  if (codeProcedure) matchFilter["procedureParlementaire.code"] = codeProcedure;
+  if (badge) matchFilter["dossierBadge"] = badge;
+
+  if (theme) {
+    const enrichis = await db
+      .collection("dossiers_enrichis")
+      .find(
+        { "dossier_summary_enrichment.qualification.themes_senat": theme },
+        { projection: { _id: 0, uid: 1 } }
+      )
+      .toArray();
+    const uids = enrichis.map((d) => d.uid).filter(Boolean);
+    matchFilter["uid"] = { $in: uids };
   }
 
   const [items, totalArr] = await Promise.all([
@@ -51,7 +53,7 @@ export async function GET(request: NextRequest) {
           "heatComponents.n_auteurs_uniques": 1,
         },
       })
-      .sort({ heatScore: -1 })
+      .sort(sort === "popular" ? { heatScore: -1 } : { "heatComponents.last_acte_date": -1 })
       .skip(skip)
       .limit(limit)
       .toArray(),

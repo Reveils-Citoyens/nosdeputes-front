@@ -20,6 +20,7 @@ export type DossierEnrichment = {
   ce_qui_change: string[];
   acteurs_concernes: ActeurConcerne[];
   themes_ouverts: string[];
+  themes_senat: string[];
   model_name: string | null;
 };
 
@@ -33,6 +34,7 @@ export const getDossierEnrichment = cache(
           _id: 0,
           "dossier_summary_enrichment.structured_summary": 1,
           "dossier_summary_enrichment.qualification.themes_ouverts": 1,
+          "dossier_summary_enrichment.qualification.themes_senat": 1,
           "dossier_summary_enrichment.model_name": 1,
         },
       }
@@ -67,12 +69,14 @@ export const getDossierEnrichment = cache(
       ? s.ce_qui_change.filter((c: unknown) => typeof c === "string" && c)
       : [];
 
-    const themes_ouverts: string[] = Array.isArray(
-      doc.dossier_summary_enrichment?.qualification?.themes_ouverts
-    )
-      ? doc.dossier_summary_enrichment.qualification.themes_ouverts.filter(
-          (t: unknown) => typeof t === "string" && t
-        )
+    const qual = doc.dossier_summary_enrichment?.qualification;
+
+    const themes_ouverts: string[] = Array.isArray(qual?.themes_ouverts)
+      ? qual.themes_ouverts.filter((t: unknown) => typeof t === "string" && t)
+      : [];
+
+    const themes_senat: string[] = Array.isArray(qual?.themes_senat)
+      ? qual.themes_senat.filter((t: unknown) => typeof t === "string" && t)
       : [];
 
     return {
@@ -83,6 +87,7 @@ export const getDossierEnrichment = cache(
       ce_qui_change,
       acteurs_concernes,
       themes_ouverts,
+      themes_senat,
       model_name: typeof doc.dossier_summary_enrichment?.model_name === "string"
         ? doc.dossier_summary_enrichment.model_name
         : null,

@@ -32,6 +32,11 @@ export default function QuestionsLoadMore({
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  React.useEffect(() => {
+    setItems([]);
+    seenUids.current = new Set();
+  }, [query, legislature, sort]);
+
   const totalShown = alreadyShown + items.length;
   const remaining = Math.max(0, total - totalShown);
 

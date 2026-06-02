@@ -10,7 +10,6 @@ import { getThemeCounts } from "@/data/mongo/getThemeCounts";
 import { getThemeGroupCounts } from "@/data/mongo/getThemeGroupCounts";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import AiDisclaimer from "@/components/AiDisclaimer";
 import { ThemeGroupIcon, ThemeIcon } from "./themeIcons";
 
 export const metadata = {
@@ -58,7 +57,6 @@ export default async function ThemesPage() {
           Les 33 thèmes parlementaires sont regroupés en {groups.length} grands domaines
           calqués sur les portefeuilles ministériels.
         </Typography>
-        <AiDisclaimer variant="inline" />
       </Stack>
 
       {/* Sections par domaine */}

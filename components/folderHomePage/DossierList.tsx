@@ -70,6 +70,9 @@ function DossierRow({ d }: { d: DossierSearchResult }) {
 export default function DossierList() {
   const [search] = useQueryState("search");
   const [codeProcedure] = useQueryState("codeProcedure");
+  const [badge] = useQueryState("badge");
+  const [theme] = useQueryState("theme");
+  const [sort] = useQueryState("sort");
 
   const [items, setItems] = React.useState<DossierSearchResult[]>([]);
   const seenUids = React.useRef(new Set<string>());
@@ -89,14 +92,16 @@ export default function DossierList() {
 
     const q = (search ?? "").trim();
     const params = new URLSearchParams({ limit: String(PAGE_SIZE), skip: "0" });
+    if (codeProcedure) params.set("codeProcedure", codeProcedure);
+    if (badge) params.set("badge", badge);
+    if (sort) params.set("sort", sort);
 
     let url: string;
     if (q.length >= MIN_SEARCH_CHARS) {
       params.set("q", q);
-      if (codeProcedure) params.set("codeProcedure", codeProcedure);
       url = `/api/search/dossiers?${params}`;
     } else {
-      if (codeProcedure) params.set("codeProcedure", codeProcedure);
+      if (theme) params.set("theme", theme);
       url = `/api/dossiers?${params}`;
     }
 
@@ -122,7 +127,7 @@ export default function DossierList() {
       });
 
     return () => { cancelled = true; };
-  }, [search, codeProcedure]);
+  }, [search, codeProcedure, badge, theme, sort]);
 
   const loadMore = async () => {
     setLoading(true);
@@ -132,14 +137,16 @@ export default function DossierList() {
       limit: String(PAGE_SIZE),
       skip: String(items.length),
     });
+    if (codeProcedure) params.set("codeProcedure", codeProcedure);
+    if (badge) params.set("badge", badge);
+    if (sort) params.set("sort", sort);
 
     let url: string;
     if (q.length >= MIN_SEARCH_CHARS) {
       params.set("q", q);
-      if (codeProcedure) params.set("codeProcedure", codeProcedure);
       url = `/api/search/dossiers?${params}`;
     } else {
-      if (codeProcedure) params.set("codeProcedure", codeProcedure);
+      if (theme) params.set("theme", theme);
       url = `/api/dossiers?${params}`;
     }
 
@@ -170,7 +177,7 @@ export default function DossierList() {
       {/* En-tête : titre de section + compteur */}
       <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
         <Typography variant="h6" fontWeight="bold" sx={{ color: "#1A1A1B" }}>
-          {isSearchMode ? "Résultats de recherche" : "Dossiers en cours"}
+          {isSearchMode ? "Résultats de recherche" : "Tous les dossiers"}
         </Typography>
         {!loading && total > 0 && (
           <Box

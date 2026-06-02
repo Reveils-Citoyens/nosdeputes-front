@@ -88,7 +88,7 @@ export default function NavSearchBar({ mobile = false }: { mobile?: boolean }) {
 
   React.useEffect(() => {
     closeSearch();
-  }, [pathname]);
+  }, [pathname, closeSearch]);
 
   React.useEffect(() => {
     if (inputValue.length < MIN_CHARS) {
@@ -378,7 +378,7 @@ function MobileSearch({
   setValue,
   setInputValue,
 }: {
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   value: ActeurSearchResult | DossierSearchResult | null;
   inputValue: string;
   loading: boolean;

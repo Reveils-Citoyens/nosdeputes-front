@@ -35,6 +35,7 @@ export async function searchAll(
     return {
       deputes: [],
       dossiers: [],
+      dossiersTotal: 0,
       amendements: [],
       amendementsTotal: 0,
       questions: [],

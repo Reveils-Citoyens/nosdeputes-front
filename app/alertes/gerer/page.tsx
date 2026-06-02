@@ -70,8 +70,8 @@ function GererAlertes() {
   if (data.subjects.length === 0) {
     return (
       <PageShell>
-        <Typography>Vous n'avez plus d'alertes actives.</Typography>
-        <Button component={Link} href="/" sx={{ mt: 3 }}>Retour à l'accueil</Button>
+        <Typography>Vous n&apos;avez plus d&apos;alertes actives.</Typography>
+        <Button component={Link} href="/" sx={{ mt: 3 }}>Retour à l&apos;accueil</Button>
       </PageShell>
     );
   }

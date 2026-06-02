@@ -147,17 +147,15 @@ export default function AmendementCard(props: AmendementCardProps) {
               overflow: "hidden",
             }}
           >
-            <Typography
-              variant="subtitle2"
-              noWrap
-              sx={{
-                fontWeight: 700,
-                minWidth: 0,
-              }}
-            >
-              {titre || `N°${amendement.numeroLong}`}
-            </Typography>
-
+            {titre && (
+              <Typography
+                variant="subtitle2"
+                noWrap
+                sx={{ fontWeight: 700, minWidth: 0 }}
+              >
+                {titre}
+              </Typography>
+            )}
             {/* stopPropagation : le clic sur le nom/avatar navigue sans toggler l'accordion */}
             <Box
               onClick={(e) => e.stopPropagation()}
@@ -167,12 +165,14 @@ export default function AmendementCard(props: AmendementCardProps) {
                 maxWidth: isMobile ? 150 : "auto",
               }}
             >
-              {acteurUid && (
-                <ActeurCard id={acteurUid} smallGroupColor link="name" />
-              )}
-              {!acteurUid && amendement.typeAuteur === "Gouvernement" && (
+              {amendement.typeAuteur === "Gouvernement" ? (
                 <GouvernementAvatar />
-              )}
+              ) : acteurUid ? (
+                <ActeurCard id={acteurUid} smallGroupColor link="name" />
+              ) : !titre ? (
+                // Contexte dossier (pas de titre prop) : pas d'acteur identifié = amendement gouvernemental
+                <GouvernementAvatar />
+              ) : null}
             </Box>
           </Box>
 
@@ -282,6 +282,7 @@ export default function AmendementCard(props: AmendementCardProps) {
               spacing={{ xs: 2, sm: 0 }}
               sx={{ bgcolor: "grey.100", p: 1.5, borderRadius: 1 }}
             >
+              <MetaItem label="Numéro" value={`N°${amendement.numeroLong}`} />
               <MetaItem
                 label="Signataires"
                 value={

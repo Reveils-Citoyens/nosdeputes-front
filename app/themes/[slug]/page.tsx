@@ -13,8 +13,8 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { THEMES, ThemeSlug, isThemeSlug } from "@/data/themes";
 import { THEME_GROUPS, THEME_TO_GROUP } from "@/data/themeGroups";
 import { getDossiersByTheme } from "@/data/mongo/getDossiersByTheme";
-import DossierBadge from "@/components/folders/DossierBadge";
-import AiDisclaimer from "@/components/AiDisclaimer";
+import { CComptesSection } from "@/components/ccomptes/CComptesSection";
+import DossierThemeList from "@/components/themes/DossierThemeList";
 import { ThemeIcon } from "../themeIcons";
 import type { Metadata } from "next";
 
@@ -49,7 +49,7 @@ export default async function ThemeSlugPage({
   const theme = THEMES[slug];
   const groupSlug = THEME_TO_GROUP[slug];
   const groupLabel = THEME_GROUPS[groupSlug].label;
-  const { items, total } = await getDossiersByTheme(slug, { limit: 30 });
+  const { items, total } = await getDossiersByTheme(slug, { limit: 10 });
 
   return (
     <Container maxWidth="md" sx={{ py: { xs: 4, md: 8 } }}>
@@ -95,93 +95,11 @@ export default async function ThemeSlugPage({
         <Typography variant="body2" color="text.secondary">
           {total} dossier{total > 1 ? "s" : ""} répertorié{total > 1 ? "s" : ""}
         </Typography>
-        <AiDisclaimer variant="banner" />
       </Stack>
 
-      {/* Liste */}
-      <Stack spacing={1.5}>
-        {items.map((d) => (
-          <Link
-            key={d.uid}
-            href={`/${d.legislature}/dossier/${d.uid}`}
-            style={{ textDecoration: "none", color: "inherit" }}
-          >
-            <Box
-              sx={{
-                p: 2.5,
-                borderRadius: "12px",
-                border: "1px solid",
-                borderColor: "grey.200",
-                bgcolor: "background.paper",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 2,
-                transition: "border-color 0.15s, box-shadow 0.15s",
-                "&:hover": {
-                  borderColor: "primary.main",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
-                },
-              }}
-            >
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                {/* Type + date */}
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }} flexWrap="wrap">
-                  <Chip
-                    label={d.type_initiative}
-                    size="small"
-                    variant="outlined"
-                    sx={{ fontSize: "0.68rem", height: 22, borderColor: "grey.300", color: "text.secondary" }}
-                  />
-                  {d.date_dernier_acte && (
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(d.date_dernier_acte).toLocaleDateString("fr-FR", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </Typography>
-                  )}
-                  <DossierBadge badge={d.dossierBadge} />
-                </Stack>
+      <DossierThemeList initialItems={items} total={total} slug={slug} />
 
-                {/* Titre */}
-                <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1.4, mb: 0.75 }}>
-                  {d.titre}
-                </Typography>
-
-                {/* TL;DR */}
-                {d.tldr && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {d.tldr}
-                  </Typography>
-                )}
-              </Box>
-
-              <ChevronRightIcon sx={{ color: "grey.400", fontSize: 20, flexShrink: 0, mt: 0.25 }} />
-            </Box>
-          </Link>
-        ))}
-      </Stack>
-
-      {total > 30 && (
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ textAlign: "center", mt: 4 }}
-        >
-          {total - 30} dossier{total - 30 > 1 ? "s" : ""} supplémentaire{total - 30 > 1 ? "s" : ""} non affichés.
-        </Typography>
-      )}
+      <CComptesSection themes={slug} />
     </Container>
   );
 }

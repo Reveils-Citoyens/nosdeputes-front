@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import { useTheme, useMediaQuery } from "@mui/material";
 import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
@@ -17,6 +18,8 @@ import AlerteButton from "@/components/AlerteButton";
 import Term from "@/components/Term";
 import { getTermForProcedure } from "@/data/glossaire";
 import { statusInfo } from "@/app/[legislature]/dossier/[id]/dataFunctions";
+import { THEMES, type ThemeSlug } from "@/data/themes";
+import { THEME_ICONS } from "@/app/themes/themeIcons";
 
 const breadcrumbs = [
   <Link key="1" href="/">
@@ -38,6 +41,7 @@ type HeroSectionProps = {
   theme: string | null;
   status?: string;
   dossierUid?: string;
+  themesSenat?: ThemeSlug[];
 };
 
 export const HeroSection = ({
@@ -46,6 +50,7 @@ export const HeroSection = ({
   theme: dossierTheme,
   status,
   dossierUid,
+  themesSenat = [],
 }: HeroSectionProps) => {
   const theme = useTheme();
   const procedureTermSlug = getTermForProcedure(libelleProcedure);
@@ -153,53 +158,76 @@ export const HeroSection = ({
                 {titre}
               </Typography>
             </Stack>
-            <Stack
-              direction="row"
-              useFlexGap
-              spacing={1}
-              alignItems="center"
-              flexWrap="wrap"
-              sx={{
-                justifyContent: "flex-start",
-                mt: 3,
-                [theme.breakpoints.up("md")]: {
-                  justifyContent: "center",
-                },
-              }}
-            >
-              {status && <StatusChip size="small" {...statusInfo[status]} />}
-              {/* <StatusChip size="small" status="refused" label="Abrogé" />
-              <StatusChip size="small" status="refused" label="Rejeté" />
-              <StatusChip size="small" status="dropped" label="Non-soutenu" />
-              <StatusChip size="small" status="review" label="1e lecture AN" />
-              <StatusChip size="small" status="validated" label="Promulgué" /> */}
-              {/* {themes_labels?.map((label: string) => (
-                <LabelChip
-                  key={label}
-                  size="small"
-                  label={label}
-                  icon={<EnergyIcon />}
-                />
-              ))} */}
-              {dossierTheme && (
-                <LabelChip
-                  size="small"
-                  label={dossierTheme}
-                  icon={<EnergyIcon />}
-                />
-              )}
-              {dossierUid && titre && (
-                <AlerteButton
-                  subjectType="dossier"
-                  subjectUid={dossierUid}
-                  subjectLabel={titre}
-                  variant="button"
-                />
+            <Box sx={{ mt: 3 }}>
+              {/* Ligne 1 : statut + alerte */}
+              <Stack
+                direction="row"
+                useFlexGap
+                spacing={1}
+                alignItems="center"
+                flexWrap="wrap"
+                sx={{
+                  justifyContent: "flex-start",
+                  [theme.breakpoints.up("md")]: { justifyContent: "center" },
+                }}
+              >
+                {status && <StatusChip size="small" {...statusInfo[status]} />}
+                {themesSenat.length === 0 && dossierTheme && (
+                  <LabelChip size="small" label={dossierTheme} icon={<EnergyIcon />} />
+                )}
+                {dossierUid && titre && (
+                  <AlerteButton
+                    subjectType="dossier"
+                    subjectUid={dossierUid}
+                    subjectLabel={titre}
+                    variant="button"
+                  />
+                )}
+              </Stack>
+
+              {/* Ligne 2 : thèmes structurés */}
+              {themesSenat.length > 0 && (
+                <Stack
+                  direction="row"
+                  useFlexGap
+                  spacing={1}
+                  alignItems="center"
+                  flexWrap="wrap"
+                  sx={{
+                    mt: 1.5,
+                    justifyContent: "flex-start",
+                    [theme.breakpoints.up("md")]: { justifyContent: "center" },
+                  }}
+                >
+                  {themesSenat.map((slug) => {
+                    const Icon = THEME_ICONS[slug];
+                    return (
+                      <Chip
+                        key={slug}
+                        component={Link}
+                        href={`/themes/${slug}`}
+                        clickable
+                        size="medium"
+                        label={THEMES[slug].label}
+                        icon={<Icon style={{ fontSize: 16 }} />}
+                        variant="outlined"
+                        sx={{
+                          fontSize: "0.8rem",
+                          borderColor: "grey.300",
+                          color: "text.secondary",
+                          bgcolor: "background.paper",
+                          "& .MuiChip-icon": { color: "primary.main", ml: 1 },
+                          "&:hover": { borderColor: "primary.main", color: "primary.main" },
+                        }}
+                      />
+                    );
+                  })}
+                </Stack>
               )}
               {/* <LabelChip size="small" label="Label" />
               <LabelChip size="small" label="Label" onDelete={() => {}} />
               <LabelChip size="small" label="Label" onDelete={() => {}} /> */}
-            </Stack>
+            </Box>
           </Stack>
         </Paper>
       </Box>

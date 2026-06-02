@@ -14,11 +14,12 @@ export async function GET(request: NextRequest) {
   const legislature = sp.get("legislature") ?? "17";
   const sort = sp.get("sort") === "date" ? "date" : "relevance";
   const codeProcedure = sp.get("codeProcedure") ?? undefined;
+  const badge = sp.get("badge") ?? undefined;
 
   try {
     // Pour la navbar/home (pas de skip), on continue de renvoyer juste le tableau
     // pour rétrocompatibilité. Avec skip/limit explicites on renvoie { items, total }.
-    const result = await searchDossierParTitre(q, { limit, skip, legislature, sort, codeProcedure });
+    const result = await searchDossierParTitre(q, { limit, skip, legislature, sort, codeProcedure, badge });
 
     if (skip === 0 && !sp.has("skip")) {
       // Rétrocompatibilité : navbar et SearchBar attendent un tableau plat

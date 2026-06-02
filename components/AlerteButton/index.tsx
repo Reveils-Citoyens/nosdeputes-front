@@ -11,6 +11,7 @@ import {
   Stack,
 } from "@mui/material";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import type { AlertSubjectType } from "@/lib/alerts";
 
@@ -41,6 +42,23 @@ const MESSAGES: Record<string, string> = {
   error: "Une erreur est survenue. Veuillez réessayer.",
 };
 
+const FOLLOWED_KEY = "alerte_followed";
+
+function getFollowed(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(FOLLOWED_KEY) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+function addFollowed(uid: string) {
+  const followed = getFollowed();
+  if (!followed.includes(uid)) {
+    localStorage.setItem(FOLLOWED_KEY, JSON.stringify([...followed, uid]));
+  }
+}
+
 export default function AlerteButton({
   subjectType,
   subjectUid,
@@ -50,18 +68,22 @@ export default function AlerteButton({
   const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
   const [email, setEmail] = React.useState("");
   const [status, setStatus] = React.useState<SubmitStatus>("idle");
+  const [isFollowed, setIsFollowed] = React.useState(false);
 
   const open = Boolean(anchorEl);
 
+  React.useEffect(() => {
+    const saved = localStorage.getItem("alerte_email");
+    if (saved) setEmail(saved);
+    setIsFollowed(getFollowed().includes(subjectUid));
+  }, [subjectUid]);
+
   const handleOpen = (e: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(e.currentTarget);
-    setStatus("idle");
+    setStatus(isFollowed ? "already_subscribed" : "idle");
   };
   const handleClose = () => {
     setAnchorEl(null);
-    if (status !== "confirmation_sent" && status !== "confirmation_resent") {
-      setEmail("");
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,7 +98,13 @@ export default function AlerteButton({
         body: JSON.stringify({ email, subjectType, subjectUid, subjectLabel }),
       });
       const data = await res.json();
-      setStatus(data.status ?? "error");
+      const newStatus = data.status ?? "error";
+      setStatus(newStatus);
+      if (newStatus !== "error") {
+        localStorage.setItem("alerte_email", email);
+        addFollowed(subjectUid);
+        setIsFollowed(true);
+      }
     } catch {
       setStatus("error");
     }
@@ -99,34 +127,40 @@ export default function AlerteButton({
             width: 44,
             height: 44,
             borderRadius: "50%",
-            bgcolor: "white",
+            bgcolor: isFollowed ? "primary.main" : "white",
             boxShadow: "0px 2px 8px rgba(0,0,0,0.08)",
             border: "1px solid #f0f0f0",
-            color: "#1A1A1B",
+            color: isFollowed ? "white" : "#1A1A1B",
             "&:hover": { transform: "scale(1.1)" },
           }}
         >
-          <NotificationsNoneIcon sx={{ fontSize: 20 }} />
+          {isFollowed
+            ? <NotificationsActiveIcon sx={{ fontSize: 20 }} />
+            : <NotificationsNoneIcon sx={{ fontSize: 20 }} />}
         </IconButton>
       ) : (
         <Button
           onClick={handleOpen}
-          startIcon={<NotificationsNoneIcon />}
-          variant="outlined"
+          startIcon={isFollowed
+            ? <NotificationsActiveIcon />
+            : <NotificationsNoneIcon />}
+          variant={isFollowed ? "contained" : "outlined"}
           size="small"
           sx={{
             borderRadius: "30px",
             textTransform: "none",
             fontWeight: "bold",
             fontSize: "12px",
-            letterSpacing: "0.05em",
-            px: 2.5,
-            borderColor: "#1A1A1B",
-            color: "#1A1A1B",
-            "&:hover": { bgcolor: "#f5f5f5" },
+            letterSpacing: 0,
+            px: 1.5,
+            py: 0.5,
+            ...(isFollowed
+              ? { bgcolor: "#1A1A1B", color: "white", borderColor: "#1A1A1B", "&:hover": { bgcolor: "#333" } }
+              : { borderColor: "#1A1A1B", color: "#1A1A1B", "&:hover": { bgcolor: "#f5f5f5" } }),
+            "& .MuiButton-startIcon": { marginRight: 0.5 },
           }}
         >
-          M'alerter
+          {isFollowed ? "Suivi" : "Suivre"}
         </Button>
       )}
 

@@ -25,7 +25,7 @@ export default async function AlerteErreur({
       </Typography>
       <Button component={Link} href="/" variant="contained"
         sx={{ borderRadius: 30, textTransform: "none", px: 4 }}>
-        Retour à l'accueil
+        Retour à l&apos;accueil
       </Button>
     </Box>
   );

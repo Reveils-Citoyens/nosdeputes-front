@@ -1,10 +1,8 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import {
   Box,
-  Chip,
   Collapse,
   Divider,
   Stack,
@@ -31,7 +29,6 @@ function SectionTitle({ icon, label }: { icon: React.ReactNode; label: string })
 
 type Props = {
   tldr: string;
-  themesOuverts: string[];
   pourquoi: string | null;
   ce_qui_change: string[];
   enjeux: Enjeu[];
@@ -40,7 +37,6 @@ type Props = {
 
 export function CollapsibleSummary({
   tldr,
-  themesOuverts,
   pourquoi,
   ce_qui_change,
   enjeux,
@@ -58,29 +54,6 @@ export function CollapsibleSummary({
         <Typography variant="body2" sx={{ lineHeight: 1.7, color: "text.primary", fontStyle: "italic" }}>
           {tldr}
         </Typography>
-
-        {themesOuverts.length > 0 && (
-          <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 2 }}>
-            {themesOuverts.map((theme) => (
-              <Chip
-                key={theme}
-                label={theme}
-                size="small"
-                component={Link}
-                href={`/recherche?q=${encodeURIComponent(theme)}`}
-                clickable
-                variant="outlined"
-                sx={{
-                  fontSize: "0.72rem",
-                  height: 24,
-                  borderColor: "grey.300",
-                  color: "text.secondary",
-                  "&:hover": { borderColor: "primary.main", color: "primary.main" },
-                }}
-              />
-            ))}
-          </Stack>
-        )}
 
         {hasDetails && (
           <Stack

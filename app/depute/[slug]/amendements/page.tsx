@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   searchAmendement,
   sortAmendementPossible,
+  type AmendementWithDossierRef,
 } from "@/data/searchAmendement";
 import { useParams } from "next/navigation";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
@@ -37,7 +38,7 @@ export default function Amendements() {
       if (!acteur?.uid) return null;
       return await searchAmendement({
         page,
-        perPage: 10,
+        perPage: 5,
         acteurRefUid: acteur.uid,
         sortAmendement,
         search,
@@ -112,7 +113,7 @@ export default function Amendements() {
         </Select>
       </Stack>
 
-      {data.map((amendement) => {
+      {(data as AmendementWithDossierRef[]).map((amendement) => {
         const dossierTitre = amendement.dossierRef?.titre;
         const titre = dossierTitre
           ? `${dossierTitre} — N°${amendement.numeroOrdreDepot}`

@@ -72,7 +72,7 @@ export default function MonDeputeSurDossier({ dossierUid }: Props) {
           depute!.uid
         )}&dossierUid=${encodeURIComponent(dossierUid)}`
       );
-      if (!res.ok) return { votes: [] };
+      if (!res.ok) return { votes: [], amendements: { total: 0, adoptes: 0, rejetes: 0, retires: 0, autres: 0 }, interventionsCount: 0, roles: [] };
       return res.json();
     },
   });

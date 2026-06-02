@@ -7,6 +7,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import DossierBadge from "@/components/folders/DossierBadge";
 import { THEMES, isThemeSlug } from "@/data/themes";
+import { THEME_ICONS } from "@/app/themes/themeIcons";
 
 const MAX_THEMES = 3;
 
@@ -93,7 +94,7 @@ const DossierCard = ({ href, titre, typeLabel, badge, tldr, themes }: DossierCar
               fontStyle: "italic",
               lineHeight: 1.55,
               display: "-webkit-box",
-              WebkitLineClamp: 3,
+              WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
               overflow: "hidden",
             }}
@@ -104,29 +105,35 @@ const DossierCard = ({ href, titre, typeLabel, badge, tldr, themes }: DossierCar
 
         {/* Thèmes */}
         {visibleThemes.length > 0 && (
-          <Stack direction="row" gap={0.75} sx={{ flexWrap: "nowrap", minWidth: 0, width: "100%" }}>
-            {visibleThemes.map((slug) => (
-              <Chip
-                key={slug}
-                label={isThemeSlug(slug) ? THEMES[slug].label : slug}
-                size="small"
-                variant="outlined"
-                sx={{
-                  fontSize: "0.68rem",
-                  height: 22,
-                  borderColor: "grey.300",
-                  color: "text.secondary",
-                  pointerEvents: "none",
-                  flexShrink: 1,
-                  minWidth: 0,
-                  "& .MuiChip-label": {
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  },
-                }}
-              />
-            ))}
+          <Stack direction="row" gap={0.75} sx={{ flexWrap: "nowrap", minWidth: 0, width: "100%", mt: "auto" }}>
+            {visibleThemes.map((slug) => {
+              const isValid = isThemeSlug(slug);
+              const Icon = isValid ? THEME_ICONS[slug] : null;
+              return (
+                <Chip
+                  key={slug}
+                  label={isValid ? THEMES[slug].label : slug}
+                  size="small"
+                  variant="outlined"
+                  icon={Icon ? <Icon style={{ fontSize: 13 }} /> : undefined}
+                  sx={{
+                    fontSize: "0.75rem",
+                    height: 26,
+                    borderColor: "grey.300",
+                    color: "text.secondary",
+                    pointerEvents: "none",
+                    flexShrink: 1,
+                    minWidth: 0,
+                    "& .MuiChip-icon": { color: "primary.main", ml: 0.75 },
+                    "& .MuiChip-label": {
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    },
+                  }}
+                />
+              );
+            })}
           </Stack>
         )}
       </CardActionArea>

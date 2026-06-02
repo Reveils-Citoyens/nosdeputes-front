@@ -248,7 +248,7 @@ export default function About() {
           </Typography>
         </Stack>
         <Stack direction="row" justifyContent="center" flexWrap="wrap" gap={4}>
-          {["Alex", "David", "Emmanuel", "Henry", "Samuel", "Thomas"].map(
+          {["Alex", "David", "Henry", "Samuel", "Thomas"].map(
             (name) => (
               <TeamMember key={name} name={name} />
             )

@@ -7,7 +7,7 @@ export async function EnrichmentCard({ dossierUid }: { dossierUid: string }) {
   const enrichment = await getDossierEnrichment(dossierUid);
   if (!enrichment) return null;
 
-  const { tldr, pourquoi, enjeux, ce_qui_change, acteurs_concernes, themes_ouverts } = enrichment;
+  const { tldr, pourquoi, enjeux, ce_qui_change, acteurs_concernes } = enrichment;
   const hasContent = tldr || pourquoi || enjeux.length > 0 || ce_qui_change.length > 0 || acteurs_concernes.length > 0;
   if (!hasContent) return null;
 
@@ -22,7 +22,6 @@ export async function EnrichmentCard({ dossierUid }: { dossierUid: string }) {
     >
       <CollapsibleSummary
         tldr={tldr ?? ""}
-        themesOuverts={themes_ouverts}
         pourquoi={pourquoi}
         ce_qui_change={ce_qui_change}
         enjeux={enjeux}

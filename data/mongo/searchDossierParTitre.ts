@@ -46,11 +46,12 @@ export async function searchDossierParTitre(
     legislature?: string;
     sort?: "relevance" | "date";
     codeProcedure?: string;
+    badge?: string;
   } = {}
 ): Promise<{ items: DossierSearchResult[]; total: number }> {
   if (!query.trim()) return { items: [], total: 0 };
 
-  const { limit = 10, skip = 0, legislature = "17", sort = "relevance", codeProcedure } = options;
+  const { limit = 10, skip = 0, legislature = "17", sort = "relevance", codeProcedure, badge } = options;
 
   const db = await getParlementDb();
 
@@ -89,6 +90,7 @@ export async function searchDossierParTitre(
         dossierRef: null,
         chambre: { $ne: "SN" }, // les dossiers AN n'ont pas de champ chambre; seuls les dossiers SN l'ont
         ...(codeProcedure ? { "procedureParlementaire.code": codeProcedure } : {}),
+        ...(badge ? { dossierBadge: badge } : {}),
       },
     },
     {

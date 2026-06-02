@@ -45,7 +45,7 @@ export default function PaginatedQuestions({
     placeholderData: keepPreviousData,
   });
 
-  const data = result?.data ?? [];
+  const data = React.useMemo(() => result?.data ?? [], [result?.data]);
   const pagination = result?.pagination;
 
   // Si une question cible est passée en URL et qu'elle est sur la page

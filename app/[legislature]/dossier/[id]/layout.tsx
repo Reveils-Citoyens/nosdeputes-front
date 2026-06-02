@@ -10,6 +10,8 @@ import { getDossier } from "@/data/getDossier";
 import { getDebats } from "@/data/getDebats";
 import { dossierSettings } from "./dossierSettings";
 import { getAmendementCount, getScrutinCount } from "@/data/getDossierCounts";
+import { getDossierEnrichment } from "@/data/mongo/getDossierEnrichment";
+import { isThemeSlug } from "@/data/themes";
 
 export default async function Dossier({
   children,
@@ -35,12 +37,17 @@ export default async function Dossier({
   const status = getCurrentStatus(actesLegislatifs);
 
   // Comptes légers pour activer/désactiver les tabs sans données
-  const [amendementCount, scrutinCount, debats] = await Promise.all([
+  const [amendementCount, scrutinCount, debats, enrichment] = await Promise.all([
     tableAmendements ? getAmendementCount(id) : Promise.resolve(0),
     tableVotes ? getScrutinCount(id) : Promise.resolve(0),
     // getDebats est cached via React.cache, donc partagé avec page.tsx
     apercuVariant === "redirect-commission" ? getDebats(id) : Promise.resolve(null),
+    getDossierEnrichment(id),
   ]);
+
+  const themesSenat = (enrichment?.themes_senat ?? [])
+    .filter(isThemeSlug)
+    .slice(0, 3);
 
   // Le redirect vers /commission ne s'applique que si des travaux en commission existent.
   // Sans ça, on garde la tab Aperçu visible et on rend l'aperçu standard.
@@ -57,6 +64,7 @@ export default async function Dossier({
         theme={theme}
         status={status}
         dossierUid={id}
+        themesSenat={themesSenat}
       />
       {tableVotes && <MonDeputeSurDossier dossierUid={id} />}
       <ComprendreBanner />

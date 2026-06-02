@@ -36,7 +36,7 @@ export default async function AlerteConfirmee({
           variant="outlined"
           sx={{ borderRadius: 30, textTransform: "none", px: 4, borderColor: "#1A1A1B", color: "#1A1A1B" }}
         >
-          Retour à l'accueil
+          Retour à l&apos;accueil
         </Button>
       </Stack>
     </Box>
