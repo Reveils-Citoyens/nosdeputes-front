@@ -61,12 +61,10 @@ export default async function Dossiers() {
           key={dossier.uid}
           href={`/${dossier.legislature}/dossier/${dossier.uid}`}
           titre={dossier.titre}
-          dateDernierActe={dossier.dateDernierActe}
-          type={dossier.typeLabel}
-          statusLabel={dossier.statusLabel}
-          statusType={dossier.statusType}
-          amendements={dossier.amendements}
-          // thematique={dossier.theme} pour le moment en attendant Thomas
+          typeLabel={dossier.typeLabel}
+          badge={dossier.badge}
+          tldr={dossier.tldr}
+          themes={dossier.themes}
         />
       ))}
     </Box>

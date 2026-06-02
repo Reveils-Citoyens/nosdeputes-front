@@ -18,7 +18,7 @@ export const dossierSettings: Record<string, DossierSettings | undefined> = {
     5: { carteRapporteurs: true, carteAmendements: true, carteCoSignataires: true, carteDocuments: true, tableDebats: true, tableAmendements: true, tableVotes: true, },
     6: { carteRapporteurs: true, carteAmendements: true, carteCoSignataires: false, carteDocuments: true, tableDebats: true, tableAmendements: true, tableVotes: true, },
     7: { carteRapporteurs: false, carteAmendements: true, carteCoSignataires: true, carteDocuments: true, tableDebats: true, tableAmendements: true, tableVotes: true, },
-    8: { carteRapporteurs: false, carteAmendements: true, carteCoSignataires: true, carteDocuments: true, tableDebats: true, tableAmendements: true, tableVotes: true, },
+    8: { carteRapporteurs: false, carteAmendements: true, carteCoSignataires: true, carteDocuments: true, tableDebats: true, tableAmendements: true, tableVotes: true, apercuVariant: "document" },
     9: { carteRapporteurs: false, carteAmendements: false, carteCoSignataires: true, carteDocuments: true, tableDebats: true, tableAmendements: false, tableVotes: true, apercuVariant: "redirect-commission" },
     10: { carteRapporteurs: false, carteAmendements: false, carteCoSignataires: true, carteDocuments: true, tableDebats: true, tableAmendements: false, tableVotes: false, apercuVariant: "redirect-commission" },
     12: { carteRapporteurs: false, carteAmendements: false, carteCoSignataires: false, carteDocuments: true, tableDebats: true, tableAmendements: false, tableVotes: false, },
@@ -30,6 +30,6 @@ export const dossierSettings: Record<string, DossierSettings | undefined> = {
     19: { carteRapporteurs: false, carteAmendements: false, carteCoSignataires: true, carteDocuments: true, tableDebats: false, tableAmendements: false, tableVotes: false, },
     20: { carteRapporteurs: false, carteAmendements: false, carteCoSignataires: false, carteDocuments: true, tableDebats: true, tableAmendements: false, tableVotes: false, },
     21: { carteRapporteurs: true, carteAmendements: true, carteCoSignataires: false, carteDocuments: true, tableDebats: true, tableAmendements: true, tableVotes: true, },
-    22: { carteRapporteurs: false, carteAmendements: false, carteCoSignataires: true, carteDocuments: true, tableDebats: true, tableAmendements: true, tableVotes: true, },
+    22: { carteRapporteurs: false, carteAmendements: false, carteCoSignataires: true, carteDocuments: true, tableDebats: true, tableAmendements: true, tableVotes: true, apercuVariant: "document" },
     23: { carteRapporteurs: false, carteAmendements: false, carteCoSignataires: true, carteDocuments: true, tableDebats: false, tableAmendements: false, tableVotes: false, },
 }
