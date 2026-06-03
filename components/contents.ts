@@ -106,8 +106,8 @@ Il s'agit donc d'organismes publics autonomes, hors gouvernement direct, garants
             dialog: `Les organismes extra-parlementaires sont des organes auxquels des parlementaires peuvent être nommés ou représenter le Parlement. Ce sont des institutions, commissions, conseils ou organismes extérieurs au fonctionnement strict de l’Assemblée nationale ou du Sénat, mais rattachés par convention ou nomination parlementaire.`,
         },
         CNPS: {
-            translation: ``,
-            dialog: ``,
+            translation: "Commission spéciale",
+            dialog: `Une commission spéciale est constituée à titre temporaire pour examiner un projet ou une proposition de loi déterminé, à la place des commissions permanentes. Elle est dissoute une fois le texte adopté.`,
         },
         GE: {
             translation: "Groupes d'études",
@@ -142,6 +142,38 @@ En résumé, les commissions permanentes sont le cœur technique et analytique d
         COMNL: {
             translation: "Missions parlementaires",
             dialog: ``,
+        },
+        MISINFO: {
+            translation: "Mission d'information",
+            dialog: `Une mission d'information est créée par une commission ou par la Conférence des présidents pour étudier un sujet particulier et éclairer l'Assemblée nationale.
+
+Elle procède à des auditions et des déplacements, puis publie un rapport assorti de recommandations. Elle n'a pas de pouvoir législatif mais nourrit la réflexion parlementaire.`,
+        },
+        MISINFOCOM: {
+            translation: "Mission d'information commune",
+            dialog: `Une mission d'information commune réunit des députés issus de plusieurs commissions permanentes pour étudier un sujet transversal qui dépasse le champ d'une seule commission.`,
+        },
+        MISINFOPRE: {
+            translation: "Mission d'information de la Conférence des présidents",
+            dialog: `Mission d'information créée par la Conférence des présidents de l'Assemblée nationale, généralement sur un sujet d'actualité ou d'intérêt général majeur. Elle aboutit à un rapport présenté en séance.`,
+        },
+        CMP: {
+            translation: "Commission mixte paritaire",
+            dialog: `Une commission mixte paritaire (CMP) réunit 7 députés et 7 sénateurs pour tenter d'élaborer un texte commun lorsque l'Assemblée nationale et le Sénat sont en désaccord sur un projet ou une proposition de loi.
+
+Si elle aboutit, le texte de compromis est soumis aux deux chambres ; sinon, l'Assemblée nationale statue en dernier ressort.`,
+        },
+        DELEG: {
+            translation: "Délégation parlementaire",
+            dialog: `Une délégation parlementaire est un organe permanent chargé d'informer l'Assemblée et de formuler des recommandations dans un domaine déterminé (droits des femmes, outre-mer, prospective, renseignement, etc.).`,
+        },
+        DELEGBUREAU: {
+            translation: "Délégation du Bureau",
+            dialog: `Une délégation du Bureau réunit des membres du Bureau de l'Assemblée nationale chargés d'une mission interne particulière (communication, activités internationales, applications informatiques, etc.).`,
+        },
+        BUREAU: {
+            translation: "Bureau de l'Assemblée nationale",
+            dialog: `Le Bureau est l'organe de direction de l'Assemblée nationale. Composé du président, des vice-présidents, des questeurs et des secrétaires, il détermine l'organisation et le fonctionnement de l'Assemblée et dispose de tous pouvoirs pour en régler les délibérations.`,
         },
     },
 

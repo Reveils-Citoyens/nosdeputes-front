@@ -20,7 +20,6 @@ const BADGE_OPTIONS: { code: string; label: string }[] = [
 ];
 
 export const Filter = () => {
-  const [search, setSearch] = useQueryState("search");
   const [codeProcedure, setCodeProcedure] = useQueryState("codeProcedure");
   const [badge, setBadge] = useQueryState("badge");
   const [theme, setTheme] = useQueryState("theme");
@@ -29,23 +28,15 @@ export const Filter = () => {
   return (
     <>
       <TextField
-        size="small"
-        label="Chercher par mot-clef"
-        value={search ?? ""}
-        onChange={(e) => setSearch(e.target.value)}
-        variant="outlined"
-      />
-
-      <TextField
         select
         size="small"
         label="Trier par"
-        value={sort ?? "recent"}
-        onChange={(e) => setSort(e.target.value === "recent" ? null : e.target.value)}
+        value={sort ?? "popular"}
+        onChange={(e) => setSort(e.target.value === "popular" ? null : e.target.value)}
         variant="outlined"
       >
-        <MenuItem value="recent">Activité récente</MenuItem>
         <MenuItem value="popular">Les plus discutés</MenuItem>
+        <MenuItem value="recent">Activité récente</MenuItem>
       </TextField>
 
       <TextField

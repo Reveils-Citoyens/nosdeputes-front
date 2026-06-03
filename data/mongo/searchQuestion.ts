@@ -43,6 +43,8 @@ export async function searchQuestion(
   }
 
   const { limit = 5, skip = 0, legislature = "17", sort = "relevance" } = options;
+
+  try {
   const db = await getParlementDb();
 
   const escaped = query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -287,4 +289,8 @@ export async function searchQuestion(
   });
 
   return { items, total };
+  } catch (error) {
+    console.error("[searchQuestion] erreur:", error);
+    return { items: [], total: 0 };
+  }
 }

@@ -26,14 +26,14 @@ export const metadata: Metadata = {
   description: "Observatoire citoyen de l'activité parlementaire",
 
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     site: "@ReveilsCitoyens",
     title: "NosDéputés.fr par @ReveilsCitoyens",
     description:
       "Observatoire citoyen de l'activité parlementaire à l'Assemblée nationale",
     images: {
-      url: "https://www.nosdeputes.fr/images/xneth/bouton_logo.png",
-      type: "image/png",
+      url: "https://www.nosdeputes.fr/preview.jpg",
+      type: "image/jpeg",
     },
   },
   openGraph: {
@@ -42,9 +42,9 @@ export const metadata: Metadata = {
     siteName: "NosDéputés.fr",
     description:
       "Observatoire citoyen de l'activité parlementaire à l'Assemblée nationale",
-    url: "https://www.NosDéputés.fr",
+    url: "https://www.nosdeputes.fr",
     locale: "fr_FR",
-    images: "https://www.nosdeputes.fr/images/xneth/bouton_logo.png",
+    images: "https://www.nosdeputes.fr/preview.jpg",
   },
 };
 

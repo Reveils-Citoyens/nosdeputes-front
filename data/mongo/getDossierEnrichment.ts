@@ -26,6 +26,7 @@ export type DossierEnrichment = {
 
 export const getDossierEnrichment = cache(
   async (uid: string): Promise<DossierEnrichment | null> => {
+    try {
     const db = await getParlementDb();
     const doc = await db.collection("dossiers_enrichis").findOne(
       { uid },
@@ -92,5 +93,11 @@ export const getDossierEnrichment = cache(
         ? doc.dossier_summary_enrichment.model_name
         : null,
     };
+    } catch (error) {
+      // Hoquet transitoire de connexion Mongo (cold start, pool) : on dégrade
+      // gracieusement plutôt que de faire planter le rendu serveur du dossier.
+      console.error("[getDossierEnrichment] erreur:", error);
+      return null;
+    }
   }
 );

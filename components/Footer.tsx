@@ -93,6 +93,14 @@ export default function Footer() {
             </Typography>
             <Stack component="nav" spacing={1}>
               <Link
+                href="/alertes"
+                color="text.secondary"
+                variant="body2"
+                underline="hover"
+              >
+                Gérer mes alertes
+              </Link>
+              <Link
                 href="https://github.com/Reveils-Citoyens/nosdeputes-front"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -101,14 +109,6 @@ export default function Footer() {
                 underline="hover"
               >
                 Code Source
-              </Link>
-              <Link
-                href="/mentions-legales"
-                color="text.secondary"
-                variant="body2"
-                underline="hover"
-              >
-                Mentions Légales
               </Link>
             </Stack>
           </Box>

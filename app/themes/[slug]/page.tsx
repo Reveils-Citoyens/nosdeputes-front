@@ -16,6 +16,7 @@ import { getDossiersByTheme } from "@/data/mongo/getDossiersByTheme";
 import { CComptesSection } from "@/components/ccomptes/CComptesSection";
 import DossierThemeList from "@/components/themes/DossierThemeList";
 import { ThemeIcon } from "../themeIcons";
+import AlerteButton from "@/components/AlerteButton";
 import type { Metadata } from "next";
 
 export const revalidate = 3600;
@@ -92,9 +93,17 @@ export default async function ThemeSlugPage({
         <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 580, lineHeight: 1.6 }}>
           {theme.description}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {total} dossier{total > 1 ? "s" : ""} répertorié{total > 1 ? "s" : ""}
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Typography variant="body2" color="text.secondary">
+            {total} dossier{total > 1 ? "s" : ""} répertorié{total > 1 ? "s" : ""}
+          </Typography>
+          <AlerteButton
+            subjectType="theme"
+            subjectUid={slug}
+            subjectLabel={theme.label}
+            variant="button"
+          />
+        </Stack>
       </Stack>
 
       <DossierThemeList initialItems={items} total={total} slug={slug} />

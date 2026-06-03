@@ -31,6 +31,12 @@ export const LegislativeDocumentsCard = async (
     return d.toLocaleDateString("fr-FR", { year: "numeric", month: "short", day: "numeric" });
   };
 
+  const chambreLabel = (chambre?: string | null) => {
+    if (chambre === "AN") return "Assemblée nationale";
+    if (chambre === "SN") return "Sénat";
+    return chambre ?? "";
+  };
+
   // Group documents by typeLibelle
   const grouped = docsList.reduce((acc: Record<string, any[]>, document) => {
     const key = document.typeLibelle ?? "Autre";
@@ -75,11 +81,29 @@ export const LegislativeDocumentsCard = async (
       </AccordionSummary>
       <AccordionDetails sx={{ pt: 0, pb: 1.5 }}>
         <Stack direction="column" spacing={2}>
-          {sortedGroups.map(([typeLibelle, docs]) => (
+          {sortedGroups.map(([typeLibelle, docs]) => {
+            // Chambre commune au groupe ? Si oui, on l'affiche une seule fois
+            // (sous-titre) et les lignes ne montrent que la date — sinon on garde
+            // la chambre par ligne (cas navette AN ↔ Sénat).
+            const chambres = Array.from(
+              new Set(docs.map((d) => d.chambre).filter(Boolean))
+            );
+            const groupChamber = chambres.length === 1 ? chambres[0] : null;
+            // Les textes de loi sont des versions successives → on l'explicite.
+            const isLoi = /loi/i.test(typeLibelle);
+
+            return (
             <Stack key={typeLibelle} direction="column" spacing={1}>
-              <Typography variant="subtitle2" fontWeight="bold">
-                {typeLibelle}
-              </Typography>
+              <Box>
+                <Typography variant="subtitle2" fontWeight="bold">
+                  {typeLibelle}
+                </Typography>
+                {groupChamber && (
+                  <Typography variant="caption" color="text.secondary">
+                    {chambreLabel(groupChamber)}
+                  </Typography>
+                )}
+              </Box>
               {docs.map((document) => (
                 <Stack key={document.uid} direction="row" spacing={1} alignItems="flex-start">
                   {document.pdfUrl && (
@@ -88,14 +112,20 @@ export const LegislativeDocumentsCard = async (
                     </Box>
                   )}
                   <Typography variant="body2" fontWeight="medium" href={document.pdfUrl ?? undefined} component={document.pdfUrl ? Link : "p"} target="_blank">
-                    {document.chambre ? `${document.chambre}` : ""}
-                    {document.dateCreation && document.chambre ? ` — ` : ""}
-                    {document.dateCreation ? formatDate(document.dateCreation) : ""}
+                    {/* Chambre par ligne uniquement si le groupe mélange les chambres */}
+                    {!groupChamber && document.chambre ? chambreLabel(document.chambre) : ""}
+                    {!groupChamber && document.dateCreation && document.chambre ? ` — ` : ""}
+                    {document.dateCreation
+                      ? isLoi
+                        ? `Version du ${formatDate(document.dateCreation)}`
+                        : formatDate(document.dateCreation)
+                      : ""}
                   </Typography>
                 </Stack>
               ))}
             </Stack>
-          ))}
+            );
+          })}
         </Stack>
       </AccordionDetails>
     </Accordion>

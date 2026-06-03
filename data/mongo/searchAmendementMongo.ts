@@ -65,6 +65,7 @@ export async function searchAmendementMongo(
   const q = query.trim();
   if (q.length < 5) return { items: [], total: 0 };
 
+  try {
   const { limit = 5, skip = 0, legislature = "17", sort = "relevance" } = options;
   const db = await getParlementDb();
 
@@ -270,4 +271,8 @@ export async function searchAmendementMongo(
     }),
     total,
   };
+  } catch (error) {
+    console.error("[searchAmendementMongo] erreur:", error);
+    return { items: [], total: 0 };
+  }
 }

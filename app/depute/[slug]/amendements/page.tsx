@@ -38,7 +38,7 @@ export default function Amendements() {
       if (!acteur?.uid) return null;
       return await searchAmendement({
         page,
-        perPage: 5,
+        perPage: 10,
         acteurRefUid: acteur.uid,
         sortAmendement,
         search,

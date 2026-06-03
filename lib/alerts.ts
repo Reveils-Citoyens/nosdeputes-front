@@ -1,12 +1,15 @@
 import { ObjectId } from "mongodb";
 
-export type AlertSubjectType = "dossier" | "depute" | "recherche";
+// Types et helpers purs ré-exportés depuis alertTypes (importables côté client).
+export {
+  isValidEmail,
+  confirmTokenExpiryDate,
+  subjectTypeLabel,
+  subjectTypeEmoji,
+} from "./alertTypes";
+export type { AlertSubjectType, AlertSubject } from "./alertTypes";
 
-export type AlertSubject = {
-  type: AlertSubjectType;
-  uid: string;
-  label: string;
-};
+import type { AlertSubject } from "./alertTypes";
 
 export type AlertSubscription = {
   _id?: ObjectId;
@@ -21,13 +24,3 @@ export type AlertSubscription = {
   lastDigestSentAt: Date | null;
   createdAt: Date;
 };
-
-export function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-export function confirmTokenExpiryDate(): Date {
-  const d = new Date();
-  d.setHours(d.getHours() + 24);
-  return d;
-}

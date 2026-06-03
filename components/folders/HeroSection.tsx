@@ -145,7 +145,7 @@ export const HeroSection = ({
                 component="h1"
                 sx={{
                   color: "#fff",
-                  fontSize: "body1.fontSize",
+                  fontSize: "h5.fontSize",
                   fontWeight: "fontWeightBold",
                   lineHeight: 1.3,
                   [theme.breakpoints.up("md")]: {

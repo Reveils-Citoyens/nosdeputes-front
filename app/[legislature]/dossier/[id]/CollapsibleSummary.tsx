@@ -6,6 +6,7 @@ import {
   Collapse,
   Divider,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -127,18 +128,25 @@ export function CollapsibleSummary({
                           {enjeu.sujet}
                         </Typography>
                         {enjeu.importance && (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              px: 1, py: 0.25, borderRadius: "6px",
-                              bgcolor: "grey.200", color: "text.secondary",
-                              fontSize: "0.65rem", fontWeight: "bold",
-                              textTransform: "uppercase", letterSpacing: "0.05em",
-                              whiteSpace: "nowrap", flexShrink: 0,
-                            }}
-                          >
-                            {enjeu.importance}
-                          </Typography>
+                          <Tooltip title={enjeu.importance} placement="top">
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                px: 1, py: 0.25, borderRadius: "6px",
+                                bgcolor: "grey.200", color: "text.secondary",
+                                fontSize: "0.65rem", fontWeight: "bold",
+                                textTransform: "uppercase", letterSpacing: "0.05em",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                flexShrink: 1,
+                                minWidth: 0,
+                                maxWidth: { xs: 120, sm: 200 },
+                              }}
+                            >
+                              {enjeu.importance}
+                            </Typography>
+                          </Tooltip>
                         )}
                       </Stack>
                       {enjeu.arbitrages && (

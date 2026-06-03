@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const codeProcedure = sp.get("codeProcedure") ?? "";
   const badge = sp.get("badge") ?? "";
   const theme = sp.get("theme") ?? "";
-  const sort = sp.get("sort") === "popular" ? "popular" : "recent";
+  const sort = sp.get("sort") === "recent" ? "recent" : "popular";
   const skip = Math.max(parseInt(sp.get("skip") ?? "0", 10) || 0, 0);
   const limit = Math.min(parseInt(sp.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT, MAX_LIMIT);
 
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
           "heatComponents.n_auteurs_uniques": 1,
         },
       })
-      .sort(sort === "popular" ? { heatScore: -1 } : { "heatComponents.last_acte_date": -1 })
+      .sort(sort === "recent" ? { "heatComponents.last_acte_date": -1 } : { heatScore: -1 })
       .skip(skip)
       .limit(limit)
       .toArray(),

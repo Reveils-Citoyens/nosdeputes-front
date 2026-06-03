@@ -37,7 +37,7 @@ export default function AmendementsList(props: { dossierUid: string }) {
     queryFn: () =>
       searchAmendement({
         page,
-        perPage: 5,
+        perPage: 10,
         dossierUid,
         sortAmendement: status ?? "",
         documentRefUid: documentUid ?? "",

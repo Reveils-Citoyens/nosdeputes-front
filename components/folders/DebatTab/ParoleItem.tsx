@@ -67,9 +67,13 @@ export default function ParoleItem(props: ParoleItemProps) {
           }}
         >
           <Avatar
-            sx={{ height: 40, width: 40, bgcolor: "white" }}
+            sx={{ height: 40, width: 40, bgcolor: "white", color: "grey.600" }}
             alt={`${acteur?.prenom ?? ""} ${acteur?.nom ?? ""}`}
-            src={acteur?.urlImage || undefined}
+            src={
+              acteur?.urlImage && !acteur.urlImage.includes("marianne")
+                ? acteur.urlImage
+                : undefined
+            }
           >
             {acteur ? (
               acteur.prenom?.[0] || acteur.nom?.[0] ? (

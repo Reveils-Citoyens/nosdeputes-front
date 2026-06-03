@@ -68,7 +68,7 @@ function DossierRow({ d, showThemeIcon }: { d: ThemeDossierResult; showThemeIcon
               sx={{ fontSize: "0.68rem", height: 22, borderColor: "grey.300", color: "text.secondary" }}
             />
             {firstTheme && (
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" sx={{ display: { xs: "none", sm: "block" } }}>
                 {THEMES[firstTheme].label}
               </Typography>
             )}

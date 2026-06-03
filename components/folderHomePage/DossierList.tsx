@@ -12,6 +12,8 @@ import {
 import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import { useQueryState } from "nuqs";
 import DossierBadge from "@/components/folders/DossierBadge";
+import SearchInput from "@/components/SearchInput";
+import debounce from "@/utils/debounce";
 import type { DossierSearchResult } from "@/data/mongo/searchDossierParTitre";
 
 const PAGE_SIZE = 20;
@@ -68,7 +70,7 @@ function DossierRow({ d }: { d: DossierSearchResult }) {
 // ─── DossierList ──────────────────────────────────────────────────────────────
 
 export default function DossierList() {
-  const [search] = useQueryState("search");
+  const [search, setSearch] = useQueryState("search");
   const [codeProcedure] = useQueryState("codeProcedure");
   const [badge] = useQueryState("badge");
   const [theme] = useQueryState("theme");
@@ -79,6 +81,19 @@ export default function DossierList() {
   const [total, setTotal] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+
+  // Saisie immédiate dans le champ, propagée (debounce) vers le query state `search`.
+  const [searchInput, setSearchInput] = React.useState(search ?? "");
+
+  const debouncedSetSearch = React.useMemo(
+    () => debounce((next: string) => setSearch(next || null), 300),
+    [setSearch]
+  );
+
+  const handleSearchChange = (next: string) => {
+    setSearchInput(next);
+    debouncedSetSearch(next.trim());
+  };
 
   const isSearchMode = (search ?? "").trim().length >= MIN_SEARCH_CHARS;
 
@@ -95,13 +110,13 @@ export default function DossierList() {
     if (codeProcedure) params.set("codeProcedure", codeProcedure);
     if (badge) params.set("badge", badge);
     if (sort) params.set("sort", sort);
+    if (theme) params.set("theme", theme);
 
     let url: string;
     if (q.length >= MIN_SEARCH_CHARS) {
       params.set("q", q);
       url = `/api/search/dossiers?${params}`;
     } else {
-      if (theme) params.set("theme", theme);
       url = `/api/dossiers?${params}`;
     }
 
@@ -140,13 +155,13 @@ export default function DossierList() {
     if (codeProcedure) params.set("codeProcedure", codeProcedure);
     if (badge) params.set("badge", badge);
     if (sort) params.set("sort", sort);
+    if (theme) params.set("theme", theme);
 
     let url: string;
     if (q.length >= MIN_SEARCH_CHARS) {
       params.set("q", q);
       url = `/api/search/dossiers?${params}`;
     } else {
-      if (theme) params.set("theme", theme);
       url = `/api/dossiers?${params}`;
     }
 
@@ -195,6 +210,15 @@ export default function DossierList() {
           </Box>
         )}
       </Stack>
+
+      {/* Barre de recherche (remplace le filtre mot-clef du panneau latéral) */}
+      <Box sx={{ mb: 2 }}>
+        <SearchInput
+          value={searchInput}
+          onChange={handleSearchChange}
+          placeholder="Rechercher un dossier par mot-clé…"
+        />
+      </Box>
 
       {/* Hint si saisie trop courte en mode search partiel */}
       {!isSearchMode && (search ?? "").trim().length > 0 && (search ?? "").trim().length < MIN_SEARCH_CHARS && (

@@ -28,12 +28,16 @@ import { getDocument } from "@/data/getDocument";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import RemoveIcon from "@mui/icons-material/Remove";
+import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 
 type Outcome = {
   label: string;
   date: Date | null;
-  /** "positive" → adoptée/promulguée (vert) ; "negative" → rejetée (rouge) ; "neutral" → retrait (gris) */
-  variant: "positive" | "negative" | "neutral";
+  /**
+   * "positive" → adoptée/promulguée (vert) ; "negative" → rejetée (rouge) ;
+   * "neutral" → retrait/en attente (gris) ; "progress" → étape en cours (bleu)
+   */
+  variant: "positive" | "negative" | "neutral" | "progress";
 };
 
 function detectOutcome(acts: ActeLegislatif[]): Outcome | null {
@@ -73,6 +77,40 @@ function detectOutcome(acts: ActeLegislatif[]): Outcome | null {
     return { label: "Retrait de l'initiative", date: retrait.dateActe ?? null, variant: "neutral" };
   }
 
+  // Commission mixte paritaire engagée mais réunion pas encore datée.
+  // (Le CMP-COM n'apparaît que lorsque la CMP est réellement saisie.)
+  const cmpPending = acts.find((a) => a.codeActe === "CMP-COM" && !a.dateActe);
+  if (cmpPending) {
+    return { label: "En attente d'une date", date: null, variant: "neutral" };
+  }
+
+  // Aucune issue définitive → on déduit l'état d'avancement du dernier acte daté.
+  return detectInProgress(acts);
+}
+
+/**
+ * État d'avancement (chip bleu "en cours") déduit du dernier acte daté,
+ * quand aucune issue définitive n'a été détectée.
+ */
+function detectInProgress(acts: ActeLegislatif[]): Outcome | null {
+  const dated = acts.filter((a) => a.dateActe);
+  if (dated.length === 0) return null;
+
+  const latest = dated.reduce((a, b) =>
+    (a.dateActe as Date) > (b.dateActe as Date) ? a : b,
+  );
+  const code = (latest.codeActe ?? "").toUpperCase();
+  const date = latest.dateActe ?? null;
+  const state = (label: string): Outcome => ({ label, date, variant: "progress" });
+
+  if (code.includes("DEBATS-SEANCE")) return state("Débats en séance");
+  if (code.includes("COM-FOND-SAISIE")) return state("En attente d'examen en commission");
+  if (code.includes("COM-FOND-REUNION") || code.includes("COM-FOND-ETUDE"))
+    return state("Examen en commission");
+  if (code.includes("CC-SAISIE")) return state("Saisine du Conseil constitutionnel");
+  if (code.includes("CMP-SAISIE")) return state("Commission mixte paritaire convoquée");
+  if (code.includes("DEPOT")) return state("Déposé, en attente d'examen");
+
   return null;
 }
 
@@ -83,11 +121,22 @@ const OutcomeTimelineItem = ({
   outcome: Outcome;
   isMobile: boolean;
 }) => {
-  const isPositive = outcome.variant === "positive";
-  const isNeutral = outcome.variant === "neutral";
-  const color = isPositive ? "#16a34a" : isNeutral ? "#6b7280" : "#dc2626";
-  const bg = isPositive ? "#dcfce7" : isNeutral ? "#f3f4f6" : "#fee2e2";
-  const textColor = isPositive ? "#166534" : isNeutral ? "#374151" : "#991b1b";
+  const PALETTE: Record<Outcome["variant"], { color: string; bg: string; text: string }> = {
+    positive: { color: "#16a34a", bg: "#dcfce7", text: "#166534" },
+    negative: { color: "#dc2626", bg: "#fee2e2", text: "#991b1b" },
+    neutral: { color: "#6b7280", bg: "#f3f4f6", text: "#374151" },
+    progress: { color: "#2563eb", bg: "#dbeafe", text: "#1e40af" },
+  };
+  const { color, bg, text: textColor } = PALETTE[outcome.variant];
+
+  const Icon =
+    outcome.variant === "positive"
+      ? CheckIcon
+      : outcome.variant === "negative"
+      ? CloseIcon
+      : outcome.variant === "progress"
+      ? HourglassEmptyIcon
+      : RemoveIcon;
 
   return (
     <TimelineItem>
@@ -101,9 +150,11 @@ const OutcomeTimelineItem = ({
               height: 50,
             }}
           >
-            <Typography variant="body2" fontWeight="light">
-              {formatDate(outcome.date)}
-            </Typography>
+            {outcome.date && (
+              <Typography variant="body2" fontWeight="light">
+                {formatDate(outcome.date)}
+              </Typography>
+            )}
           </Box>
         </TimelineOppositeContent>
       )}
@@ -124,18 +175,12 @@ const OutcomeTimelineItem = ({
             zIndex: 1,
           }}
         >
-          {isPositive ? (
-            <CheckIcon sx={{ fontSize: isMobile ? 22 : 26 }} />
-          ) : isNeutral ? (
-            <RemoveIcon sx={{ fontSize: isMobile ? 22 : 26 }} />
-          ) : (
-            <CloseIcon sx={{ fontSize: isMobile ? 22 : 26 }} />
-          )}
+          <Icon sx={{ fontSize: isMobile ? 22 : 26 }} />
         </Box>
       </TimelineSeparator>
 
       <TimelineContent sx={{ pr: 0 }}>
-        {isMobile && (
+        {isMobile && outcome.date && (
           <Typography
             variant="caption"
             color="text.secondary"
@@ -177,7 +222,7 @@ const OutcomeTimelineItem = ({
 
 // Utilitaire pour formater la date proprement
 const formatDate = (date?: Date | null) => {
-  if (!date) return "?";
+  if (!date) return "À définir";
   return date.toLocaleDateString("fr-FR", {
     year: "numeric",
     month: "short",
@@ -555,7 +600,10 @@ export const TimelineCard = ({
       );
       const map: Record<string, boolean> = {};
       documentUids.forEach((uid, index) => {
-        map[uid] = docs[index] != null; // true if document has pdfUrl
+        // Le trombone ne doit apparaître que si un PDF ouvrable existe réellement.
+        // Beaucoup de documents existent sans pdfUrl → sinon le clic ne fait rien
+        // (lien "cassé" perçu par l'utilisateur).
+        map[uid] = !!docs[index]?.pdfUrl;
       });
       return map;
     },

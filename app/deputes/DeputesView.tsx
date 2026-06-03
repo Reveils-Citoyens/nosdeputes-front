@@ -49,7 +49,7 @@ function GroupPolitiqueHeader({
               (<strong>{group.libelleAbrev}</strong>)
             </>
           ) : "Groupe non renseigné"}{" "}
-          — {nbDeputes} {nbDeputes > 1 ? "deputés" : "deputé"}
+          — {nbDeputes} {nbDeputes > 1 ? "députés" : "député"}
         </Typography>
       </Stack>
     </AccordionSummary>
@@ -70,7 +70,7 @@ function NameHeader({
       id={`${itemKey}-header`}
     >
       <Typography>
-        {itemKey} - {nbDeputes} {nbDeputes > 1 ? "deputés" : "deputé"}
+        {itemKey} - {nbDeputes} {nbDeputes > 1 ? "députés" : "député"}
       </Typography>
     </AccordionSummary>
   );

@@ -292,27 +292,42 @@ export default async function Page({
           gap: 4,
         }}
       >
-        {/* Colonne de Gauche (Infos) */}
-        <Stack
-          spacing={3}
-          flex={2}
-          // Force les cartes enfants (InfoPersonelles, etc.) à prendre 100% de la largeur du conteneur
+        {/* Fiche d'identité — visible en 1er sur mobile, colonne gauche sur desktop */}
+        <Box
           sx={{
-            minWidth: 0,
+            flex: { xs: "unset", md: 2 },
+            order: { xs: 0, md: 0 },
+            display: { xs: "block", md: "none" },
             width: "100%",
-            "& > *": { width: "100% !important" }, // Hack CSS pour forcer la largeur des Paper enfants qui ont width: 300
           }}
         >
           <InfoPersonelles acteurUid={depute.uid} depute={depute} />
+        </Box>
+
+        {/* Tabs + contenu — 2e sur mobile */}
+        <Stack spacing={3} flex={5} sx={{ minWidth: 0, order: { xs: 1, md: 0 } }}>
+          <Tabs slug={slug} />
+          {children}
+        </Stack>
+
+        {/* Colonne gauche complète (desktop) / reste des infos en bas (mobile) */}
+        <Stack
+          spacing={3}
+          flex={2}
+          sx={{
+            minWidth: 0,
+            width: "100%",
+            order: { xs: 2, md: 0 },
+            "& > *": { width: "100% !important" },
+          }}
+        >
+          {/* InfoPersonelles masquée sur mobile (déjà rendue au-dessus) */}
+          <Box sx={{ display: { xs: "none", md: "block" } }}>
+            <InfoPersonelles acteurUid={depute.uid} depute={depute} />
+          </Box>
           <Mandats acteurUid={depute.uid} />
           <Contacts acteurUid={depute.uid} />
           <CollaborateursSection collaborateurs={collaborateurs} />
-        </Stack>
-
-        {/* Colonne de Droite (Tabs et Contenu principal) */}
-        <Stack spacing={3} flex={5} sx={{ minWidth: 0 }}>
-          <Tabs slug={slug} />
-          {children}
         </Stack>
       </Container>
     </Box>

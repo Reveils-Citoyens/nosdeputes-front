@@ -72,6 +72,17 @@ const theme = createTheme({
     },
   },
   components: {
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          // Tooltips parfois longs (explications d'amendements, enjeux) :
+          // un peu de respiration (padding + interligne) améliore la lisibilité.
+          lineHeight: 1.5,
+          fontSize: "0.75rem",
+          padding: "8px 12px",
+        },
+      },
+    },
     MuiButton: {
       defaultProps: {
         disableElevation: true,

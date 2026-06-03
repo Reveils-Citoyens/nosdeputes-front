@@ -6,6 +6,7 @@ export async function getDossiersByThemeGroup(
   slug: ThemeGroupSlug,
   options: { limit?: number; skip?: number; sort?: "relevance" | "date" } = {}
 ): Promise<{ items: ThemeDossierResult[]; total: number }> {
+  try {
   const { limit = 20, skip = 0, sort = "relevance" } = options;
   const db = await getParlementDb();
 
@@ -81,4 +82,8 @@ export async function getDossiersByThemeGroup(
     })),
     total,
   };
+  } catch (error) {
+    console.error("[getDossiersByThemeGroup] erreur:", error);
+    return { items: [], total: 0 };
+  }
 }

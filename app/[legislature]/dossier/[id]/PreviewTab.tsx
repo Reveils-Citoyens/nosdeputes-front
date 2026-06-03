@@ -90,6 +90,9 @@ export const PreviewTab = async ({ dossier }: PreviewTabProps) => {
           minWidth: 0,
         }}
       >
+        {carteDocuments && (
+          <LegislativeDocumentsCard documentIds={documentIds} />
+        )}
         {carteRapporteurs && (
           <CommissionsCard
             commissionFondIds={commissionFondIds}
@@ -104,9 +107,6 @@ export const PreviewTab = async ({ dossier }: PreviewTabProps) => {
           showAmendements={carteAmendements}
           showCoSignataires={carteCoSignataires}
         />
-        {carteDocuments && (
-          <LegislativeDocumentsCard documentIds={documentIds} />
-        )}
         {themesOuverts.length > 0 && (
           <Accordion
             elevation={0}

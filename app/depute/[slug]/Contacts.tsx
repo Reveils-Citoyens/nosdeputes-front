@@ -24,7 +24,7 @@ import {
  *
  *  - 'Url sénateur': page peu mise a jour
  *  - 'Contact presse': seulement un acteur l'a
- *  - 'Télécopie': seul 3 deputés de la 16eme legislature consernés
+ *  - 'Télécopie': seul 3 députés de la 16eme legislature consernés
  */
 
 const internetPlatformsIcons = {

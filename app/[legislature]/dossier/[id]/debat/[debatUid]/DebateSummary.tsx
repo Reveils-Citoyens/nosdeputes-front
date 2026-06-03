@@ -160,7 +160,14 @@ export const DebateSummary = (props: DebateSummaryProps) => {
       >
         <Typography>Sommaire</Typography>
       </AccordionSummary>
-      <AccordionDetails>
+      <AccordionDetails
+        sx={{
+          // Sommaire potentiellement plus haut que l'écran sur les longs débats :
+          // on borne la hauteur (sticky top:50 + header) et on scrolle en interne.
+          maxHeight: "calc(100vh - 120px)",
+          overflowY: "auto",
+        }}
+      >
         <Stack direction="column" spacing={2} pb={3}>
           {sections.map(({ uid, texte }, index) =>
             activeState === uid || (activeState === null && index === 0) ? (

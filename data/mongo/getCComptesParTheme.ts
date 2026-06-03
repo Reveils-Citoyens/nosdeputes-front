@@ -67,19 +67,24 @@ async function getCComptesParThemeUnCached(
   limit = 5,
   skip = 0
 ): Promise<{ items: CCompteResult[]; total: number }> {
-  const db = await getParlementDb();
-  const themesArr = Array.isArray(themes) ? themes : [themes];
-  const filter = { themes: { $in: themesArr } };
+  try {
+    const db = await getParlementDb();
+    const themesArr = Array.isArray(themes) ? themes : [themes];
+    const filter = { themes: { $in: themesArr } };
 
-  const [docs, total] = await Promise.all([
-    db
-      .collection("ccomptes")
-      .find(filter, { projection: PROJECTION, sort: { date: -1 }, skip, limit })
-      .toArray(),
-    db.collection("ccomptes").countDocuments(filter),
-  ]);
+    const [docs, total] = await Promise.all([
+      db
+        .collection("ccomptes")
+        .find(filter, { projection: PROJECTION, sort: { date: -1 }, skip, limit })
+        .toArray(),
+      db.collection("ccomptes").countDocuments(filter),
+    ]);
 
-  return { items: docs.map((d) => mapDoc(d as Record<string, unknown>)), total };
+    return { items: docs.map((d) => mapDoc(d as Record<string, unknown>)), total };
+  } catch (error) {
+    console.error("[getCComptesParTheme] erreur:", error);
+    return { items: [], total: 0 };
+  }
 }
 
 export const getCComptesParTheme = cache(getCComptesParThemeUnCached);

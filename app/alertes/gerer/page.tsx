@@ -8,8 +8,9 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { subjectTypeLabel, type AlertSubject } from "@/lib/alertTypes";
 
-type Subject = { type: "dossier" | "depute"; uid: string; label: string };
+type Subject = AlertSubject;
 type Subscription = {
   email: string;
   confirmed: boolean;
@@ -104,9 +105,20 @@ function GererAlertes() {
             >
               <ListItemText
                 primary={s.label}
+                primaryTypographyProps={{
+                  sx: {
+                    pr: 2,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    wordBreak: "break-word",
+                  },
+                }}
+                secondaryTypographyProps={{ component: "div" }}
                 secondary={
                   <Chip
-                    label={s.type === "depute" ? "Député" : "Dossier"}
+                    label={subjectTypeLabel(s.type)}
                     size="small"
                     sx={{ mt: 0.5 }}
                   />
@@ -134,7 +146,7 @@ function GererAlertes() {
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <Box sx={{ maxWidth: 560, mx: "auto", mt: 8, px: 3 }}>
+    <Box sx={{ width: "100%", maxWidth: 560, mx: "auto", mt: 8, px: 3 }}>
       {children}
     </Box>
   );

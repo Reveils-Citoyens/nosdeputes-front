@@ -30,6 +30,7 @@ export async function searchActeurParNom(
 ): Promise<ActeurSearchResult[]> {
   if (!query.trim()) return [];
 
+  try {
   const db = await getParlementDb();
 
   const pipeline = [
@@ -179,4 +180,8 @@ export async function searchActeurParNom(
     .toArray();
 
   return results as ActeurSearchResult[];
+  } catch (error) {
+    console.error("[searchActeurParNom] erreur:", error);
+    return [];
+  }
 }

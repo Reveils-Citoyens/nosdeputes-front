@@ -47,13 +47,31 @@ export async function searchDossierParTitre(
     sort?: "relevance" | "date";
     codeProcedure?: string;
     badge?: string;
+    theme?: string;
   } = {}
 ): Promise<{ items: DossierSearchResult[]; total: number }> {
   if (!query.trim()) return { items: [], total: 0 };
 
-  const { limit = 10, skip = 0, legislature = "17", sort = "relevance", codeProcedure, badge } = options;
+  const { limit = 10, skip = 0, legislature = "17", sort = "relevance", codeProcedure, badge, theme } = options;
 
+  try {
   const db = await getParlementDb();
+
+  // Filtre par thème : les thèmes vivent dans dossiers_enrichis (themes_senat).
+  // On récupère les UIDs correspondants pour les injecter dans le $match du search.
+  let themeUids: string[] | null = null;
+  if (theme) {
+    const enrichis = await db
+      .collection("dossiers_enrichis")
+      .find(
+        { "dossier_summary_enrichment.qualification.themes_senat": theme },
+        { projection: { _id: 0, uid: 1 } }
+      )
+      .toArray();
+    themeUids = enrichis.map((d) => d.uid).filter(Boolean);
+    // Aucun dossier pour ce thème → résultat vide garanti.
+    if (themeUids.length === 0) return { items: [], total: 0 };
+  }
 
   const pipeline = [
     {
@@ -91,6 +109,7 @@ export async function searchDossierParTitre(
         chambre: { $ne: "SN" }, // les dossiers AN n'ont pas de champ chambre; seuls les dossiers SN l'ont
         ...(codeProcedure ? { "procedureParlementaire.code": codeProcedure } : {}),
         ...(badge ? { dossierBadge: badge } : {}),
+        ...(themeUids ? { uid: { $in: themeUids } } : {}),
       },
     },
     {
@@ -168,4 +187,8 @@ export async function searchDossierParTitre(
     items: (facet?.items ?? []) as DossierSearchResult[],
     total: (facet?.total?.[0]?.n ?? 0) as number,
   };
+  } catch (error) {
+    console.error("[searchDossierParTitre] erreur:", error);
+    return { items: [], total: 0 };
+  }
 }

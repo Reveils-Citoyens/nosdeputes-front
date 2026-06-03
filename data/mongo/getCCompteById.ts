@@ -19,6 +19,7 @@ export type CCompteDetail = {
 };
 
 async function getCCompteByIdUnCached(id: string): Promise<CCompteDetail | null> {
+  try {
   const db = await getParlementDb();
 
   // _id est stocké comme string dans cette collection
@@ -52,6 +53,10 @@ async function getCCompteByIdUnCached(id: string): Promise<CCompteDetail | null>
       ? doc.themes.filter((t: unknown) => typeof t === "string")
       : [],
   };
+  } catch (error) {
+    console.error("[getCCompteById] erreur:", error);
+    return null;
+  }
 }
 
 export const getCCompteById = cache(getCCompteByIdUnCached);

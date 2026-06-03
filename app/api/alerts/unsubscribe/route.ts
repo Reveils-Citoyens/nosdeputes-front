@@ -42,6 +42,18 @@ export async function GET(request: NextRequest) {
   );
 }
 
+// Désabonnement total en un clic (en-tête List-Unsubscribe-Post des clients mail).
+export async function POST(request: NextRequest) {
+  const token = request.nextUrl.searchParams.get("token");
+  if (!token) {
+    return NextResponse.json({ error: "Token manquant." }, { status: 400 });
+  }
+  const db = await getParlementDb();
+  const col = db.collection<AlertSubscription>("alert_subscriptions");
+  await col.deleteOne({ token });
+  return NextResponse.json({ status: "unsubscribed" });
+}
+
 // Support DELETE pour les appels programmatiques depuis la page de gestion
 export async function DELETE(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
