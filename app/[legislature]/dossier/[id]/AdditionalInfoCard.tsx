@@ -7,7 +7,7 @@ import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import Box from "@mui/material/Box";
 import MuiLink from "@mui/material/Link";
-import InfoIcon from "@/icons/InfoIcon";
+import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
 import Link from "next/link";
 import Signataires from "../../../../components/folders/Signataires";
 import { getDocument } from "@/data/getDocument";
@@ -89,7 +89,11 @@ export const AdditionalInfoCard = async (props: {
                   >
                     Amendements
                   </Typography>
-                  <InfoIcon sx={{ fontSize: "14px" }} />
+                  <InfoDialogIcon
+                    sx={{ fontSize: "14px" }}
+                    category="dossier"
+                    item="amendements"
+                  />
                 </Stack>
                 <Stack direction="column" spacing={1}>
                   <MuiLink

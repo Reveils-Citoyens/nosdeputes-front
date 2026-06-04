@@ -15,7 +15,9 @@ import { isValidEmail } from "@/lib/alertTypes";
 
 export default function AlertesIndexPage() {
   const [email, setEmail] = React.useState("");
-  const [status, setStatus] = React.useState<"idle" | "loading" | "sent" | "error">("idle");
+  const [status, setStatus] = React.useState<
+    "idle" | "loading" | "sent" | "error" | "rate_limited"
+  >("idle");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +32,10 @@ export default function AlertesIndexPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),
       });
+      if (res.status === 429) {
+        setStatus("rate_limited");
+        return;
+      }
       if (!res.ok) throw new Error("request failed");
       setStatus("sent");
     } catch {
@@ -75,10 +81,16 @@ export default function AlertesIndexPage() {
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
-            if (status === "error") setStatus("idle");
+            if (status === "error" || status === "rate_limited") setStatus("idle");
           }}
-          error={status === "error"}
-          helperText={status === "error" ? "Adresse email invalide." : " "}
+          error={status === "error" || status === "rate_limited"}
+          helperText={
+            status === "error"
+              ? "Adresse email invalide."
+              : status === "rate_limited"
+              ? "Trop de tentatives. Réessayez dans quelques minutes."
+              : " "
+          }
           fullWidth
           autoFocus
         />

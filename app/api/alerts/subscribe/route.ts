@@ -10,6 +10,9 @@ import {
   sendConfirmationEmail,
   sendSubjectAddedEmail,
 } from "@/lib/alertEmails";
+import { checkRateLimit, getClientIp, tooManyRequests } from "@/lib/rateLimit";
+
+const MIN = 60 * 1000;
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
@@ -25,6 +28,17 @@ export async function POST(request: NextRequest) {
   if (subjectType !== "dossier" && subjectType !== "depute" && subjectType !== "recherche" && subjectType !== "theme") {
     return NextResponse.json({ error: "Type de sujet invalide." }, { status: 400 });
   }
+
+  // Anti-abus : limite par IP (volume) et par email cible (anti email-bombing,
+  // puisqu'un tiers pourrait abonner l'adresse d'autrui de façon répétée).
+  const normalizedEmail = String(email).toLowerCase().trim();
+  const ip = getClientIp(request);
+  const [ipLimit, emailLimit] = await Promise.all([
+    checkRateLimit(`subscribe:ip:${ip}`, 10, 10 * MIN),
+    checkRateLimit(`subscribe:email:${normalizedEmail}`, 4, 60 * MIN),
+  ]);
+  if (!ipLimit.ok) return tooManyRequests(ipLimit.retryAfterSec);
+  if (!emailLimit.ok) return tooManyRequests(emailLimit.retryAfterSec);
 
   const newSubject: AlertSubject = {
     type: subjectType,

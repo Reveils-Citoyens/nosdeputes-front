@@ -14,10 +14,13 @@ import { getDocument } from "@/data/getDocument";
 
 interface LegislativeDocumentsCardProps {
   documentIds: string[];
+  /** Libellé de version par documentUid (texte initial, texte adopté…). */
+  versionLabels?: Record<string, string>;
 }
 export const LegislativeDocumentsCard = async (
   props: LegislativeDocumentsCardProps
 ) => {
+  const versionLabels = props.versionLabels ?? {};
   let documents = await Promise.all(
     props.documentIds.map((documentUid) => getDocument(documentUid))
   );
@@ -104,25 +107,52 @@ export const LegislativeDocumentsCard = async (
                   </Typography>
                 )}
               </Box>
-              {docs.map((document) => (
+              {docs.map((document) => {
+                const versionLabel = versionLabels[document.uid];
+                const chambrePrefix =
+                  !groupChamber && document.chambre ? `${chambreLabel(document.chambre)} · ` : "";
+                // Libellé principal : version issue de l'acte si dispo,
+                // sinon repli "Version du {date}" pour les lois / date brute sinon.
+                const primary = versionLabel
+                  ? `${chambrePrefix}${versionLabel}`
+                  : document.dateCreation
+                  ? `${chambrePrefix}${isLoi ? `Version du ${formatDate(document.dateCreation)}` : formatDate(document.dateCreation)}`
+                  : chambrePrefix || typeLibelle;
+                // Date en sous-ligne uniquement quand le principal n'est pas déjà la date.
+                const dateLine = versionLabel && document.dateCreation ? formatDate(document.dateCreation) : null;
+
+                return (
                 <Stack key={document.uid} direction="row" spacing={1} alignItems="flex-start">
                   {document.pdfUrl && (
                     <Box sx={{ display: "flex", alignItems: "center", height: "25px", flexShrink: 0 }}>
                       <Image src="/documents.png" alt="Icone document" width={18} height={18} />
                     </Box>
                   )}
-                  <Typography variant="body2" fontWeight="medium" href={document.pdfUrl ?? undefined} component={document.pdfUrl ? Link : "p"} target="_blank">
-                    {/* Chambre par ligne uniquement si le groupe mélange les chambres */}
-                    {!groupChamber && document.chambre ? chambreLabel(document.chambre) : ""}
-                    {!groupChamber && document.dateCreation && document.chambre ? ` — ` : ""}
-                    {document.dateCreation
-                      ? isLoi
-                        ? `Version du ${formatDate(document.dateCreation)}`
-                        : formatDate(document.dateCreation)
-                      : ""}
-                  </Typography>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography
+                      variant="body2"
+                      fontWeight="medium"
+                      href={document.pdfUrl ?? undefined}
+                      component={document.pdfUrl ? Link : "p"}
+                      target="_blank"
+                      sx={{
+                        display: "block",
+                        textDecoration: "none",
+                        color: "inherit",
+                        "&:hover": document.pdfUrl ? { textDecoration: "underline" } : {},
+                      }}
+                    >
+                      {primary}
+                    </Typography>
+                    {dateLine && (
+                      <Typography variant="caption" color="text.secondary">
+                        {dateLine}
+                      </Typography>
+                    )}
+                  </Box>
                 </Stack>
-              ))}
+                );
+              })}
             </Stack>
             );
           })}

@@ -291,6 +291,38 @@ Cela inclut les propositions de loi, les résolutions ou tout autre texte dépos
 Cet indicateur mesure la capacité d’initiative législative d’un parlementaire.`  },
 
 
+    },
+    dossier: {
+        amendements: {
+            translation: `Amendements`,
+            dialog: `Un amendement est une proposition de modification d’un texte de loi en cours d’examen : ajout, suppression ou réécriture d’un article ou d’un alinéa.
+
+Les amendements peuvent être déposés par les députés, les groupes politiques, la commission saisie au fond ou le gouvernement. Ils sont d’abord examinés en commission, puis en séance publique, où chacun est mis aux voix.
+
+Le nombre d’amendements donne une idée de l’intensité du débat et des points de désaccord sur un texte.`,
+        },
+        commission_fond: {
+            translation: `Commission saisie au fond`,
+            dialog: `La commission saisie au fond est la commission permanente principalement responsable de l’examen d’un texte de loi.
+
+Elle désigne un rapporteur, auditionne des acteurs concernés, examine et amende le texte article par article, puis établit le texte qui servira de base à la discussion en séance publique.
+
+Chaque texte n’a qu’une seule commission saisie au fond, choisie selon son domaine (lois, finances, affaires sociales, etc.).`,
+        },
+        commission_avis: {
+            translation: `Commission saisie pour avis`,
+            dialog: `Une commission saisie pour avis examine un texte qui relève partiellement de son domaine de compétence, en complément de la commission saisie au fond.
+
+Elle rend un avis et peut proposer des amendements, mais ne maîtrise pas le texte : c’est la commission saisie au fond qui décide de les retenir ou non.
+
+Un même texte peut faire l’objet de plusieurs saisines pour avis.`,
+        },
+        cosignataires: {
+            translation: `Co-signataires`,
+            dialog: `Les co-signataires sont les parlementaires qui apportent leur soutien officiel à un texte (proposition de loi, amendement…) sans en être l’auteur principal.
+
+Le nombre de co-signataires reflète le soutien politique dont bénéficie une initiative et peut traduire son caractère transpartisan ou, au contraire, son ancrage dans un seul groupe.`,
+        },
     }
 } as const
 

@@ -1,5 +1,12 @@
 import * as React from "react";
-import { Box, type SvgIconProps, type SxProps, type Theme } from "@mui/material";
+import {
+  Box,
+  Stack,
+  Typography,
+  type SvgIconProps,
+  type SxProps,
+  type Theme,
+} from "@mui/material";
 import AgricultureOutlinedIcon from "@mui/icons-material/AgricultureOutlined";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
 import MilitaryTechOutlinedIcon from "@mui/icons-material/MilitaryTechOutlined";
@@ -42,8 +49,8 @@ import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
 import EnergySavingsLeafOutlinedIcon from "@mui/icons-material/EnergySavingsLeafOutlined";
 import TerrainOutlinedIcon from "@mui/icons-material/TerrainOutlined";
-import type { ThemeSlug } from "@/data/themes";
-import type { ThemeGroupSlug } from "@/data/themeGroups";
+import { THEMES, type ThemeSlug } from "@/data/themes";
+import { THEME_GROUPS, type ThemeGroupSlug } from "@/data/themeGroups";
 
 export const THEME_ICONS: Record<ThemeSlug, React.ComponentType<SvgIconProps>> = {
   agriculture_et_peche: AgricultureOutlinedIcon,
@@ -156,6 +163,86 @@ export function ThemeGroupIcon({
       }}
     >
       <Icon sx={{ fontSize: size, color: "inherit" }} />
+    </Box>
+  );
+}
+
+type BannerHeight = number | string | Record<string, number | string>;
+type ThemeBannerProps =
+  | { variant?: "theme"; slug: ThemeSlug; titleComponent?: React.ElementType; height?: BannerHeight }
+  | { variant: "group"; slug: ThemeGroupSlug; titleComponent?: React.ElementType; height?: BannerHeight };
+
+/**
+ * Bannière graphique d'un thème (ou domaine) : aplat de couleur du domaine +
+ * icône en filigrane + libellé. Neutre, sans illustration, réutilisable comme
+ * bannière générique de dossier (via le 1er thème).
+ */
+export function ThemeBanner(props: ThemeBannerProps) {
+  const { slug, titleComponent = "div", height = { xs: 120, md: 168 } } = props;
+  const variant = props.variant ?? "theme";
+
+  const Icon =
+    variant === "group"
+      ? THEME_GROUP_ICONS[slug as ThemeGroupSlug]
+      : THEME_ICONS[slug as ThemeSlug];
+  const label =
+    variant === "group"
+      ? THEME_GROUPS[slug as ThemeGroupSlug].label
+      : THEMES[slug as ThemeSlug].label;
+
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        overflow: "hidden",
+        height,
+        borderRadius: "16px",
+        display: "flex",
+        alignItems: "center",
+        px: { xs: 3, md: 5 },
+        // Monochrome sombre (couleur de marque) : neutre, aucune connotation
+        // politique. L'icône en filigrane distingue le thème et apporte le relief.
+        background: "linear-gradient(135deg, #2A2A2E 0%, #161618 100%)",
+      }}
+    >
+      {/* Icône en filigrane, débordant le coin bas-droit */}
+      <Icon
+        sx={{
+          position: "absolute",
+          right: { xs: -16, md: -8 },
+          bottom: { xs: -24, md: -28 },
+          fontSize: { xs: 150, md: 220 },
+          color: "rgba(255,255,255,0.08)",
+        }}
+      />
+      <Stack direction="row" alignItems="center" spacing={2} sx={{ zIndex: 1 }}>
+        <Box
+          sx={{
+            width: { xs: 44, md: 56 },
+            height: { xs: 44, md: 56 },
+            flexShrink: 0,
+            borderRadius: "12px",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: "rgba(255,255,255,0.12)",
+          }}
+        >
+          <Icon sx={{ fontSize: { xs: 24, md: 30 }, color: "#fff" }} />
+        </Box>
+        <Typography
+          component={titleComponent}
+          sx={{
+            color: "#fff",
+            fontWeight: "bold",
+            lineHeight: 1.2,
+            fontSize: { xs: "1.4rem", md: "2rem" },
+            textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+          }}
+        >
+          {label}
+        </Typography>
+      </Stack>
     </Box>
   );
 }

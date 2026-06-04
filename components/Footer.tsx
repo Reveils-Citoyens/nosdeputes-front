@@ -101,6 +101,22 @@ export default function Footer() {
                 Gérer mes alertes
               </Link>
               <Link
+                href="/methodologie"
+                color="text.secondary"
+                variant="body2"
+                underline="hover"
+              >
+                Méthodologie & transparence
+              </Link>
+              <Link
+                href="/mentions-legales"
+                color="text.secondary"
+                variant="body2"
+                underline="hover"
+              >
+                Mentions légales
+              </Link>
+              <Link
                 href="https://github.com/Reveils-Citoyens/nosdeputes-front"
                 target="_blank"
                 rel="noopener noreferrer"

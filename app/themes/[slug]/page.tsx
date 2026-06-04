@@ -15,7 +15,7 @@ import { THEME_GROUPS, THEME_TO_GROUP } from "@/data/themeGroups";
 import { getDossiersByTheme } from "@/data/mongo/getDossiersByTheme";
 import { CComptesSection } from "@/components/ccomptes/CComptesSection";
 import DossierThemeList from "@/components/themes/DossierThemeList";
-import { ThemeIcon } from "../themeIcons";
+import { ThemeBanner } from "../themeIcons";
 import AlerteButton from "@/components/AlerteButton";
 import type { Metadata } from "next";
 
@@ -81,15 +81,7 @@ export default async function ThemeSlugPage({
         >
           Thème
         </Typography>
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <ThemeIcon slug={slug} size={28} boxSize={56} />
-          <Typography
-            component="h1"
-            sx={{ fontSize: { xs: "1.75rem", md: "2.5rem" }, fontWeight: "bold", lineHeight: 1.2 }}
-          >
-            {theme.label}
-          </Typography>
-        </Stack>
+        <ThemeBanner slug={slug} titleComponent="h1" />
         <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 580, lineHeight: 1.6 }}>
           {theme.description}
         </Typography>

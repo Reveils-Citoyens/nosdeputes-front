@@ -20,6 +20,7 @@ import { getDossier } from "@/data/getDossier";
 import { dossierSettings, type ApercuVariant } from "./dossierSettings";
 import { EnrichmentCard } from "./EnrichmentCard";
 import { getDossierEnrichment } from "@/data/mongo/getDossierEnrichment";
+import { buildDocumentVersionLabels } from "./documentVersions";
 
 type PreviewTabProps = {
   dossier?: Awaited<ReturnType<typeof getDossier>>;
@@ -79,6 +80,10 @@ export const PreviewTab = async ({ dossier }: PreviewTabProps) => {
     )
   );
 
+  // Qualifie chaque document (texte initial, texte de la commission, texte adopté…)
+  // à partir de l'acte législatif qui l'a produit.
+  const versionLabels = buildDocumentVersionLabels(actesLegislatifs);
+
   return (
     <div className="container">
       <div
@@ -91,7 +96,7 @@ export const PreviewTab = async ({ dossier }: PreviewTabProps) => {
         }}
       >
         {carteDocuments && (
-          <LegislativeDocumentsCard documentIds={documentIds} />
+          <LegislativeDocumentsCard documentIds={documentIds} versionLabels={versionLabels} />
         )}
         {carteRapporteurs && (
           <CommissionsCard

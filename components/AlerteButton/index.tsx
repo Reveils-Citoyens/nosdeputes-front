@@ -30,6 +30,7 @@ type SubmitStatus =
   | "confirmation_resent"
   | "subject_added"
   | "already_subscribed"
+  | "rate_limited"
   | "error";
 
 const MESSAGES: Record<string, string> = {
@@ -39,6 +40,7 @@ const MESSAGES: Record<string, string> = {
     "Un nouvel email de confirmation vous a été envoyé.",
   subject_added: "Alerte ajoutée ! Vous recevrez un récapitulatif chaque semaine.",
   already_subscribed: "Vous êtes déjà abonné à cette alerte.",
+  rate_limited: "Trop de tentatives. Merci de réessayer dans quelques minutes.",
   error: "Une erreur est survenue. Veuillez réessayer.",
 };
 
@@ -97,6 +99,10 @@ export default function AlerteButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, subjectType, subjectUid, subjectLabel }),
       });
+      if (res.status === 429) {
+        setStatus("rate_limited");
+        return;
+      }
       const data = await res.json();
       const newStatus = data.status ?? "error";
       setStatus(newStatus);
@@ -214,9 +220,9 @@ export default function AlerteButton({
               disabled={status === "loading"}
               sx={{ mb: 2 }}
             />
-            {status === "error" && (
+            {(status === "error" || status === "rate_limited") && (
               <Typography variant="caption" color="error" sx={{ mb: 1, display: "block" }}>
-                {MESSAGES.error}
+                {MESSAGES[status]}
               </Typography>
             )}
             <Button
