@@ -16,10 +16,11 @@ export default function DossiersTabs(props: {
   showDebats: boolean;
   showAmendements: boolean;
   showVotes: boolean;
+  showComptesRendus?: boolean;
   hasAmendements: boolean;
   hasVotes: boolean;
 }) {
-  const { legislature, dossierUid, showApercu, showDebats, showAmendements, showVotes, hasAmendements, hasVotes } =
+  const { legislature, dossierUid, showApercu, showDebats, showAmendements, showVotes, showComptesRendus, hasAmendements, hasVotes } =
     props;
   const segment = useSelectedLayoutSegment();
 
@@ -40,18 +41,18 @@ export default function DossiersTabs(props: {
   const tabs = [
     { value: "", label: "Aperçu", href: rootPathName, visible: showApercu },
     {
+      value: "amendement",
+      label: "Texte & amendements",
+      href: `${rootPathName}amendement`,
+      visible: showAmendements,
+      disabled: !hasAmendements,
+    },
+    {
       value: "commission",
       label: "Commission",
       href: `${rootPathName}commission`,
       visible: showDebats,
       disabled: commissionDebats != null && commissionDebats.length === 0,
-    },
-    {
-      value: "amendement",
-      label: "Amendements",
-      href: `${rootPathName}amendement`,
-      visible: showAmendements,
-      disabled: !hasAmendements,
     },
     {
       value: "debat",
@@ -66,6 +67,12 @@ export default function DossiersTabs(props: {
       href: `${rootPathName}votes`,
       visible: showVotes,
       disabled: !hasVotes,
+    },
+    {
+      value: "comptes-rendus",
+      label: "Comptes-rendus",
+      href: `${rootPathName}comptes-rendus`,
+      visible: !!showComptesRendus,
     },
   ];
 

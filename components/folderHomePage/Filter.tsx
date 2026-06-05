@@ -12,6 +12,7 @@ const BADGE_OPTIONS: { code: string; label: string }[] = [
   { code: "actif", label: "🔥 Actif" },
   { code: "en_cours", label: "En cours" },
   { code: "en_pause", label: "En pause" },
+  { code: "termine", label: "Achevée" },
   { code: "promulgue", label: "Promulgué" },
   { code: "adopte", label: "Adopté" },
   { code: "rejete", label: "Rejeté" },

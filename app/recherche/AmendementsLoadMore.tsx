@@ -6,6 +6,7 @@ import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import { useSearchParams } from "next/navigation";
 import SearchAmendementCard from "./SearchAmendementCard";
 import type { AmendementSearchResult } from "@/data/mongo/searchAmendementMongo";
+import { trackEvent } from "@/lib/umami";
 
 // Item tel que renvoyé par l'API (dates en ISO strings après JSON serialization)
 type ApiItem = Omit<AmendementSearchResult, "dateDepot" | "dateSort"> & {
@@ -44,6 +45,7 @@ export default function AmendementsLoadMore({
   const loadMore = async () => {
     setLoading(true);
     setError(null);
+    trackEvent("charger-plus", { section: "recherche-amendements" });
     try {
       const params = new URLSearchParams({
         q: query,

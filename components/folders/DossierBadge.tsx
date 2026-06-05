@@ -10,6 +10,7 @@ export type DossierBadgeCode =
   | "actif"
   | "en_pause"
   | "en_cours"
+  | "termine"
   | "inactif";
 
 type BadgeStyle = {
@@ -69,6 +70,12 @@ const STYLES: Record<DossierBadgeCode, BadgeStyle | null> = {
     bg: "#dbeafe",
     text: "#1e40af",
     dot: "#2563eb",
+  },
+  termine: {
+    label: "Achevée",
+    bg: "#e2e8f0",
+    text: "#334155",
+    dot: "#64748b",
   },
   // Pas de badge visible pour les dossiers inactifs : on retourne null
   inactif: null,

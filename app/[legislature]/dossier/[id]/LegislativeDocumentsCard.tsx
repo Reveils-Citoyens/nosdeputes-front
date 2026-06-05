@@ -135,6 +135,7 @@ export const LegislativeDocumentsCard = async (
                       href={document.pdfUrl ?? undefined}
                       component={document.pdfUrl ? Link : "p"}
                       target="_blank"
+                      {...(document.pdfUrl ? { "data-umami-event": "document-ouvert" } : {})}
                       sx={{
                         display: "block",
                         textDecoration: "none",

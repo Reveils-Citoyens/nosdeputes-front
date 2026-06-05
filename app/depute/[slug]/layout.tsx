@@ -18,6 +18,7 @@ import { getActeurBySlug } from "@/data/getActeurBySlug";
 import { getActeurAdressesElectroniques } from "@/data/getActeurContacts";
 import { getActeurCollaborateurs } from "@/data/getActeurCollaborateurs";
 import CollaborateursSection from "./CollaborateursSection";
+import { formatCirco } from "@/utils/formatCirco";
 
 const SocialLink = ({
   Icon,
@@ -31,6 +32,8 @@ const SocialLink = ({
     href={href}
     target="_blank"
     rel="noopener noreferrer"
+    data-umami-event="lien-sortant"
+    data-umami-event-type="reseau-social"
     sx={{
       width: 44,
       height: 44,
@@ -206,8 +209,11 @@ export default async function Page({
                 fontWeight="light"
                 color="text.secondary"
               >
-                {circonscription.numCirco}° circonscription de{" "}
-                {circonscription.departement} ({circonscription.numDepartement})
+                {formatCirco(
+                  circonscription.numCirco,
+                  circonscription.departement,
+                  circonscription.numDepartement,
+                )}
               </Typography>
             )}
           </Box>
@@ -250,6 +256,7 @@ export default async function Page({
             <Box
               component="a"
               href={`mailto:${email}`}
+              data-umami-event="contact-depute"
               sx={{ ...contactButtonStyle, ml: { md: 1 } }}
             >
               Contacter
@@ -258,6 +265,7 @@ export default async function Page({
             <Link
               href="#contacts"
               style={{ textDecoration: "none", marginLeft: 8 }}
+              data-umami-event="contact-depute"
             >
               <Box sx={contactButtonStyle}>Contacter</Box>
             </Link>
@@ -310,14 +318,14 @@ export default async function Page({
           {children}
         </Stack>
 
-        {/* Colonne gauche complète (desktop) / reste des infos en bas (mobile) */}
+        {/* Colonne latérale complète (desktop) / reste des infos en bas (mobile) */}
         <Stack
           spacing={3}
           flex={2}
           sx={{
             minWidth: 0,
             width: "100%",
-            order: { xs: 2, md: 0 },
+            order: { xs: 2, md: -1 },
             "& > *": { width: "100% !important" },
           }}
         >

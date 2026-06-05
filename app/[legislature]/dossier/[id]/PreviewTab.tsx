@@ -21,6 +21,10 @@ import { dossierSettings, type ApercuVariant } from "./dossierSettings";
 import { EnrichmentCard } from "./EnrichmentCard";
 import { getDossierEnrichment } from "@/data/mongo/getDossierEnrichment";
 import { buildDocumentVersionLabels } from "./documentVersions";
+import { getMissionReunions } from "@/data/mongo/getMissionReunions";
+import { MissionReunionsCard } from "@/components/folders/MissionReunionsCard";
+import { EmptyState } from "@/components/folders/EmptyState";
+import EventBusyOutlinedIcon from "@mui/icons-material/EventBusyOutlined";
 
 type PreviewTabProps = {
   dossier?: Awaited<ReturnType<typeof getDossier>>;
@@ -40,6 +44,13 @@ export const PreviewTab = async ({ dossier }: PreviewTabProps) => {
   // getDossierEnrichment est cached via React.cache — pas d'appel DB supplémentaire
   const enrichment = await getDossierEnrichment(dossier!.uid);
   const themesOuverts = enrichment?.themes_ouverts ?? [];
+
+  // Missions d'information (code 10) et commissions d'enquête (code 9) : leur
+  // contenu n'est pas exposé par l'API → on récupère les réunions via l'organe.
+  const isMissionOuCE = ["9", "10"].includes(String(codeProcedure));
+  const missionReunions = isMissionOuCE
+    ? await getMissionReunions(dossier!.titre, dossier!.legislature)
+    : [];
 
   const commissionFondIds = getCommissionUids(actesLegislatifs, "FOND");
   const commissionAvisIds = getCommissionUids(actesLegislatifs, "AVIS");
@@ -83,6 +94,32 @@ export const PreviewTab = async ({ dossier }: PreviewTabProps) => {
   // Qualifie chaque document (texte initial, texte de la commission, texte adopté…)
   // à partir de l'acte législatif qui l'a produit.
   const versionLabels = buildDocumentVersionLabels(actesLegislatifs);
+
+  // Missions d'information / commissions d'enquête : Aperçu pleine largeur,
+  // sans panneau latéral — uniquement la liste des réunions et auditions.
+  if (isMissionOuCE) {
+    return (
+      <div className="container">
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%", minWidth: 0 }}
+        >
+          <EnrichmentCard dossierUid={dossier!.uid} />
+          {missionReunions.length > 0 ? (
+            <MissionReunionsCard
+              reunions={missionReunions}
+              linkBase={`/${dossier!.legislature}/dossier/${dossier!.uid}/comptes-rendus`}
+            />
+          ) : (
+            <EmptyState
+              icon={<EventBusyOutlinedIcon />}
+              title="Aucune réunion pour le moment"
+              message="Ce dossier vient d'être créé ou n'a pas encore tenu de réunion. Les auditions et leurs comptes rendus apparaîtront ici dès qu'ils seront publiés."
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container">

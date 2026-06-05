@@ -14,7 +14,6 @@ import {
   Edit as EditIcon,
   QuestionAnswer as QuestionIcon,
   RecordVoiceOver as VoiceIcon,
-  Label as ThemeIcon,
 } from "@mui/icons-material";
 import { searchAll } from "@/data/searchAll";
 import type { AmendementSearchResult } from "@/data/mongo/searchAmendementMongo";
@@ -23,6 +22,9 @@ import SearchQuestionCard from "./SearchQuestionCard";
 import AmendementsLoadMore from "./AmendementsLoadMore";
 import QuestionsLoadMore from "./QuestionsLoadMore";
 import DossiersLoadMore from "./DossiersLoadMore";
+import SearchDebatCard from "./SearchDebatCard";
+import DebatsLoadMore from "./DebatsLoadMore";
+import type { DebatSearchResult } from "@/data/searchInterventions";
 import DossierBadge from "@/components/folders/DossierBadge";
 import type { ActeurSearchResult } from "@/data/mongo/searchActeurParNom";
 import type { DossierSearchResult } from "@/data/mongo/searchDossierParTitre";
@@ -119,6 +121,8 @@ function DeputesSection({ items }: { items: ActeurSearchResult[] }) {
               key={d.uid}
               href={`/depute/${toSlug(d.prenom, d.nom)}`}
               style={{ textDecoration: "none", color: "inherit" }}
+              data-umami-event="recherche-resultat"
+              data-umami-event-section="depute"
             >
               <Stack
                 direction="row"
@@ -230,6 +234,8 @@ function DossiersSection({
                 key={d.uid}
                 href={`/${d.legislature}/dossier/${d.uid}`}
                 style={{ textDecoration: "none", color: "inherit" }}
+                data-umami-event="recherche-resultat"
+                data-umami-event-section="dossier"
               >
                 <Stack
                   direction="row"
@@ -343,31 +349,33 @@ function QuestionsSection({
   );
 }
 
-function ComingSoonSection({
-  icon,
-  title,
-  message,
+function DebatsSection({
+  items,
+  total,
+  query,
 }: {
-  icon: React.ElementType;
-  title: string;
-  message: string;
+  items: DebatSearchResult[];
+  total: number;
+  query: string;
 }) {
   return (
-    <SectionShell icon={icon} title={title}>
-      <Box sx={{ py: 3, textAlign: "center", color: "grey.500" }}>
-        <Typography
-          variant="caption"
-          sx={{ textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: "bold" }}
-        >
-          Bientôt disponible
-        </Typography>
-        <Typography variant="body2" sx={{ mt: 0.5 }}>
-          {message}
-        </Typography>
-      </Box>
+    <SectionShell icon={VoiceIcon} title="Débats" count={total || undefined}>
+      {items.length === 0 ? (
+        <EmptyRow message="Aucune intervention trouvée." />
+      ) : (
+        <>
+          <Stack spacing={0}>
+            {items.map((d) => (
+              <SearchDebatCard key={d.uid} debat={d} />
+            ))}
+          </Stack>
+          <DebatsLoadMore query={query} alreadyShown={items.length} total={total} />
+        </>
+      )}
     </SectionShell>
   );
 }
+
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -486,15 +494,10 @@ async function RechercheResults({
         query={query}
         legislature={legislature}
       />
-      <ComingSoonSection
-        icon={VoiceIcon}
-        title="Débats en séance"
-        message="La recherche dans le verbatim des débats nécessite l'indexation des paragraphes en base — en cours."
-      />
-      <ComingSoonSection
-        icon={ThemeIcon}
-        title="Thèmes"
-        message="Les classifications thématiques seront ajoutées dès que les données seront livrées."
+      <DebatsSection
+        items={results.debats}
+        total={results.debatsTotal}
+        query={query}
       />
     </Stack>
   );

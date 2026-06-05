@@ -50,6 +50,7 @@ const fetchDossiers = debounce(
   (query: string, cb: (r: DossierSearchResult[]) => void) =>
     fetch(`/api/search/dossiers?q=${encodeURIComponent(query)}`)
       .then((r) => (r.ok ? r.json() : []))
+      .then((data: unknown) => (Array.isArray(data) ? (data as DossierSearchResult[]) : []))
       .then(cb)
       .catch(() => cb([]))
 );

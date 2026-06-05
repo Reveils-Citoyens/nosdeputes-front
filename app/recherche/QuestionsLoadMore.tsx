@@ -6,6 +6,7 @@ import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import { useSearchParams } from "next/navigation";
 import SearchQuestionCard from "./SearchQuestionCard";
 import type { QuestionSearchResult } from "@/data/mongo/searchQuestion";
+import { trackEvent } from "@/lib/umami";
 
 // Item tel que renvoyé par l'API (dates en ISO strings après JSON serialization)
 type ApiItem = Omit<QuestionSearchResult, "dateDepot"> & {
@@ -43,6 +44,7 @@ export default function QuestionsLoadMore({
   const loadMore = async () => {
     setLoading(true);
     setError(null);
+    trackEvent("charger-plus", { section: "recherche-questions" });
     try {
       const params = new URLSearchParams({
         q: query,

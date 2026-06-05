@@ -25,6 +25,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getDebats } from "@/data/getDebats";
 import { getDocument } from "@/data/getDocument";
+import { trackEvent } from "@/lib/umami";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import RemoveIcon from "@mui/icons-material/Remove";
@@ -77,11 +78,17 @@ function detectOutcome(acts: ActeLegislatif[]): Outcome | null {
     return { label: "Retrait de l'initiative", date: retrait.dateActe ?? null, variant: "neutral" };
   }
 
-  // Commission mixte paritaire engagée mais réunion pas encore datée.
-  // (Le CMP-COM n'apparaît que lorsque la CMP est réellement saisie.)
-  const cmpPending = acts.find((a) => a.codeActe === "CMP-COM" && !a.dateActe);
+  // Tout acte CMP sans date = une étape de la CMP est planifiée mais pas encore réalisée.
+  // On affine le label selon le type d'acte pour distinguer "convoquée" / "réunie" / "décision attendue".
+  const cmpPending = acts.find((a) => a.codeActe?.startsWith("CMP-") && !a.dateActe);
   if (cmpPending) {
-    return { label: "En attente d'une date", date: null, variant: "neutral" };
+    const nom = (cmpPending.nomCanonique ?? cmpPending.codeActe ?? "").toLowerCase();
+    const label = nom.includes("décision") || nom.includes("dec")
+      ? "En attente de la décision de la CMP"
+      : nom.includes("rapport")
+      ? "CMP réunie, rapport en attente"
+      : "Commission mixte paritaire en cours";
+    return { label, date: null, variant: "neutral" };
   }
 
   // Aucune issue définitive → on déduit l'état d'avancement du dernier acte daté.
@@ -93,7 +100,10 @@ function detectOutcome(acts: ActeLegislatif[]): Outcome | null {
  * quand aucune issue définitive n'a été détectée.
  */
 function detectInProgress(acts: ActeLegislatif[]): Outcome | null {
-  const dated = acts.filter((a) => a.dateActe);
+  const now = new Date();
+  // Actes passés uniquement : les réunions planifiées (dates futures déjà dans l'API)
+  // ne doivent pas écraser le statut réel d'aujourd'hui.
+  const dated = acts.filter((a) => a.dateActe && new Date(a.dateActe as unknown as string) <= now);
   if (dated.length === 0) return null;
 
   const latest = dated.reduce((a, b) =>
@@ -103,12 +113,25 @@ function detectInProgress(acts: ActeLegislatif[]): Outcome | null {
   const date = latest.dateActe ?? null;
   const state = (label: string): Outcome => ({ label, date, variant: "progress" });
 
+  // Nouvelle Lecture (après désaccord CMP)
+  if (code.includes("ANNLEC-DEBATS-SEANCE")) return state("Nouvelle lecture — Débats en séance");
+  if (code.includes("ANNLEC-COM-FOND-REUNION") || code.includes("ANNLEC-COM-FOND-ETUDE"))
+    return state("Nouvelle lecture — Examen en commission");
+  if (code.includes("ANNLEC-COM-FOND-SAISIE")) return state("Nouvelle lecture — En attente d'examen en commission");
+  if (code.includes("ANNLEC")) return state("Nouvelle lecture");
+
   if (code.includes("DEBATS-SEANCE")) return state("Débats en séance");
   if (code.includes("COM-FOND-SAISIE")) return state("En attente d'examen en commission");
   if (code.includes("COM-FOND-REUNION") || code.includes("COM-FOND-ETUDE"))
     return state("Examen en commission");
   if (code.includes("CC-SAISIE")) return state("Saisine du Conseil constitutionnel");
   if (code.includes("CMP-SAISIE")) return state("Commission mixte paritaire convoquée");
+  if (code === "CMP-DEC") {
+    if (latest.adoption === true) return { label: "Accord de la CMP", date, variant: "positive" };
+    if (latest.adoption === false) return { label: "Désaccord de la CMP", date, variant: "neutral" };
+    return state("Décision de la CMP");
+  }
+  if (code.startsWith("CMP-")) return state("Commission mixte paritaire en cours");
   if (code.includes("DEPOT")) return state("Déposé, en attente d'examen");
 
   return null;
@@ -624,6 +647,7 @@ export const TimelineCard = ({
       for (const uid of candidateUids) {
         const document = await getDocument(uid as string);
         if (document?.pdfUrl) {
+          trackEvent("document-ouvert", { source: "chronologie" });
           window.open(document.pdfUrl, "_blank");
           return;
         }

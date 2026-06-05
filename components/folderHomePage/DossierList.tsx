@@ -14,6 +14,7 @@ import { useQueryState } from "nuqs";
 import DossierBadge from "@/components/folders/DossierBadge";
 import SearchInput from "@/components/SearchInput";
 import debounce from "@/utils/debounce";
+import { trackEvent } from "@/lib/umami";
 import type { DossierSearchResult } from "@/data/mongo/searchDossierParTitre";
 
 const PAGE_SIZE = 20;
@@ -147,6 +148,7 @@ export default function DossierList() {
   const loadMore = async () => {
     setLoading(true);
     setError(null);
+    trackEvent("charger-plus", { section: "dossiers" });
     const q = (search ?? "").trim();
     const params = new URLSearchParams({
       limit: String(PAGE_SIZE),

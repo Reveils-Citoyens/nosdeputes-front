@@ -43,15 +43,22 @@ async function getDebatsUnCached(
       return true;
     });
 
+    // Chaque débat est récupéré indépendamment : un échec réseau isolé ne doit
+    // pas faire échouer toute la liste (sinon la tab entière disparaît).
     const items = await Promise.all(
       uniqueMeta.map(async ({ uid, debateType, organeLibelle }) => {
-        const r = await fetch(
-          `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/debats/${uid}?include=_count.paragraphes`
-        );
-        const { data } = await r.json();
-        if (!data) return null;
-        if (data.dateSeance) data.dateSeance = new Date(data.dateSeance);
-        return { ...data, debateType, organeLibelle } as ReturnedDebat;
+        try {
+          const r = await fetch(
+            `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/debats/${uid}?include=_count.paragraphes`
+          );
+          if (!r.ok) return null;
+          const { data } = await r.json();
+          if (!data) return null;
+          if (data.dateSeance) data.dateSeance = new Date(data.dateSeance);
+          return { ...data, debateType, organeLibelle } as ReturnedDebat;
+        } catch {
+          return null;
+        }
       })
     );
 
@@ -63,7 +70,9 @@ async function getDebatsUnCached(
         return da - db; // croissant : plus ancien en premier (ordre chronologique)
       });
   } catch (error) {
-    console.error("Error fetching debats:", error);
+    // Échec géré et non bloquant : warn (et non error) pour ne pas déclencher
+    // l'overlay Next.js en dev.
+    console.warn("getDebats: échec de récupération", dossierUid, error);
     return null;
   }
 }

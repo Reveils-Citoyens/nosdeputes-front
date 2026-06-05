@@ -137,6 +137,8 @@ export default async function CComptePage({
             href={rapport.url}
             target="_blank"
             rel="noopener noreferrer"
+            data-umami-event="lien-sortant"
+            data-umami-event-source="ccomptes"
             variant="body2"
             sx={{
               display: "inline-flex",
@@ -194,6 +196,8 @@ export default async function CComptePage({
                   href={doc.href}
                   target="_blank"
                   rel="noopener noreferrer"
+                  data-umami-event="lien-sortant"
+                  data-umami-event-source="ccomptes"
                   variant="body2"
                   sx={{
                     display: "inline-flex",

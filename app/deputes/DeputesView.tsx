@@ -24,6 +24,7 @@ import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import { Acteur, Mandat, Organe } from "@prisma/client";
 import { DeputeFilterProps } from "./DeputesFilter";
+import { departements } from "./structureCircos";
 
 function GroupPolitiqueHeader({
   itemKey,
@@ -179,6 +180,10 @@ export default function DeputesView({
   //   sont pas affichés car la liste filtre les clés vides (cf. plus bas).
   // - on applique aussi les filtres search / département pour que le compteur
   //   se mette à jour en temps réel.
+  const selectedDeptName = numeroDepartement !== null
+    ? (departements.find((d) => d.numeroDepartement === numeroDepartement)?.nomDepartement ?? null)
+    : null;
+
   const visibleDeputes = Object.values(deputes).filter((depute) => {
     const { nom, prenom, mandatPrincipal, groupeParlementaireUid } = depute;
 
@@ -196,9 +201,8 @@ export default function DeputesView({
     }
 
     if (
-      numeroDepartement !== null &&
-      mandatPrincipal?.numDepartement !==
-        Number.parseInt(numeroDepartement, 10)
+      selectedDeptName !== null &&
+      mandatPrincipal?.departement?.toLowerCase() !== selectedDeptName.toLowerCase()
     ) {
       return false;
     }
@@ -288,9 +292,8 @@ export default function DeputesView({
                   `${nom} ${prenom} ${mandatPrincipal?.departement ?? ""}`
                     .toLowerCase()
                     .includes(search.toLowerCase())) &&
-                (numeroDepartement === null ||
-                  mandatPrincipal?.numDepartement ===
-                    Number.parseInt(numeroDepartement, 10))
+                (selectedDeptName === null ||
+                  mandatPrincipal?.departement?.toLowerCase() === selectedDeptName.toLowerCase())
               );
             });
 

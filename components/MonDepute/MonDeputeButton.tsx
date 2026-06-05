@@ -12,6 +12,7 @@ import {
   readMonDepute,
   writeMonDepute,
 } from "@/lib/monDepute";
+import { trackEvent } from "@/lib/umami";
 
 type Props = {
   uid: string;
@@ -53,6 +54,7 @@ export default function MonDeputeButton({
       setToast("Sélection retirée");
     } else {
       writeMonDepute({ uid, slug, prenom, nom });
+      trackEvent("mon-depute-defini");
       setToast(
         hadOther
           ? `${prenom} ${nom} remplace votre précédente sélection`

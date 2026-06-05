@@ -66,22 +66,37 @@ export default function MentionsLegales() {
 
         <Section title="Hébergement">
           <Typography variant="body1">
-            Le site est hébergé par <strong>Vercel Inc.</strong>, 440 N Barranca Ave #4133,
-            Covina, CA 91723, États-Unis —{" "}
-            <Link href="https://vercel.com" target="_blank" rel="noopener noreferrer" underline="hover">
-              vercel.com
-            </Link>
-            . Les données applicatives (abonnements aux alertes) sont stockées sur une base
-            MongoDB Atlas hébergée en Europe.
+            Hébergeur : <em>[hébergeur à préciser]</em>.
           </Typography>
         </Section>
 
         <Section title="Sources des données">
           <Typography variant="body1">
             Les données parlementaires (dossiers législatifs, amendements, scrutins, débats,
-            députés) proviennent des données ouvertes de l&apos;Assemblée nationale, exposées
-            via l&apos;API <strong>Tricoteuses</strong>. NosDéputés.fr n&apos;est pas un site
-            officiel de l&apos;Assemblée nationale.
+            députés, organes) proviennent des données ouvertes de l&apos;Assemblée nationale,
+            collectées et exposées par le projet <strong>Tricoteuses</strong> :
+          </Typography>
+          <Box component="ul" sx={{ pl: 3, m: 0, "& li": { mb: 0.75 } }}>
+            <li>
+              Site du projet :{" "}
+              <Link href="https://www.tricoteuses.fr" target="_blank" rel="noopener noreferrer" underline="hover">
+                www.tricoteuses.fr
+              </Link>
+            </li>
+            <li>
+              Code source (Assemblée) :{" "}
+              <Link
+                href="https://git.tricoteuses.fr/logiciels/tricoteuses-assemblee"
+                target="_blank"
+                rel="noopener noreferrer"
+                underline="hover"
+              >
+                git.tricoteuses.fr/logiciels/tricoteuses-assemblee
+              </Link>
+            </li>
+          </Box>
+          <Typography variant="body1">
+            NosDéputés.fr n&apos;est pas un site officiel de l&apos;Assemblée nationale.
           </Typography>
           <Typography variant="body1">
             Certains contenus (résumés, enjeux, mots-clés) sont générés automatiquement par un

@@ -56,6 +56,10 @@ export default async function Dossier({
   );
   const showApercu = !(apercuVariant === "redirect-commission" && hasCommissionDebats);
 
+  // Missions d'information (10) et commissions d'enquête (9) : layout dédié —
+  // uniquement Aperçu + Comptes-rendus, sans les autres onglets ni panneau latéral.
+  const isMissionOuCE = ["9", "10"].includes(String(codeProcedure));
+
   return (
     <React.Fragment>
       <HeroSection
@@ -66,15 +70,16 @@ export default async function Dossier({
         dossierUid={id}
         themesSenat={themesSenat}
       />
-      {tableVotes && <MonDeputeSurDossier dossierUid={id} />}
+      {!isMissionOuCE && tableVotes && <MonDeputeSurDossier dossierUid={id} />}
       <ComprendreBanner />
       <Tabs
         legislature={legislature}
         dossierUid={id}
-        showApercu={showApercu}
-        showDebats={tableDebats}
-        showAmendements={tableAmendements}
-        showVotes={tableVotes}
+        showApercu
+        showDebats={!isMissionOuCE && tableDebats}
+        showAmendements={!isMissionOuCE && tableAmendements}
+        showVotes={!isMissionOuCE && tableVotes}
+        showComptesRendus={isMissionOuCE}
         hasAmendements={amendementCount > 0}
         hasVotes={scrutinCount > 0}
       />

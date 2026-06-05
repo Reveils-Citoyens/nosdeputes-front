@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
   const q = sp.get("q")?.trim() ?? "";
 
   if (!q || q.length < 5) {
+    if (!sp.has("skip")) return NextResponse.json([]);
     return NextResponse.json({ items: [], total: 0 });
   }
 

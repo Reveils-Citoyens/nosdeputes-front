@@ -14,6 +14,7 @@ import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import type { AlertSubjectType } from "@/lib/alerts";
+import { trackEvent } from "@/lib/umami";
 
 type Props = {
   subjectType: AlertSubjectType;
@@ -110,6 +111,10 @@ export default function AlerteButton({
         localStorage.setItem("alerte_email", email);
         addFollowed(subjectUid);
         setIsFollowed(true);
+        // Conversion clé : nouvelle alerte (on distingue confirmation vs ajout direct).
+        if (newStatus === "confirmation_sent" || newStatus === "subject_added") {
+          trackEvent("alerte-souscrite", { type: subjectType });
+        }
       }
     } catch {
       setStatus("error");

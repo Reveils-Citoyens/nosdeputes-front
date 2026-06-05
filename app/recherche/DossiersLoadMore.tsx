@@ -7,6 +7,7 @@ import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import { useSearchParams } from "next/navigation";
 import DossierBadge from "@/components/folders/DossierBadge";
 import type { DossierSearchResult } from "@/data/mongo/searchDossierParTitre";
+import { trackEvent } from "@/lib/umami";
 
 type ApiItem = DossierSearchResult;
 
@@ -41,6 +42,7 @@ export default function DossiersLoadMore({
   const loadMore = async () => {
     setLoading(true);
     setError(null);
+    trackEvent("charger-plus", { section: "recherche-dossiers" });
     try {
       const params = new URLSearchParams({
         q: query,

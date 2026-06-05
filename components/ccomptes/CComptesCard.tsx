@@ -118,6 +118,8 @@ export function CComptesCard({ rapport }: { rapport: CCompteResult }) {
                 href={doc.href}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-umami-event="lien-sortant"
+                data-umami-event-source="ccomptes"
                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 variant="caption"
                 sx={{
@@ -180,6 +182,8 @@ export function CComptesCard({ rapport }: { rapport: CCompteResult }) {
                     href={doc.href}
                     target="_blank"
                     rel="noopener noreferrer"
+                    data-umami-event="lien-sortant"
+                    data-umami-event-source="ccomptes"
                     variant="caption"
                     sx={{
                       display: "inline-flex",

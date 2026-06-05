@@ -75,7 +75,7 @@ export default function Footer() {
                   color="primary"
                   fontWeight="medium"
                 >
-                  hello@reveilscitoyens.org
+                  info@reveilscitoyens.org
                 </Link>
               </Typography>
             </Stack>

@@ -5,6 +5,7 @@ import {
   searchAmendementMongo,
   AmendementSearchResult,
 } from "@/data/mongo/searchAmendementMongo";
+import { searchInterventions, DebatSearchResult } from "@/data/searchInterventions";
 
 export type SearchAllResults = {
   deputes: ActeurSearchResult[];
@@ -14,6 +15,8 @@ export type SearchAllResults = {
   amendementsTotal: number;
   questions: QuestionSearchResult[];
   questionsTotal: number;
+  debats: DebatSearchResult[];
+  debatsTotal: number;
 };
 
 const PER_SECTION = 5;
@@ -40,6 +43,8 @@ export async function searchAll(
       amendementsTotal: 0,
       questions: [],
       questionsTotal: 0,
+      debats: [],
+      debatsTotal: 0,
     };
   }
 
@@ -48,12 +53,14 @@ export async function searchAll(
     : "17";
   const sort: SortMode = options.sort === "date" ? "date" : "relevance";
 
-  const [deputes, dossiersResp, amendementsResp, questionsResp] = await Promise.all([
-    searchActeurParNom(q, PER_SECTION),
-    searchDossierParTitre(q, { limit: PER_SECTION, legislature, sort }),
-    searchAmendementMongo(q, { limit: PER_SECTION, legislature, sort }),
-    searchQuestion(q, { limit: PER_SECTION, legislature, sort }),
-  ]);
+  const [deputes, dossiersResp, amendementsResp, questionsResp, debatsResp] =
+    await Promise.all([
+      searchActeurParNom(q, PER_SECTION),
+      searchDossierParTitre(q, { limit: PER_SECTION, legislature, sort }),
+      searchAmendementMongo(q, { limit: PER_SECTION, legislature, sort }),
+      searchQuestion(q, { limit: PER_SECTION, legislature, sort }),
+      searchInterventions(q, { perPage: PER_SECTION }),
+    ]);
 
   return {
     deputes,
@@ -63,5 +70,7 @@ export async function searchAll(
     amendementsTotal: amendementsResp.total,
     questions: questionsResp.items,
     questionsTotal: questionsResp.total,
+    debats: debatsResp.items,
+    debatsTotal: debatsResp.total,
   };
 }
