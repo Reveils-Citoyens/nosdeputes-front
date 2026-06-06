@@ -1,21 +1,38 @@
-
+import argparse
+import datetime
+import json
+import logging
+import math
 import os
+import re
+import sys
+import time
+from pathlib import Path
+from typing import Generator, Any
 from urllib.parse import quote
-
-from pymongo import MongoClient
-from pprint import pprint
 
 from bs4 import BeautifulSoup
 import requests
-import sys
-import time
+from pymongo import MongoClient, UpdateOne
+from pymongo.collection import Collection
+from pymongo.errors import BulkWriteError
+from pprint import pprint
+
 
 MONGO_URI = os.environ.get("MONGO_URI")
 
-print(f"DEBUG: Type de MONGO_URI = {type(MONGO_URI)}")
-print(f"DEBUG: Début de l'URI reçu par GitHub = {str(MONGO_URI)[:15]}...")
-
 client_ = MongoClient(MONGO_URI)
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-8s  %(message)s",
+    datefmt="%H:%M:%S",
+)
+log = logging.getLogger("tricoteuses")
+
 
 
 ### UTILS
@@ -74,27 +91,6 @@ Usage :
         --categories acteurs organes scrutins \
         --batch-size 500
 """
-
-import argparse
-import json
-import logging
-import sys
-from pathlib import Path
-from typing import Generator, Any
-
-from pymongo import MongoClient, UpdateOne
-from pymongo.collection import Collection
-from pymongo.errors import BulkWriteError
-
-# ---------------------------------------------------------------------------
-# Logging
-# ---------------------------------------------------------------------------
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s  %(levelname)-8s  %(message)s",
-    datefmt="%H:%M:%S",
-)
-log = logging.getLogger("tricoteuses")
 
 
 # ---------------------------------------------------------------------------
@@ -383,7 +379,6 @@ def main():
             batch_size=args.batch_size,
         )
 
-    client.close()
     log.info("✅ Ingestion terminée.")
 
 #####
@@ -413,9 +408,6 @@ sans accumulation) :
   - heatComputedAt (timestamp UTC)
 """
 
-import math
-from datetime import datetime, timezone
-from pymongo import UpdateOne
 
 # ─── Paramètres ──────────────────────────────────────────────────────────────
 DB_NAME = "parlement"
@@ -944,7 +936,6 @@ for d in top:
 page = 1
 results = []
 
-import datetime
 today = datetime.datetime.now()
 annee = int(today.year)
 
@@ -968,58 +959,61 @@ while True:
         break   
 
 
-import re
-
 existing_docs = [x['url'] for x in client_.parlement.ccomptes.find({}, {"url": 1})]
 
 for e in [x for x in results if x not in existing_docs]:
     print(e)
-    bsobj = BeautifulSoup(requests.get(e).content, 'html.parser')
-
-    titre = bsobj.find("meta", {"name": "twitter:title"})["content"]
-    date = bsobj.find("time", {"class": "date"})["datetime"]
-
-    documents = [{
-        "href":  "https://www.ccomptes.fr" + x["href"],
-        "type": x["data-document"]
-        } for x in bsobj.find_all("a", {"data-document": True})]
-    
-    teaser = bsobj.find("div", {"class": "teaser-text"}).p.get_text(separator="\n", strip=True)
 
     try:
-        content = bsobj.find("div", {"class": "text-formatted"}).find("div", {"class": "field__item"})
-    except Exception as ex:
-        print(ex)
-        content = None
+        bsobj = BeautifulSoup(requests.get(e).content, 'html.parser')
 
-    structured_data = [{
-        "type": "paragraph",
-        "content": teaser
-    }]
+        titre = bsobj.find("meta", {"name": "twitter:title"})["content"]
+        date = bsobj.find("time", {"class": "date"})["datetime"]
+
+        documents = [{
+            "href":  "https://www.ccomptes.fr" + x["href"],
+            "type": x["data-document"]
+            } for x in bsobj.find_all("a", {"data-document": True})]
+        
+        teaser = bsobj.find("div", {"class": "teaser-text"}).p.get_text(separator="\n", strip=True)
+
+        try:
+            content = bsobj.find("div", {"class": "text-formatted"}).find("div", {"class": "field__item"})
+        except Exception as ex:
+            print(ex)
+            content = None
+
+        structured_data = [{
+            "type": "paragraph",
+            "content": teaser
+        }]
 
 
-    if content is not None:
-        for child in content.find_all(recursive=False):
-            if child.name == "h4":
-                structured_data.append({
-                    "type": "title",
-                    "content": child.get_text(strip=True)
-                })
-            elif child.name == "p":
-                structured_data.append({
-                    "type": "paragraph",
-                    "content": child.get_text(separator="\n", strip=True)
-                })
+        if content is not None:
+            for child in content.find_all(recursive=False):
+                if child.name == "h4":
+                    structured_data.append({
+                        "type": "title",
+                        "content": child.get_text(strip=True)
+                    })
+                elif child.name == "p":
+                    structured_data.append({
+                        "type": "paragraph",
+                        "content": child.get_text(separator="\n", strip=True)
+                    })
 
-    doc = {
-        "url": e,
-        "titre": titre,
-        "date": date,
-        "documents": documents,
-        "content": structured_data,
-        "teaser": teaser
-    }
+        doc = {
+            "url": e,
+            "titre": titre,
+            "date": date,
+            "documents": documents,
+            "content": structured_data,
+            "teaser": teaser
+        }
 
-    client_.parlement.ccomptes.update_one({"url": e}, {"$set": doc}, upsert=True)
+        client_.parlement.ccomptes.update_one({"url": e}, {"$set": doc}, upsert=True)
+
+    except Exception as error_scraping:
+        print(f"❌ Erreur lors du scraping de la page {e} : {error_scraping}")
 
     time.sleep(5)

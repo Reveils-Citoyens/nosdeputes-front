@@ -245,11 +245,20 @@ const OutcomeTimelineItem = ({
   );
 };
 
-// Badge vert/rouge affiché inline sur les actes ayant un résultat de vote
-// (champ adoption !== null sur ActeLegislatif).
-function AdoptionBadge({ adoption, size = "sm" }: { adoption: boolean; size?: "sm" | "md" }) {
+// Badge vert/rouge affiché inline sur les actes ayant un résultat de vote.
+// Si voteInfo est fourni, un Tooltip affiche pour/contre/abstentions + lien /votes.
+function AdoptionBadge({
+  adoption,
+  size = "sm",
+  voteInfo,
+}: {
+  adoption: boolean;
+  size?: "sm" | "md";
+  voteInfo?: { pour: number; contre: number; abstentions: number; href?: string };
+}) {
   const isLarge = size === "md";
-  return (
+
+  const badge = (
     <Box
       component="span"
       sx={{
@@ -268,6 +277,7 @@ function AdoptionBadge({ adoption, size = "sm" }: { adoption: boolean; size?: "s
         lineHeight: 1,
         flexShrink: 0,
         whiteSpace: "nowrap",
+        cursor: voteInfo ? "pointer" : "default",
       }}
     >
       {adoption
@@ -275,6 +285,40 @@ function AdoptionBadge({ adoption, size = "sm" }: { adoption: boolean; size?: "s
         : <CloseIcon sx={{ fontSize: isLarge ? 15 : 13 }} />}
       {adoption ? "Adopté" : "Rejeté"}
     </Box>
+  );
+
+  if (!voteInfo) return badge;
+
+  const tooltipContent = (
+    <Box sx={{ p: 0.5 }}>
+      <Stack direction="row" spacing={2} sx={{ mb: voteInfo.href ? 1 : 0 }}>
+        <Typography variant="caption" sx={{ color: "#86efac", fontWeight: 700 }}>
+          ✓ {voteInfo.pour} pour
+        </Typography>
+        <Typography variant="caption" sx={{ color: "#fca5a5", fontWeight: 700 }}>
+          ✗ {voteInfo.contre} contre
+        </Typography>
+        <Typography variant="caption" sx={{ color: "grey.400" }}>
+          {voteInfo.abstentions} abst.
+        </Typography>
+      </Stack>
+      {voteInfo.href && (
+        <Typography
+          component={Link}
+          href={voteInfo.href}
+          variant="caption"
+          sx={{ color: "#93c5fd", textDecoration: "underline", display: "block" }}
+        >
+          Voir le détail du vote →
+        </Typography>
+      )}
+    </Box>
+  );
+
+  return (
+    <Tooltip title={tooltipContent} arrow placement="top">
+      {badge}
+    </Tooltip>
   );
 }
 
@@ -562,10 +606,12 @@ const TimelineItemLvl1 = ({
   groupDate,
   children,
   isMobile,
+  voteInfo,
 }: React.PropsWithChildren<{
   act: ActeLegislatif;
   groupDate?: Date;
   isMobile: boolean;
+  voteInfo?: { pour: number; contre: number; abstentions: number; href?: string };
 }>) => {
   const title = act.nomCanonique || act.codeActe;
   const dateStr = formatDate(act.dateActe ?? groupDate);
@@ -606,7 +652,7 @@ const TimelineItemLvl1 = ({
             {title}
           </Typography>
           {act.adoption !== null && act.adoption !== undefined && (
-            <AdoptionBadge adoption={act.adoption} size="md" />
+            <AdoptionBadge adoption={act.adoption} size="md" voteInfo={voteInfo} />
           )}
         </Stack>
 
@@ -710,6 +756,32 @@ export const TimelineCard = ({
     queryFn: async () => await getDebats(dossierUid),
   });
 
+  // Charge les scrutins (pour/contre/abstentions) pour les actes de décision
+  // avec un include léger — uniquement pour le tooltip du badge Adopté/Rejeté.
+  const { data: acteVoteMap } = useQuery({
+    queryKey: ["timeline-votes", dossierUid],
+    queryFn: async () => {
+      const rep = await fetch(
+        `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/${dossierUid}?include=actesLegislatifs.voteRefs.voteRef`
+      );
+      if (!rep.ok) return {};
+      const { data } = await rep.json();
+      const map: Record<string, { pour: number; contre: number; abstentions: number }> = {};
+      for (const acte of data?.actesLegislatifs ?? []) {
+        const scrutin = acte.voteRefs?.[0]?.voteRef;
+        if (scrutin && acte.uid) {
+          map[acte.uid] = {
+            pour: scrutin.pour ?? 0,
+            contre: scrutin.contre ?? 0,
+            abstentions: scrutin.abstentions ?? 0,
+          };
+        }
+      }
+      return map;
+    },
+    staleTime: 60_000,
+  });
+
   const agendatsToDebatMap: Record<string, string> = {};
   debats?.forEach((debat) => {
     if (debat.reunionRefUid && debat._count.paragraphes > 0) {
@@ -750,6 +822,10 @@ export const TimelineCard = ({
                     act={lvl1Act}
                     groupDate={lvl1Act.date}
                     isMobile={isMobile}
+                    voteInfo={acteVoteMap?.[lvl1Act.uid] ? {
+                      ...acteVoteMap[lvl1Act.uid],
+                      href: `/${legislature}/dossier/${dossierUid}/votes?acteId=${lvl1Act.uid}`,
+                    } : undefined}
                   >
                     {lvl1Act.children.map((lvl2Uid) => {
                       const lvl2Act = actsLookup[lvl2Uid];
@@ -826,7 +902,13 @@ export const TimelineCard = ({
                               acteUid={lvl2Act.uid}
                             />
                             {lvl2Act.adoption !== null && lvl2Act.adoption !== undefined && (
-                              <AdoptionBadge adoption={lvl2Act.adoption} />
+                              <AdoptionBadge
+                                adoption={lvl2Act.adoption}
+                                voteInfo={acteVoteMap?.[lvl2Act.uid] ? {
+                                  ...acteVoteMap[lvl2Act.uid],
+                                  href: `/${legislature}/dossier/${dossierUid}/votes?acteId=${lvl2Act.uid}`,
+                                } : undefined}
+                              />
                             )}
                           </Stack>
 
