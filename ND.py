@@ -1,5 +1,4 @@
 import argparse
-import datetime
 import json
 import logging
 import math
@@ -10,6 +9,7 @@ import time
 from pathlib import Path
 from typing import Generator, Any
 from urllib.parse import quote
+from datetime import datetime, timezone
 
 from bs4 import BeautifulSoup
 import requests
@@ -936,7 +936,7 @@ for d in top:
 page = 1
 results = []
 
-today = datetime.datetime.now()
+today = datetime.now(timezone.utc)
 annee = int(today.year)
 
 while True:

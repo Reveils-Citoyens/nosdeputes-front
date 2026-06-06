@@ -282,7 +282,7 @@ export default function DeputesView({
         </Button>
       </Stack>
       {Object.keys(uidGroup).filter((key) => key !== "")
-        .sort()
+        .sort((a, b) => uidGroup[b].length - uidGroup[a].length)
         .map((key) => {
           const deputesUids = uidGroup[key];
           const filteredDeputes = deputesUids

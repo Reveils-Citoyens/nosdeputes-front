@@ -36,7 +36,7 @@ export function NavBar({ navigation }: NavBarProps) {
                 className="flex items-center gap-3 group relative z-50"
               >
                 <Image
-                  src="/icon.png"
+                  src="/Icon.png"
                   alt="Logo"
                   width={32}
                   height={32}
