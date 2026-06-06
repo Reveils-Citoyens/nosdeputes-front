@@ -933,87 +933,87 @@ for d in top:
 
 ##### Cour des comptes
 
-page = 1
-results = []
+# page = 1
+# results = []
 
-today = datetime.now(timezone.utc)
-annee = int(today.year)
+# today = datetime.now(timezone.utc)
+# annee = int(today.year)
 
-while True:
-    print(page)
-    a = requests.get('https://www.ccomptes.fr/fr/publications?f%5B0%5D=daterange%3A{annee}&f%5B3%5D=institution%3A98&page={page}'.format(page = page, annee = annee))
-    bsobj = BeautifulSoup(a.content, 'html.parser')
+# while True:
+#     print(page)
+#     a = requests.get('https://www.ccomptes.fr/fr/publications?f%5B0%5D=daterange%3A{annee}&f%5B3%5D=institution%3A98&page={page}'.format(page = page, annee = annee))
+#     bsobj = BeautifulSoup(a.content, 'html.parser')
 
-    try:
-        tmp = ["https://www.ccomptes.fr" + x.a["href"] for x in bsobj.find("ul", {"class": "search-list-results"}).find_all("li", {"class": "search-result"})]
-        results += tmp
+#     try:
+#         tmp = ["https://www.ccomptes.fr" + x.a["href"] for x in bsobj.find("ul", {"class": "search-list-results"}).find_all("li", {"class": "search-result"})]
+#         results += tmp
 
-        print(len(tmp))
+#         print(len(tmp))
 
-        if len(tmp) == 0:
-            break
+#         if len(tmp) == 0:
+#             break
         
-        page += 1
-    except Exception as e:
-        print(e)
-        break   
+#         page += 1
+#     except Exception as e:
+#         print(e)
+#         break   
 
 
-existing_docs = [x['url'] for x in client_.parlement.ccomptes.find({}, {"url": 1})]
+# existing_docs = [x['url'] for x in client_.parlement.ccomptes.find({}, {"url": 1})]
 
-for e in [x for x in results if x not in existing_docs]:
-    print(e)
+# for e in [x for x in results if x not in existing_docs]:
+#     print(e)
 
-    try:
-        bsobj = BeautifulSoup(requests.get(e).content, 'html.parser')
+#     try:
+#         bsobj = BeautifulSoup(requests.get(e).content, 'html.parser')
 
-        titre = bsobj.find("meta", {"name": "twitter:title"})["content"]
-        date = bsobj.find("time", {"class": "date"})["datetime"]
+#         titre = bsobj.find("meta", {"name": "twitter:title"})["content"]
+#         date = bsobj.find("time", {"class": "date"})["datetime"]
 
-        documents = [{
-            "href":  "https://www.ccomptes.fr" + x["href"],
-            "type": x["data-document"]
-            } for x in bsobj.find_all("a", {"data-document": True})]
+#         documents = [{
+#             "href":  "https://www.ccomptes.fr" + x["href"],
+#             "type": x["data-document"]
+#             } for x in bsobj.find_all("a", {"data-document": True})]
         
-        teaser = bsobj.find("div", {"class": "teaser-text"}).p.get_text(separator="\n", strip=True)
+#         teaser = bsobj.find("div", {"class": "teaser-text"}).p.get_text(separator="\n", strip=True)
 
-        try:
-            content = bsobj.find("div", {"class": "text-formatted"}).find("div", {"class": "field__item"})
-        except Exception as ex:
-            print(ex)
-            content = None
+#         try:
+#             content = bsobj.find("div", {"class": "text-formatted"}).find("div", {"class": "field__item"})
+#         except Exception as ex:
+#             print(ex)
+#             content = None
 
-        structured_data = [{
-            "type": "paragraph",
-            "content": teaser
-        }]
+#         structured_data = [{
+#             "type": "paragraph",
+#             "content": teaser
+#         }]
 
 
-        if content is not None:
-            for child in content.find_all(recursive=False):
-                if child.name == "h4":
-                    structured_data.append({
-                        "type": "title",
-                        "content": child.get_text(strip=True)
-                    })
-                elif child.name == "p":
-                    structured_data.append({
-                        "type": "paragraph",
-                        "content": child.get_text(separator="\n", strip=True)
-                    })
+#         if content is not None:
+#             for child in content.find_all(recursive=False):
+#                 if child.name == "h4":
+#                     structured_data.append({
+#                         "type": "title",
+#                         "content": child.get_text(strip=True)
+#                     })
+#                 elif child.name == "p":
+#                     structured_data.append({
+#                         "type": "paragraph",
+#                         "content": child.get_text(separator="\n", strip=True)
+#                     })
 
-        doc = {
-            "url": e,
-            "titre": titre,
-            "date": date,
-            "documents": documents,
-            "content": structured_data,
-            "teaser": teaser
-        }
+#         doc = {
+#             "url": e,
+#             "titre": titre,
+#             "date": date,
+#             "documents": documents,
+#             "content": structured_data,
+#             "teaser": teaser
+#         }
 
-        client_.parlement.ccomptes.update_one({"url": e}, {"$set": doc}, upsert=True)
+#         client_.parlement.ccomptes.update_one({"url": e}, {"$set": doc}, upsert=True)
 
-    except Exception as error_scraping:
-        print(f"❌ Erreur lors du scraping de la page {e} : {error_scraping}")
+#     except Exception as error_scraping:
+#         print(f"❌ Erreur lors du scraping de la page {e} : {error_scraping}")
 
-    time.sleep(5)
+#     time.sleep(5)

@@ -98,9 +98,7 @@ function Deputes({
       }}
     >
       {deputes
-        .sort((a, b) =>
-          `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`)
-        )
+        .sort((a, b) => a.nom.localeCompare(b.nom, "fr"))
         .map((depute) => {
           const {
             uid,
