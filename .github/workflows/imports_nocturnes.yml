@@ -1,4 +1,4 @@
-name: Imports Noctures de Données
+name: Imports Nocturnes de Données
 
 # on:
 #   schedule:
@@ -40,7 +40,7 @@ jobs:
         cd tricoteuses-assemblee
         npm install
         mkdir ../assemblee-data/
-        npm run data:download ../assemblee-data
+        npm run data:download ../assemblee-data -- --legislature 17
 
     - name: Run ND.py Pipeline
       env:
