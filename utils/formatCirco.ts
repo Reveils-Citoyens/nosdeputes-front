@@ -141,7 +141,7 @@ export function formatCirco(
 
   const ordinal = formatOrdinal(numCirco);
 
-  if (!departement) return `${ordinal} circonscription`;
+  if (!departement) return `${ordinal} circ.`;
 
   const info = lookupDept(departement);
 
@@ -150,15 +150,15 @@ export function formatCirco(
     const code = numDepartement != null
       ? `(${numDepartement < 10 ? String(numDepartement).padStart(2, "0") : numDepartement})`
       : "";
-    return `${ordinal} circonscription de ${departement}${code ? " " + code : ""}`;
+    return `${ordinal} circ. de ${departement}${code ? " " + code : ""}`;
   }
 
   const { prep, code } = info;
 
   // Cas spécial : "des Français établis hors de France" → la prep contient tout
   if (departement.toLowerCase() === "français établis hors de france") {
-    return `${ordinal} circonscription des Français établis hors de France`;
+    return `${ordinal} circ. des Français établis hors de France`;
   }
 
-  return `${ordinal} circonscription ${prep}${departement} (${code})`;
+  return `${ordinal} circ. ${prep}${departement} (${code})`;
 }

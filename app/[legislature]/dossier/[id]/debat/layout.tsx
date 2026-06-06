@@ -1,4 +1,7 @@
 import React from "react";
+import Container from "@mui/material/Container";
+import RecordVoiceOverOutlinedIcon from "@mui/icons-material/RecordVoiceOverOutlined";
+import { EmptyState } from "@/components/folders/EmptyState";
 import { DebateFilterBar } from "./DebateFilterBar";
 import { getDebats } from "@/data/getDebats";
 
@@ -21,7 +24,15 @@ export default async function Layout({
   );
 
   if (!seanceDebats || seanceDebats.length === 0) {
-    return <p>Aucune séance publique n&apos;a été trouvée pour ce dossier législatif.</p>;
+    return (
+      <Container sx={{ py: 6 }}>
+        <EmptyState
+          icon={<RecordVoiceOverOutlinedIcon />}
+          title="Pas de séance publique"
+          message="Ce dossier n'a pas fait l'objet de débats en séance publique référencés dans nos données."
+        />
+      </Container>
+    );
   }
 
   return (

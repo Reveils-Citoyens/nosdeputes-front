@@ -30,6 +30,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import RemoveIcon from "@mui/icons-material/Remove";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
+import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 
 type Outcome = {
   label: string;
@@ -266,6 +267,11 @@ function getLogoPathFromCode(code: string) {
   return undefined;
 }
 
+function getMuiIconFromCode(code: string): React.ElementType | undefined {
+  if (code?.startsWith("PROM")) return GavelOutlinedIcon;
+  return undefined;
+}
+
 function getScrutinStatus(code: string | null) {
   if (code) {
     const s = code.toLowerCase().trim();
@@ -421,6 +427,7 @@ const TimelineItemLvl0 = ({
 }>) => {
   const title = act.nomCanonique || act.codeActe;
   const logo = getLogoPathFromCode(act.codeActe);
+  const MuiIcon = !logo ? getMuiIconFromCode(act.codeActe ?? "") : undefined;
   const dateStr = formatDate(act.dateActe ?? groupDate);
 
   return (
@@ -473,9 +480,9 @@ const TimelineItemLvl0 = ({
                   height: isMobile ? logo.size * 0.8 : logo.size,
                 }}
               />
-            ) : (
-              act.codeActe
-            )}
+            ) : MuiIcon ? (
+              <MuiIcon sx={{ fontSize: isMobile ? 20 : 24, color: "grey.600" }} />
+            ) : null}
           </Box>
           <TimelineConnector />
         </TimelineSeparator>

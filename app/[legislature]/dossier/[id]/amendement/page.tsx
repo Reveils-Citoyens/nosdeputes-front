@@ -18,12 +18,12 @@ export type DocOption = {
   typeOrder: number;
 };
 
-// Déduit l'étape d'un document dans la navette à partir de son UID et de son
-// depotLibelle :
+// Déduit l'étape d'un document dans la navette à partir de son UID et d'un
+// index de lecture de navette AN (0 = 1re lecture, 1 = 1ère navette = "Nouvelle lecture",
+// 2 = 2e navette = "3e lecture", …). Cet index est calculé par l'appelant.
 //   - chambre  : ...ANR5L... = Assemblée, ...SNR5S... = Sénat
-//   - lecture  : "1er Dépôt" = 1re lecture, "Navette" = nouvelle lecture
 //   - type     : segment alpha de l'UID (B / BTC / BTA / TAP)
-function docMeta(uid: string, depotLibelle: string | null): {
+function docMeta(uid: string, depotLibelle: string | null, navetteLectureIdx = 0): {
   label: string;
   stageLabel: string;
   chamber: string;
@@ -32,11 +32,18 @@ function docMeta(uid: string, depotLibelle: string | null): {
 } {
   const seg = uid.match(/^(?:PION|PRJL)ANR5L\d{2}([A-Z]+)\d{4}$/)?.[1] ?? "";
   const chamber = /SNR5S/.test(uid) ? "Sénat" : "Assemblée nationale";
-  const navette = depotLibelle?.includes("Navette") ?? false;
-  const reading = navette ? "Nouvelle lecture" : "1re lecture";
+  const navette = navetteLectureIdx > 0;
 
-  // Libellés décrivant l'étape franchie dans le processus législatif :
-  //   déposé → adopté en commission → adopté en séance
+  // Libellé de lecture : "1re lecture", "Nouvelle lecture" (2e au total),
+  // "3e lecture", "4e lecture"… pour les navettes successives.
+  let reading: string;
+  if (!navette) {
+    reading = "1re lecture";
+  } else {
+    const overall = navetteLectureIdx + 1; // numéro global de la lecture (2, 3, …)
+    reading = overall === 2 ? "Nouvelle lecture" : `${overall}e lecture`;
+  }
+
   let label: string;
   let typeOrder: number;
   if (seg === "BTC") {
@@ -46,15 +53,14 @@ function docMeta(uid: string, depotLibelle: string | null): {
     label = "Texte adopté en séance";
     typeOrder = 2;
   } else {
-    // Segment "B" : texte initial (1re lecture) ou transmis (retour de navette)
     label = navette ? "Texte transmis (navette)" : "Texte initial déposé";
     typeOrder = 0;
   }
 
   const chamberOrder = chamber === "Sénat" ? 1 : 0;
-  const readingOrder = navette ? 1 : 0;
-  // Progression de la navette : lecture d'abord, puis chambre (AN avant Sénat).
-  const stageOrder = readingOrder * 2 + chamberOrder;
+  // stageOrder croissant avec le numéro de lecture (0, 2, 4, …) ; chamberOrder
+  // réserve les impairs pour le Sénat si on devait l'afficher un jour.
+  const stageOrder = navetteLectureIdx * 2 + chamberOrder;
 
   return { label, stageLabel: `${chamber} · ${reading}`, chamber, stageOrder, typeOrder };
 }
@@ -94,8 +100,8 @@ export default async function Page({
   const { id: dossierUid } = await params;
 
   const [prjlRes, pionRes] = await Promise.all([
-    searchDocument({ dossierRefUid: dossierUid, classeCode: "PRJLOI", sort: "dateCreation.asc", perPage: 20 }),
-    searchDocument({ dossierRefUid: dossierUid, classeCode: "PIONLOI", sort: "dateCreation.asc", perPage: 20 }),
+    searchDocument({ dossierRefUid: dossierUid, classeCode: "PRJLOI", sort: "dateCreation.asc", perPage: 100 }),
+    searchDocument({ dossierRefUid: dossierUid, classeCode: "PIONLOI", sort: "dateCreation.asc", perPage: 100 }),
   ]);
 
   // Déduplique et trie par date
@@ -138,9 +144,36 @@ export default async function Page({
   });
   const documents_: typeof candidateDocs = filteredDocs.length > 0 ? filteredDocs : candidateDocs;
 
+  // Détecte les débuts de lecture de navette AN : chaque doc "B" avec navette=true
+  // marque une nouvelle lecture (B2401 → 2e lecture, B2773 → 3e lecture, …).
+  // Les docs sont déjà triés par dateCreation depuis la déduplication amont.
+  const anNavetteBs = candidateDocs.filter(
+    (d) =>
+      /^(?:PION|PRJL)ANR5L\d{2}B\d{4}$/.test(d.uid) &&
+      (d.depotLibelle as string | null)?.includes("Navette"),
+  );
+
+  // Renvoie l'index de navette (1-based) pour un doc AN de navette : 1 pour la
+  // première navette (Nouvelle lecture), 2 pour la deuxième (3e lecture), etc.
+  // Retourne 0 pour les docs de 1re lecture ou hors AN.
+  function getNavetteIdx(d: (typeof candidateDocs)[0]): number {
+    if (!/ANR5L/.test(d.uid)) return 0;
+    if (!((d.depotLibelle as string | null)?.includes("Navette"))) return 0;
+    const docMs = d.dateCreation ? new Date(d.dateCreation as unknown as string).getTime() : 0;
+    let idx = 0;
+    for (let i = 0; i < anNavetteBs.length; i++) {
+      const bMs = anNavetteBs[i].dateCreation
+        ? new Date(anNavetteBs[i].dateCreation as unknown as string).getTime()
+        : 0;
+      if (bMs <= docMs) idx = i + 1;
+      else break;
+    }
+    return Math.max(1, idx);
+  }
+
   const documents: DocOption[] = documents_
     .map((d) => {
-      const meta = docMeta(d.uid, d.depotLibelle as string | null);
+      const meta = docMeta(d.uid, d.depotLibelle as string | null, getNavetteIdx(d));
       return { uid: d.uid, ...meta };
     })
     // Ordonne selon la progression de la navette (lecture → chambre → type)

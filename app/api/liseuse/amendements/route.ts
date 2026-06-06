@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   apiUrl.searchParams.set("sort", "numeroOrdreDepot.asc");
 
   try {
-    const res = await fetch(apiUrl.toString(), { next: { revalidate: 60 } });
+    const res = await fetch(apiUrl.toString(), { cache: "no-store" });
     const body = await res.json();
     const items: unknown[] = body.data ?? [];
     const headerTotal =

@@ -64,15 +64,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
-      <head>
-        {/* Analytics Umami (sans cookie) */}
-        <Script
-          defer
-          src="https://burrowing-partridge.pikapod.net/script.js"
-          data-website-id="48ac37d3-b378-4072-b628-b69f5b91f843"
-          strategy="afterInteractive"
-        />
-      </head>
       <body className={raleway.variable}>
         <NuqsAdapter>
           <InfoDialogProvider>
@@ -89,6 +80,11 @@ export default function RootLayout({
             </AppRouterCacheProvider>
           </InfoDialogProvider>
         </NuqsAdapter>
+        <Script
+          src="https://burrowing-partridge.pikapod.net/script.js"
+          data-website-id="48ac37d3-b378-4072-b628-b69f5b91f843"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

@@ -1,4 +1,7 @@
 import React from "react";
+import Container from "@mui/material/Container";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import { EmptyState } from "@/components/folders/EmptyState";
 import { DebateFilterBar } from "../debat/DebateFilterBar";
 import { getDebats } from "@/data/getDebats";
 
@@ -18,7 +21,15 @@ export default async function Layout({
   );
 
   if (!commissionDebats || commissionDebats.length === 0) {
-    return <p>Aucune réunion de commission n&apos;a été trouvée pour ce dossier.</p>;
+    return (
+      <Container sx={{ py: 6 }}>
+        <EmptyState
+          icon={<GroupsOutlinedIcon />}
+          title="Pas de travaux en commission"
+          message="Ce dossier n'a pas fait l'objet de réunions de commission référencées dans nos données."
+        />
+      </Container>
+    );
   }
 
   return (

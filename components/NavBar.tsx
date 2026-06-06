@@ -40,7 +40,7 @@ export function NavBar({ navigation }: NavBarProps) {
                   alt="Logo"
                   width={32}
                   height={32}
-                  className="h-8 w-8"
+                  className="h-8 w-8 rounded-lg"
                 ></Image>
                 <span className="text-lg font-extrabold tracking-tight uppercase text-slate-900 whitespace-nowrap">
                   Nos Députés

@@ -181,6 +181,15 @@ const theme = createTheme({
         },
       },
     },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          boxShadow:
+            "0px 2px 8px rgba(0, 0, 0, 0.08), 0px 1px 3px rgba(0, 0, 0, 0.06)",
+          borderRadius: "10px",
+        },
+      },
+    },
     MuiTimelineDot: {
       styleOverrides: {
         root: ({ theme }) => ({

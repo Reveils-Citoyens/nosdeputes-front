@@ -101,10 +101,12 @@ function sortCountByStatus(amends: RawAmendement[]) {
 
 function ColumnHeader({
   label,
+  subtitle,
   icon,
   bg = "grey.100",
 }: {
   label: React.ReactNode;
+  subtitle?: React.ReactNode;
   icon?: React.ReactNode;
   bg?: string;
 }) {
@@ -120,23 +122,36 @@ function ColumnHeader({
         borderBottom: "1px solid",
         borderColor: "grey.200",
         display: "flex",
-        alignItems: "center",
+        alignItems: subtitle ? "flex-start" : "center",
         gap: 0.75,
       }}
     >
-      {icon}
-      <Typography
-        variant="caption"
-        sx={{
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.07em",
-          color: "text.secondary",
-          fontSize: "0.64rem",
-        }}
-      >
-        {label}
-      </Typography>
+      {icon && (
+        <Box sx={{ mt: subtitle ? "2px" : 0 }}>{icon}</Box>
+      )}
+      <Box>
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.07em",
+            color: "text.secondary",
+            fontSize: "0.64rem",
+            display: "block",
+          }}
+        >
+          {label}
+        </Typography>
+        {subtitle && (
+          <Typography
+            variant="caption"
+            sx={{ fontSize: "0.6rem", color: "text.disabled", lineHeight: 1.3, display: "block" }}
+          >
+            {subtitle}
+          </Typography>
+        )}
+      </Box>
     </Box>
   );
 }
@@ -480,6 +495,7 @@ function ArticleView({
   onNext,
   index,
   total,
+  examinateurLabel,
 }: {
   item: NavItem;
   docUid: string | null;
@@ -490,6 +506,7 @@ function ArticleView({
   onNext: () => void;
   index: number;
   total: number;
+  examinateurLabel?: string | null;
 }) {
   const [alineas, setAlineas] = React.useState<AlineaData[] | null | undefined>(undefined);
   const [contentLoading, setContentLoading] = React.useState(false);
@@ -622,6 +639,7 @@ function ArticleView({
         <Box sx={{ flex: 1, overflowY: { md: "auto" }, maxHeight: PANEL_MAX_H }}>
           <ColumnHeader
             label={`${amendments.length} amendement${amendments.length > 1 ? "s" : ""}`}
+            subtitle={examinateurLabel}
             bg="white"
           />
           {amendments.length > 0 ? (
@@ -858,6 +876,16 @@ export default function LiseuseClient({
   }
   const selectedDoc = documents.find((d) => d.uid === selectedDocUid);
 
+  // Indique quel organe a proposé les amendements affichés :
+  //   typeOrder=0 (texte initial/transmis) → examiné en commission
+  //   typeOrder=1 (texte de commission)    → examiné en séance
+  const examinateurLabel =
+    selectedDoc?.typeOrder === 0
+      ? "Proposés en commission"
+      : selectedDoc?.typeOrder === 1
+        ? "Proposés en séance"
+        : null;
+
   const loadedAmend = amendments?.length ?? 0;
   const shownAmend = filteredAmendments?.length ?? 0;
   const displayedTotal = loadingMore && amendTotal > loadedAmend ? amendTotal : loadedAmend;
@@ -913,13 +941,14 @@ export default function LiseuseClient({
         </Box>
 
         {documents.length > 1 && (
+          <Box sx={{ flexShrink: 0 }}>
           <TextField
             select
             size="small"
             label="Version du texte"
             value={selectedDocUid}
             onChange={(e) => void handleDocChange(e.target.value)}
-            sx={{ minWidth: 320, flexShrink: 0 }}
+            sx={{ minWidth: 320, width: "100%" }}
             SelectProps={{
               MenuProps: { sx: { maxHeight: 460 } },
               renderValue: () =>
@@ -997,6 +1026,16 @@ export default function LiseuseClient({
               return nodes;
             })}
           </TextField>
+          {examinateurLabel && (
+            <Typography
+              variant="caption"
+              color="text.disabled"
+              sx={{ display: "block", textAlign: "right", mt: 0.5, fontSize: "0.7rem" }}
+            >
+              {examinateurLabel}
+            </Typography>
+          )}
+          </Box>
         )}
       </Box>
 
@@ -1129,6 +1168,7 @@ export default function LiseuseClient({
                 }}
                 index={selIndex}
                 total={navItems.length}
+                examinateurLabel={examinateurLabel}
               />
             </Box>
           </Box>

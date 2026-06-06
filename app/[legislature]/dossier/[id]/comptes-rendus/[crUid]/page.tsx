@@ -49,7 +49,7 @@ export default async function CompteRenduPage({
     <>
       {hasSummary && (
         <div style={{ display: "flex", flexDirection: "row", gap: 24, flex: 2 }}>
-          <DebateSummary sections={sections} wordsCounts={wordsCounts} />
+          <DebateSummary sections={sections} />
         </div>
       )}
       <div

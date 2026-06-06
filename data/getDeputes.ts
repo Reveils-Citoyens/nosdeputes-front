@@ -42,8 +42,17 @@ async function getDeputesUnCached(legislature: number): Promise<{
     const groups = Object.fromEntries(
       groupsArray
         .filter((item) => item !== null)
-        .map((item) => [item.uid, item])
+        .map((item) => [item!.uid, item!])
     );
+
+    // Si aucun groupe n'a pu être chargé mais qu'on attend des groupes
+    // (acteurs avec groupeParlementaireUid), on lève une erreur pour éviter
+    // de mettre en cache un résultat dégradé : unstable_cache ne stocke pas
+    // les exceptions, la prochaine requête fera une nouvelle tentative.
+    const expectedGroups = groupsUid.filter(uid => uid !== null).length;
+    if (expectedGroups > 0 && Object.keys(groups).length === 0) {
+      throw new Error("getDeputes: tous les appels getOrgane ont échoué, résultat non mis en cache.");
+    }
 
     return { acteurs, groups };
   } catch (error) {

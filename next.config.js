@@ -15,6 +15,8 @@ try {
 
 // Hôte des assets (photos de députés, marianne…).
 const ASSETS_HOST = "https://tricoteuses-assets.s3.fr-par.scw.cloud";
+// Serveur Umami (analytics sans cookie, hébergé sur Pikapods).
+const UMAMI_HOST = "https://burrowing-partridge.pikapod.net";
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -24,13 +26,15 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   // Next.js injecte des scripts inline (hydratation) → 'unsafe-inline'.
   // 'unsafe-eval' seulement en dev (HMR / React Refresh).
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  // Umami est chargé depuis son propre domaine Pikapods.
+  `script-src 'self' 'unsafe-inline' ${UMAMI_HOST}${isDev ? " 'unsafe-eval'" : ""}`,
   // MUI / Emotion injecte des styles inline.
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   `img-src 'self' data: blob: ${ASSETS_HOST}`,
-  // Appels client : nos routes /api + API Tricoteuses + APIs géo (code postal).
-  `connect-src 'self' https://geo.api.gouv.fr https://territoires.code4code.eu${apiOrigin ? ` ${apiOrigin}` : ""}`,
+  // Appels client : nos routes /api + API Tricoteuses + APIs géo (code postal)
+  // + Umami /api/send (POST des events analytics).
+  `connect-src 'self' https://geo.api.gouv.fr https://territoires.code4code.eu ${UMAMI_HOST}${apiOrigin ? ` ${apiOrigin}` : ""}`,
 ].join("; ");
 
 const securityHeaders = [

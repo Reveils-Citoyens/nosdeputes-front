@@ -25,6 +25,7 @@ import Stack from "@mui/material/Stack";
 import { Acteur, Mandat, Organe } from "@prisma/client";
 import { DeputeFilterProps } from "./DeputesFilter";
 import { departements } from "./structureCircos";
+import { formatCirco } from "@/utils/formatCirco";
 
 function GroupPolitiqueHeader({
   itemKey,
@@ -125,7 +126,7 @@ function Deputes({
               auGouvernement={auGouvernement}
               secondaryText={
                 grouping === "groupPolitique"
-                  ? `${mandatPrincipal?.numCirco}e Circ ${mandatPrincipal?.departement}`
+                  ? formatCirco(mandatPrincipal?.numCirco, mandatPrincipal?.departement)
                   : undefined
               }
               group={
