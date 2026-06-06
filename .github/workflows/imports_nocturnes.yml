@@ -38,7 +38,7 @@ jobs:
       run: |
         git clone https://git.tricoteuses.fr/logiciels/tricoteuses-assemblee.git
         cd tricoteuses-assemblee
-        npm ci
+        npm install
         mkdir ../assemblee-data/
         npm run data:download ../assemblee-data
 
