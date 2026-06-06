@@ -31,6 +31,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import RemoveIcon from "@mui/icons-material/Remove";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
+import HandshakeOutlinedIcon from "@mui/icons-material/HandshakeOutlined";
 
 type Outcome = {
   label: string;
@@ -244,6 +245,39 @@ const OutcomeTimelineItem = ({
   );
 };
 
+// Badge vert/rouge affiché inline sur les actes ayant un résultat de vote
+// (champ adoption !== null sur ActeLegislatif).
+function AdoptionBadge({ adoption, size = "sm" }: { adoption: boolean; size?: "sm" | "md" }) {
+  const isLarge = size === "md";
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 0.4,
+        bgcolor: adoption ? "#dcfce7" : "#fee2e2",
+        color: adoption ? "#166534" : "#991b1b",
+        border: "1px solid",
+        borderColor: adoption ? "#86efac" : "#fca5a5",
+        px: isLarge ? 1.4 : 1,
+        py: isLarge ? 0.7 : 0.45,
+        borderRadius: "6px",
+        fontWeight: 700,
+        fontSize: isLarge ? "0.85rem" : "0.72rem",
+        lineHeight: 1,
+        flexShrink: 0,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {adoption
+        ? <CheckIcon sx={{ fontSize: isLarge ? 15 : 13 }} />
+        : <CloseIcon sx={{ fontSize: isLarge ? 15 : 13 }} />}
+      {adoption ? "Adopté" : "Rejeté"}
+    </Box>
+  );
+}
+
 // Utilitaire pour formater la date proprement
 const formatDate = (date?: Date | null) => {
   if (!date) return "À définir";
@@ -269,6 +303,7 @@ function getLogoPathFromCode(code: string) {
 
 function getMuiIconFromCode(code: string): React.ElementType | undefined {
   if (code?.startsWith("PROM")) return GavelOutlinedIcon;
+  if (code?.startsWith("CMP")) return HandshakeOutlinedIcon;
   return undefined;
 }
 
@@ -566,9 +601,14 @@ const TimelineItemLvl1 = ({
       </TimelineSeparator>
 
       <TimelineContent sx={{ pb: 2, pr: 0 }}>
-        <Typography variant="body1" sx={{ mb: 1, mt: 0.5, fontWeight: 500 }}>
-          {title}
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1, mt: 0.5 }}>
+          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+            {title}
+          </Typography>
+          {act.adoption !== null && act.adoption !== undefined && (
+            <AdoptionBadge adoption={act.adoption} size="md" />
+          )}
+        </Stack>
 
         {/* Mobile seulement : Date sous le titre principal de l'étape */}
         {isMobile && (
@@ -785,6 +825,9 @@ export const TimelineCard = ({
                               legislature={legislature}
                               acteUid={lvl2Act.uid}
                             />
+                            {lvl2Act.adoption !== null && lvl2Act.adoption !== undefined && (
+                              <AdoptionBadge adoption={lvl2Act.adoption} />
+                            )}
                           </Stack>
 
                           {displayedLvl3Uids.map((lvl3Uid) => {

@@ -11,6 +11,10 @@ import sys
 import time
 
 MONGO_URI = os.environ.get("MONGO_URI")
+
+print(f"DEBUG: Type de MONGO_URI = {type(MONGO_URI)}")
+print(f"DEBUG: Début de l'URI reçu par GitHub = {str(MONGO_URI)[:15]}...")
+
 client_ = MongoClient(MONGO_URI)
 
 
