@@ -39,6 +39,8 @@ export function buildSommaireUrl(uid: string): string | null {
  *  - "Article 1er"            ↔ "article 1"        (ordinal)
  *  - "Article 6 bis (nouveau)" ↔ "article 6 bis"   (annotation de commission)
  *  - "article-9"              ↔ "article 9"        (tirets)
+ *  - "Article unique"         ↔ "article 1"        (texte mono-article : le
+ *    sommaire dit « unique », les amendements numérotent « 1 »)
  */
 export function normalizeDivisionKey(line: string): string {
   return line
@@ -47,6 +49,7 @@ export function normalizeDivisionKey(line: string): string {
     .replace(/\([^)]*\)/g, "")                     // annotations "(nouveau)", "(supprimé)"…
     .replace(/-/g, " ")                            // tirets → espaces
     .replace(/\b1\s*(?:er|re|ère|ere)\b/g, "1")    // "1er" / "1ère" → "1"
+    .replace(/\barticle\s+unique\b/, "article 1")  // "Article unique" → "article 1"
     .replace(/\s+/g, " ")
     .trim();
 }
