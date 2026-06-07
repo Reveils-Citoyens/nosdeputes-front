@@ -83,6 +83,10 @@ function statusKey(a: RawAmendement): string {
   return a.sortAmendement ?? "En cours";
 }
 
+function isGouvernement(a: RawAmendement): boolean {
+  return a.typeAuteur === "Gouvernement";
+}
+
 function statusColor(status: string): string {
   // Bleu-gris pour les statuts non définitifs (en cours, déposé, en traitement…)
   return STATUS_COLOR[status] ?? "#78909c";
@@ -680,6 +684,7 @@ export default function LiseuseClient({
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [activeStatuses, setActiveStatuses] = React.useState<Set<string>>(new Set());
+  const [govOnly, setGovOnly] = React.useState(false);
   const [selectedKey, setSelectedKey] = React.useState<string | null>(null);
   const loadIdRef = React.useRef(0);
 
@@ -693,6 +698,7 @@ export default function LiseuseClient({
     setAmendments(null);
     setAmendTotal(0);
     setActiveStatuses(new Set());
+    setGovOnly(false);
 
     try {
       // Page 1 — 500 items
@@ -773,7 +779,13 @@ export default function LiseuseClient({
       .map(([status, count]) => ({ status, count, color: statusColor(status) }));
   }, [amendments]);
 
-  const filterActive = activeStatuses.size > 0;
+  const filterActive = activeStatuses.size > 0 || govOnly;
+
+  // Nombre d'amendements gouvernementaux (pour la pastille de filtre)
+  const govCount = React.useMemo(
+    () => (amendments ? amendments.filter(isGouvernement).length : 0),
+    [amendments],
+  );
 
   const toggleStatus = React.useCallback((status: string) => {
     setActiveStatuses((prev) => {
@@ -784,12 +796,19 @@ export default function LiseuseClient({
     });
   }, []);
 
-  // Amendements après application du filtre de statut
+  const resetFilters = React.useCallback(() => {
+    setActiveStatuses(new Set());
+    setGovOnly(false);
+  }, []);
+
+  // Amendements après application des filtres (statut + gouvernement)
   const filteredAmendments = React.useMemo(() => {
     if (!amendments) return null;
-    if (activeStatuses.size === 0) return amendments;
-    return amendments.filter((a) => activeStatuses.has(statusKey(a)));
-  }, [amendments, activeStatuses]);
+    let res = amendments;
+    if (activeStatuses.size > 0) res = res.filter((a) => activeStatuses.has(statusKey(a)));
+    if (govOnly) res = res.filter(isGouvernement);
+    return res;
+  }, [amendments, activeStatuses, govOnly]);
 
   // Groupe les amendements (filtrés) par identifiantDivision
   const amendsByKey = React.useMemo(() => {
@@ -1040,7 +1059,7 @@ export default function LiseuseClient({
       </Box>
 
       {/* Barre de filtres par statut */}
-      {!loading && sommaire && statusOptions.length > 1 && (
+      {!loading && sommaire && (statusOptions.length > 1 || govCount > 0) && (
         <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 3 }}>
           <Typography
             variant="caption"
@@ -1055,6 +1074,42 @@ export default function LiseuseClient({
           >
             Filtrer
           </Typography>
+
+          {govCount > 0 && (() => {
+            const GOV_COLOR = "#5e35b1";
+            return (
+              <>
+                <Chip
+                  size="small"
+                  onClick={() => setGovOnly((v) => !v)}
+                  label={
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: GOV_COLOR }} />
+                      <span>Gouvernement</span>
+                      <Box component="span" sx={{ fontWeight: 700, opacity: 0.7 }}>
+                        {govCount}
+                      </Box>
+                    </Box>
+                  }
+                  sx={{
+                    cursor: "pointer",
+                    fontSize: "0.72rem",
+                    fontWeight: 600,
+                    height: 26,
+                    border: "1px solid",
+                    borderColor: govOnly ? GOV_COLOR : "grey.300",
+                    bgcolor: govOnly ? `${GOV_COLOR}14` : "transparent",
+                    color: govOnly ? GOV_COLOR : "text.secondary",
+                    "& .MuiChip-label": { px: 1 },
+                    "&:hover": { bgcolor: govOnly ? `${GOV_COLOR}22` : "grey.100" },
+                  }}
+                />
+                {statusOptions.length > 1 && (
+                  <Divider orientation="vertical" flexItem sx={{ mx: 0.5, my: 0.25 }} />
+                )}
+              </>
+            );
+          })()}
 
           {statusOptions.map(({ status, count, color }) => {
             const active = activeStatuses.has(status);
@@ -1091,7 +1146,7 @@ export default function LiseuseClient({
           {filterActive && (
             <Box
               component="button"
-              onClick={() => setActiveStatuses(new Set())}
+              onClick={resetFilters}
               sx={{
                 ml: 0.5,
                 border: "none",
@@ -1179,7 +1234,7 @@ export default function LiseuseClient({
             </Typography>
             <Box
               component="button"
-              onClick={() => setActiveStatuses(new Set())}
+              onClick={resetFilters}
               sx={{
                 mt: 1,
                 border: "none",

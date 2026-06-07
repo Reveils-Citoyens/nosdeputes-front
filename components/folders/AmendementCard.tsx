@@ -81,7 +81,7 @@ function GouvernementAvatar(props: { sx?: React.CSSProperties }) {
           minWidth: 0,
         }}
       >
-        <Typography variant="body2" fontWeight="medium" sx={{ mb: "1rem" }}>
+        <Typography variant="body2" fontWeight="medium">
           Gouvernement
         </Typography>
       </Box>
