@@ -33,6 +33,7 @@ export function getWeekStart(date: Date): Date {
 export async function getAgendaSemaine(
   weekStart: Date
 ): Promise<ReunionAgenda[]> {
+  try {
   const db = await getParlementDb();
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
@@ -109,4 +110,10 @@ export async function getAgendaSemaine(
     .toArray();
 
   return results as ReunionAgenda[];
+  } catch (error) {
+    // MongoDB indisponible (build sans URI, panne réseau…) : on dégrade en
+    // agenda vide plutôt que de planter le rendu de la page appelante.
+    console.warn("getAgendaSemaine: échec de récupération", error);
+    return [];
+  }
 }
