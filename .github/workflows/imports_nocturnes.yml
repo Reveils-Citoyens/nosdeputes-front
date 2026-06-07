@@ -6,9 +6,9 @@ name: Imports Nocturnes de Données
 #   workflow_dispatch:
 
 on:
-  push:
-    branches:
-      - 'modifs-sam-may26' # Déclenchement automatique à chaque git push sur ta branche
+  # push:
+  #   branches:
+  #     - 'modifs-sam-may26'
   workflow_dispatch:
 
 jobs:
