@@ -30,3 +30,10 @@ jobs:
           build-args: |
             NEXT_PUBLIC_TRICOTEUSES_API_URL=${{ secrets.NEXT_PUBLIC_TRICOTEUSES_API_URL }}
             NEXT_PUBLIC_BASE_URL=${{ secrets.NEXT_PUBLIC_BASE_URL }}
+
+      - name: Trigger Scaleway Deployment
+        run: |
+          curl -X POST "https://api.scaleway.com/containers/v1alpha1/regions/fr-par/containers/${{ secrets.SCW_CONTAINER_ID }}/deploy" \
+          -H "X-Auth-Token: ${{ secrets.SCALEWAY_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d "{}"

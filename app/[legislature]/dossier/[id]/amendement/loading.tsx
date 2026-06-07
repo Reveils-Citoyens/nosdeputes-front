@@ -28,7 +28,13 @@ export default function AmendementLoading() {
           <Skeleton variant="text" width={210} sx={{ fontSize: "1.05rem" }} />
           <Skeleton variant="text" width={150} sx={{ fontSize: "0.85rem" }} />
         </Box>
-        <Skeleton variant="rounded" width={280} height={40} sx={{ borderRadius: "4px" }} />
+        {/* Sélecteur de version : même géométrie que le dropdown réel
+            (largeur fixe 360px desktop, valeur sur deux lignes ≈ 52px de haut,
+            sous-titre dessous) pour éviter tout saut au montage du composant. */}
+        <Box sx={{ width: { xs: "100%", sm: 360 }, flexShrink: 0 }}>
+          <Skeleton variant="rounded" width="100%" height={52} sx={{ borderRadius: "4px" }} />
+          <Skeleton variant="text" width={140} sx={{ fontSize: "0.7rem", ml: "auto", mt: 0.5 }} />
+        </Box>
       </Box>
 
       {/* Liste d'articles */}

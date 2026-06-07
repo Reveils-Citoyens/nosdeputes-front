@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { THEMES, ThemeSlug, isThemeSlug } from "@/data/themes";
+import { THEMES, isThemeSlug } from "@/data/themes";
 import { THEME_GROUPS, THEME_TO_GROUP } from "@/data/themeGroups";
 import { getDossiersByTheme } from "@/data/mongo/getDossiersByTheme";
 import { CComptesSection } from "@/components/ccomptes/CComptesSection";
@@ -21,9 +21,12 @@ import type { Metadata } from "next";
 
 export const revalidate = 3600;
 
-export async function generateStaticParams() {
-  return (Object.keys(THEMES) as ThemeSlug[]).map((slug) => ({ slug }));
-}
+// Pas de generateStaticParams : on NE pré-rend PAS au build. Le build du
+// conteneur n'a pas accès à MongoDB, ce qui produisait des pages figées « 0
+// dossier » servies au premier visiteur (puis corrigées au rechargement via la
+// revalidation ISR en arrière-plan). Sans pré-rendu, chaque page est rendue à
+// la demande au 1er accès en production (Mongo disponible) puis mise en cache
+// ISR pendant `revalidate`. `dynamicParams` vaut true par défaut.
 
 export async function generateMetadata({
   params,

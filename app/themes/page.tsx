@@ -18,7 +18,12 @@ export const metadata = {
     "Explorez les dossiers législatifs par grand domaine — économie, santé, écologie, justice, éducation et plus.",
 };
 
-export const revalidate = 3600;
+// Rendu au runtime, pas au build : la page lit des compteurs Mongo et les TRIE
+// par nombre de dossiers. Pré-rendue au build (sans Mongo), elle figeait des
+// compteurs à 0 et un tri cassé, servis au premier visiteur. Les agrégations
+// restent mises en cache 1h au niveau data (unstable_cache) → l'instance n'est
+// pas sollicitée à chaque visite.
+export const dynamic = "force-dynamic";
 
 export default async function ThemesPage() {
   const [themeCounts, groupCounts] = await Promise.all([

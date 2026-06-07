@@ -66,7 +66,15 @@ export default function MentionsLegales() {
 
         <Section title="Hébergement">
           <Typography variant="body1">
-            Hébergeur : <em>[hébergeur à préciser]</em>.
+            Le site est hébergé par <strong>Scaleway SAS</strong>, dont les centres de
+            données sont situés en <strong>France</strong>.
+          </Typography>
+          <Typography variant="body1">
+            Scaleway SAS — 8 rue de la Ville l&apos;Évêque, 75008 Paris, France.
+            <br />
+            <Link href="https://www.scaleway.com" target="_blank" rel="noopener noreferrer" underline="hover">
+              www.scaleway.com
+            </Link>
           </Typography>
         </Section>
 

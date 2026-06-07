@@ -960,24 +960,33 @@ export default function LiseuseClient({
         </Box>
 
         {documents.length > 1 && (
-          <Box sx={{ flexShrink: 0 }}>
+          <Box sx={{ flexShrink: 0, width: { xs: "100%", sm: 360 } }}>
           <TextField
             select
             size="small"
             label="Version du texte"
             value={selectedDocUid}
             onChange={(e) => void handleDocChange(e.target.value)}
-            sx={{ minWidth: 320, width: "100%" }}
+            sx={{ width: "100%" }}
             SelectProps={{
               MenuProps: { sx: { maxHeight: 460 } },
+              // Valeur empilée (label puis étape) pour tenir dans une largeur
+              // FIXE (360px) : la géométrie ne dépend pas de la longueur du
+              // libellé → pas de saut entre le skeleton de chargement et le
+              // rendu réel. Ellipsis en garde-fou si un libellé dépasse.
               renderValue: () =>
                 selectedDoc ? (
-                  <Box component="span">
-                    <Box component="span" sx={{ fontWeight: 600 }}>
+                  <Box sx={{ display: "flex", flexDirection: "column", minWidth: 0, lineHeight: 1.25, py: 0.25 }}>
+                    <Box
+                      component="span"
+                      sx={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                    >
                       {selectedDoc.label}
                     </Box>
-                    <Box component="span" sx={{ color: "text.secondary" }}>
-                      {" — "}
+                    <Box
+                      component="span"
+                      sx={{ color: "text.secondary", fontSize: "0.75rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                    >
                       {selectedDoc.stageLabel}
                     </Box>
                   </Box>

@@ -13,7 +13,6 @@ import { THEMES, isThemeSlug } from "@/data/themes";
 import {
   THEME_GROUPS,
   isThemeGroupSlug,
-  type ThemeGroupSlug,
 } from "@/data/themeGroups";
 import { getDossiersByThemeGroup } from "@/data/mongo/getDossiersByThemeGroup";
 import { CComptesSection } from "@/components/ccomptes/CComptesSection";
@@ -23,9 +22,9 @@ import type { Metadata } from "next";
 
 export const revalidate = 3600;
 
-export async function generateStaticParams() {
-  return (Object.keys(THEME_GROUPS) as ThemeGroupSlug[]).map((id) => ({ id }));
-}
+// Pas de generateStaticParams : on NE pré-rend PAS au build (pas d'accès Mongo),
+// ce qui produisait des pages figées « 0 dossier ». Rendu à la demande au 1er
+// accès en production puis cache ISR pendant `revalidate`. Cf. /themes/[slug].
 
 export async function generateMetadata({
   params,

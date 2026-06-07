@@ -8,6 +8,17 @@
   --background-end-rgb: 255, 255, 255;
 }
 
+/* Scrollbar verticale TOUJOURS rendue (overflow-y: scroll), pas seulement quand
+   la page déborde. Sans ça, elle apparaît au chargement du contenu (ex.
+   amendements), réduit la largeur visible et décale horizontalement tout le
+   contenu centré (mx:auto) — d'où les « bumps ». overflow-y:scroll est le plus
+   robuste ici car `body` a overflow-x:hidden, ce qui peut faire ignorer
+   scrollbar-gutter sur <html>. On garde scrollbar-gutter en complément. */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
@@ -16,7 +27,9 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
-  max-width: 100vw;
+  /* 100% (et non 100vw) : on s'aligne sur la zone de contenu de <html> (hors
+     gouttière réservée) pour éviter un débordement de ~15px sous la scrollbar. */
+  max-width: 100%;
   overflow-x: hidden;
 }
 
