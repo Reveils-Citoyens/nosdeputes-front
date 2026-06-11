@@ -3,7 +3,7 @@ name: Build & Deploy to Scaleway
 on:
   push:
     branches:
-      - "modifs-sam-may26"
+      - "staging"
 
 jobs:
   build-and-push:
