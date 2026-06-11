@@ -25,7 +25,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.CONTAINER_REGISTRY_ENDPOINT }}/nos-deputes:latest
+          tags: ${{ secrets.CONTAINER_REGISTRY_ENDPOINT }}/nos-deputes:staging
 
           build-args: |
             NEXT_PUBLIC_TRICOTEUSES_API_URL=${{ secrets.NEXT_PUBLIC_TRICOTEUSES_API_URL }}
