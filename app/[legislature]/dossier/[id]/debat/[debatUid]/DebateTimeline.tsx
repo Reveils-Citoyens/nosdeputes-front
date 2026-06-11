@@ -43,6 +43,7 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
                 key={uid}
                 variant="h1"
                 component="h2"
+                sx={{ mt: 1.5, mb: 0.75, lineHeight: 1.25 }}
                 dangerouslySetInnerHTML={{
                   __html: cleanText(texte ?? "", true),
                 }}
@@ -54,6 +55,7 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
                 key={uid}
                 variant="h3"
                 component="h3"
+                sx={{ mt: 1, mb: 0.5, lineHeight: 1.3 }}
                 dangerouslySetInnerHTML={{
                   __html: cleanText(texte ?? "", true),
                 }}
@@ -64,6 +66,7 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
               <Typography
                 key={uid}
                 component="p"
+                sx={{ mt: 0.5, mb: 1 }}
                 dangerouslySetInnerHTML={{ __html: cleanText(texte ?? "") }}
               />
             );

@@ -1,5 +1,5 @@
 import React from "react";
-import { Avatar, Box, Container, Stack, Typography } from "@mui/material";
+import { Avatar, Box, Chip, Container, Stack, Tooltip, Typography } from "@mui/material";
 import {
   X as XIcon,
   Facebook as FacebookIcon,
@@ -12,8 +12,13 @@ import Mandats from "./Mandats";
 import Contacts from "./Contacts";
 import Tabs from "./Tabs";
 import InfoPersonelles from "./InfoPersonelles";
+import AlerteButton from "@/components/AlerteButton";
+import MonDeputeButton from "@/components/MonDepute/MonDeputeButton";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
 import { getActeurAdressesElectroniques } from "@/data/getActeurContacts";
+import { getActeurCollaborateurs } from "@/data/getActeurCollaborateurs";
+import CollaborateursSection from "./CollaborateursSection";
+import { formatCirco } from "@/utils/formatCirco";
 
 const SocialLink = ({
   Icon,
@@ -27,6 +32,8 @@ const SocialLink = ({
     href={href}
     target="_blank"
     rel="noopener noreferrer"
+    data-umami-event="lien-sortant"
+    data-umami-event-type="reseau-social"
     sx={{
       width: 44,
       height: 44,
@@ -83,9 +90,15 @@ export default async function Page({
     return <p>Deputé non trouvé</p>;
   }
 
-  const adressesElectroniques = await getActeurAdressesElectroniques(
-    depute.uid
-  );
+  const [adressesElectroniques, collaborateurs] = await Promise.all([
+    getActeurAdressesElectroniques(depute.uid),
+    getActeurCollaborateurs(depute.uid),
+  ]);
+
+  // Mandat de député achevé : signal canonique = `actif: false` sur l'acteur
+  // (démissionnaires, défunts, fin de législature, etc.).
+  const mandatAcheve = depute.chambre === "AN" && depute.actif === false;
+  const auGouvernement = depute.auGouvernement === true;
 
   const twitter = adressesElectroniques.find(
     (c) => c.typeLibelle === "Twitter"
@@ -143,16 +156,52 @@ export default async function Page({
             {depute.nom[0]}
           </Avatar>
           <Box>
-            <Typography
-              variant="h3"
-              fontWeight="bold"
-              sx={{
-                color: "#1A1A1B",
-                fontSize: { xs: "1.5rem", md: "1.7rem" },
-              }}
-            >
-              {depute.prenom} {depute.nom}
-            </Typography>
+            <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap">
+              <Typography
+                variant="h3"
+                fontWeight="bold"
+                sx={{
+                  color: "#1A1A1B",
+                  fontSize: { xs: "1.5rem", md: "1.7rem" },
+                }}
+              >
+                {depute.prenom} {depute.nom}
+              </Typography>
+              {mandatAcheve && (
+                <Chip
+                  label="Mandat achevé"
+                  size="small"
+                  sx={{
+                    bgcolor: "grey.200",
+                    color: "grey.800",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    height: 22,
+                    "& .MuiChip-label": { px: 1 },
+                  }}
+                />
+              )}
+              {auGouvernement && (
+                <Tooltip title="Membre du gouvernement (mandat de député suspendu)">
+                  <Chip
+                    label="Gouv."
+                    size="small"
+                    sx={{
+                      bgcolor: "#dbeafe",
+                      color: "#1e40af",
+                      fontWeight: 600,
+                      fontSize: "0.7rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      height: 22,
+                      "& .MuiChip-label": { px: 1 },
+                    }}
+                  />
+                </Tooltip>
+              )}
+            </Stack>
 
             {circonscription && (
               <Typography
@@ -160,8 +209,11 @@ export default async function Page({
                 fontWeight="light"
                 color="text.secondary"
               >
-                {circonscription.numCirco}° circonscription de{" "}
-                {circonscription.departement} ({circonscription.numDepartement})
+                {formatCirco(
+                  circonscription.numCirco,
+                  circonscription.departement,
+                  circonscription.numDepartement,
+                )}
               </Typography>
             )}
           </Box>
@@ -204,6 +256,7 @@ export default async function Page({
             <Box
               component="a"
               href={`mailto:${email}`}
+              data-umami-event="contact-depute"
               sx={{ ...contactButtonStyle, ml: { md: 1 } }}
             >
               Contacter
@@ -212,10 +265,25 @@ export default async function Page({
             <Link
               href="#contacts"
               style={{ textDecoration: "none", marginLeft: 8 }}
+              data-umami-event="contact-depute"
             >
               <Box sx={contactButtonStyle}>Contacter</Box>
             </Link>
           )}
+
+          <MonDeputeButton
+            uid={depute.uid}
+            slug={slug}
+            prenom={depute.prenom}
+            nom={depute.nom}
+          />
+
+          <AlerteButton
+            subjectType="depute"
+            subjectUid={depute.uid}
+            subjectLabel={`${depute.prenom} ${depute.nom}`}
+            variant="icon"
+          />
         </Stack>
       </Stack>
 
@@ -232,26 +300,42 @@ export default async function Page({
           gap: 4,
         }}
       >
-        {/* Colonne de Gauche (Infos) */}
-        <Stack
-          spacing={3}
-          flex={2}
-          // Force les cartes enfants (InfoPersonelles, etc.) à prendre 100% de la largeur du conteneur
+        {/* Fiche d'identité — visible en 1er sur mobile, colonne gauche sur desktop */}
+        <Box
           sx={{
-            minWidth: 0,
+            flex: { xs: "unset", md: 2 },
+            order: { xs: 0, md: 0 },
+            display: { xs: "block", md: "none" },
             width: "100%",
-            "& > *": { width: "100% !important" }, // Hack CSS pour forcer la largeur des Paper enfants qui ont width: 300
           }}
         >
           <InfoPersonelles acteurUid={depute.uid} depute={depute} />
-          <Mandats acteurUid={depute.uid} />
-          <Contacts acteurUid={depute.uid} />
-        </Stack>
+        </Box>
 
-        {/* Colonne de Droite (Tabs et Contenu principal) */}
-        <Stack spacing={3} flex={5} sx={{ minWidth: 0 }}>
+        {/* Tabs + contenu — 2e sur mobile */}
+        <Stack spacing={3} flex={5} sx={{ minWidth: 0, order: { xs: 1, md: 0 } }}>
           <Tabs slug={slug} />
           {children}
+        </Stack>
+
+        {/* Colonne latérale complète (desktop) / reste des infos en bas (mobile) */}
+        <Stack
+          spacing={3}
+          flex={2}
+          sx={{
+            minWidth: 0,
+            width: "100%",
+            order: { xs: 2, md: -1 },
+            "& > *": { width: "100% !important" },
+          }}
+        >
+          {/* InfoPersonelles masquée sur mobile (déjà rendue au-dessus) */}
+          <Box sx={{ display: { xs: "none", md: "block" } }}>
+            <InfoPersonelles acteurUid={depute.uid} depute={depute} />
+          </Box>
+          <Mandats acteurUid={depute.uid} />
+          <Contacts acteurUid={depute.uid} />
+          <CollaborateursSection collaborateurs={collaborateurs} />
         </Stack>
       </Container>
     </Box>

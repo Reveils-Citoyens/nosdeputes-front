@@ -2,6 +2,7 @@ import * as React from "react";
 
 import Avatar from "@mui/material/Avatar";
 import Box, { BoxProps } from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
@@ -17,6 +18,7 @@ type DeputeCardProps<RootComponent extends React.ElementType = "div"> = Pick<
   "prenom" | "nom" | "slug" | "urlImage"
 > & {
   secondaryText?: string;
+  auGouvernement?: boolean;
   group?: {
     color: string | null;
     fullName: string;
@@ -48,6 +50,7 @@ export default function DeputeCard<RootComponent extends React.ElementType>(
     sx,
     secondaryText,
     isFullCardLink,
+    auGouvernement,
     ...other
   } = props;
 
@@ -96,21 +99,41 @@ export default function DeputeCard<RootComponent extends React.ElementType>(
             minWidth: 0,
           }}
         >
-          {slug && !isFullCardLink ? (
-            <MuiLink
-              variant="body2"
-              fontWeight="bold"
-              underline="hover"
-              component={Link}
-              href={`/depute/${slug}`}
-            >
-              {prenom} {nom}
-            </MuiLink>
-          ) : (
-            <Typography variant="body2" fontWeight="bold">
-              {prenom} {nom}
-            </Typography>
-          )}
+          <Stack direction="row" alignItems="center" spacing={0.8}>
+            {slug && !isFullCardLink ? (
+              <MuiLink
+                variant="body2"
+                fontWeight="bold"
+                underline="hover"
+                component={Link}
+                href={`/depute/${slug}`}
+              >
+                {prenom} {nom}
+              </MuiLink>
+            ) : (
+              <Typography variant="body2" fontWeight="bold">
+                {prenom} {nom}
+              </Typography>
+            )}
+            {auGouvernement && (
+              <Tooltip title="Membre du gouvernement (mandat de député suspendu)">
+                <Chip
+                  label="Gouv."
+                  size="small"
+                  sx={{
+                    bgcolor: "#dbeafe",
+                    color: "#1e40af",
+                    fontWeight: 600,
+                    fontSize: "0.6rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    height: 16,
+                    "& .MuiChip-label": { px: 0.7 },
+                  }}
+                />
+              </Tooltip>
+            )}
+          </Stack>
           {secondaryText && (
             <Typography variant="body2" fontWeight="light">
               {secondaryText}

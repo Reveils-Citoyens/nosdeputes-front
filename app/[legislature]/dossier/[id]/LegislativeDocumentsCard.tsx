@@ -14,13 +14,51 @@ import { getDocument } from "@/data/getDocument";
 
 interface LegislativeDocumentsCardProps {
   documentIds: string[];
+  /** Libellé de version par documentUid (texte initial, texte adopté…). */
+  versionLabels?: Record<string, string>;
 }
 export const LegislativeDocumentsCard = async (
   props: LegislativeDocumentsCardProps
 ) => {
-  const documents = await Promise.all(
+  const versionLabels = props.versionLabels ?? {};
+  let documents = await Promise.all(
     props.documentIds.map((documentUid) => getDocument(documentUid))
   );
+  documents = documents.filter((doc) => doc?.pdfUrl);
+
+  const docsList = Object.values(documents).filter(Boolean) as any[];
+
+  const formatDate = (date?: string | Date | null) => {
+    if (!date) return "";
+    const d = typeof date === "string" ? new Date(date) : (date as Date);
+    return d.toLocaleDateString("fr-FR", { year: "numeric", month: "short", day: "numeric" });
+  };
+
+  const chambreLabel = (chambre?: string | null) => {
+    if (chambre === "AN") return "Assemblée nationale";
+    if (chambre === "SN") return "Sénat";
+    return chambre ?? "";
+  };
+
+  // Group documents by typeLibelle
+  const grouped = docsList.reduce((acc: Record<string, any[]>, document) => {
+    const key = document.typeLibelle ?? "Autre";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(document);
+    return acc;
+  }, {});
+
+  // Sort groups by first document's dateCreation (chronological order)
+  const sortedGroups = Object.entries(grouped).sort(([, docsA], [, docsB]) => {
+    const dateA = docsA[0]?.dateCreation;
+    const dateB = docsB[0]?.dateCreation;
+    if (!dateA && !dateB) return 0;
+    if (!dateA) return 1;
+    if (!dateB) return -1;
+    const timeA = typeof dateA === "string" ? new Date(dateA).getTime() : (dateA as Date).getTime();
+    const timeB = typeof dateB === "string" ? new Date(dateB).getTime() : (dateB as Date).getTime();
+    return timeA - timeB;
+  });
 
   return (
     <Accordion
@@ -46,46 +84,77 @@ export const LegislativeDocumentsCard = async (
       </AccordionSummary>
       <AccordionDetails sx={{ pt: 0, pb: 1.5 }}>
         <Stack direction="column" spacing={2}>
-          {Object.values(documents).map((document) => {
-            if (!document) {
-              return null;
-            }
+          {sortedGroups.map(([typeLibelle, docs]) => {
+            // Chambre commune au groupe ? Si oui, on l'affiche une seule fois
+            // (sous-titre) et les lignes ne montrent que la date — sinon on garde
+            // la chambre par ligne (cas navette AN ↔ Sénat).
+            const chambres = Array.from(
+              new Set(docs.map((d) => d.chambre).filter(Boolean))
+            );
+            const groupChamber = chambres.length === 1 ? chambres[0] : null;
+            // Les textes de loi sont des versions successives → on l'explicite.
+            const isLoi = /loi/i.test(typeLibelle);
 
             return (
-              <Stack
-                key={document.uid}
-                direction="row"
-                spacing={1}
-                alignItems="flex-start"
-              >
-                {document.pdfUrl && (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      height: "25px",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Image
-                      src="/documents.png"
-                      alt="Icone document"
-                      width={18}
-                      height={18}
-                    />
-                  </Box>
-                )}
-                <Typography
-                  variant="body2"
-                  fontWeight="medium"
-                  href={document.pdfUrl ?? undefined}
-                  component={document.pdfUrl ? Link : "p"}
-                  target="_blank"
-                >
-                  {document.titrePrincipalCourt}
-                  {document.chambre ? ` (${document.chambre})` : "  "}
+            <Stack key={typeLibelle} direction="column" spacing={1}>
+              <Box>
+                <Typography variant="subtitle2" fontWeight="bold">
+                  {typeLibelle}
                 </Typography>
-              </Stack>
+                {groupChamber && (
+                  <Typography variant="caption" color="text.secondary">
+                    {chambreLabel(groupChamber)}
+                  </Typography>
+                )}
+              </Box>
+              {docs.map((document) => {
+                const versionLabel = versionLabels[document.uid];
+                const chambrePrefix =
+                  !groupChamber && document.chambre ? `${chambreLabel(document.chambre)} · ` : "";
+                // Libellé principal : version issue de l'acte si dispo,
+                // sinon repli "Version du {date}" pour les lois / date brute sinon.
+                const primary = versionLabel
+                  ? `${chambrePrefix}${versionLabel}`
+                  : document.dateCreation
+                  ? `${chambrePrefix}${isLoi ? `Version du ${formatDate(document.dateCreation)}` : formatDate(document.dateCreation)}`
+                  : chambrePrefix || typeLibelle;
+                // Date en sous-ligne uniquement quand le principal n'est pas déjà la date.
+                const dateLine = versionLabel && document.dateCreation ? formatDate(document.dateCreation) : null;
+
+                return (
+                <Stack key={document.uid} direction="row" spacing={1} alignItems="flex-start">
+                  {document.pdfUrl && (
+                    <Box sx={{ display: "flex", alignItems: "center", height: "25px", flexShrink: 0 }}>
+                      <Image src="/documents.png" alt="Icone document" width={18} height={18} />
+                    </Box>
+                  )}
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography
+                      variant="body2"
+                      fontWeight="medium"
+                      href={document.pdfUrl ?? undefined}
+                      component={document.pdfUrl ? Link : "p"}
+                      target="_blank"
+                      {...(document.pdfUrl ? { "data-umami-event": "document-ouvert" } : {})}
+                      sx={{
+                        display: "block",
+                        textDecoration: "none",
+                        color: "inherit",
+                        "&:hover": document.pdfUrl ? { textDecoration: "underline" } : {},
+                      }}
+                    >
+                      {primary}
+                    </Typography>
+                    {dateLine && (
+                      <Typography variant="caption" color="text.secondary">
+                        {dateLine}
+                      </Typography>
+                    )}
+                  </Box>
+                </Stack>
+                );
+              })}
+            </Stack>
             );
           })}
         </Stack>

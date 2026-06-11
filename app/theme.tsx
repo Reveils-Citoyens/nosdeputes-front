@@ -72,6 +72,17 @@ const theme = createTheme({
     },
   },
   components: {
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          // Tooltips parfois longs (explications d'amendements, enjeux) :
+          // un peu de respiration (padding + interligne) améliore la lisibilité.
+          lineHeight: 1.5,
+          fontSize: "0.75rem",
+          padding: "8px 12px",
+        },
+      },
+    },
     MuiButton: {
       defaultProps: {
         disableElevation: true,
@@ -167,6 +178,15 @@ const theme = createTheme({
           "& .MuiOutlinedInput-notchedOutline": {
             border: "none",
           },
+        },
+      },
+    },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          boxShadow:
+            "0px 2px 8px rgba(0, 0, 0, 0.08), 0px 1px 3px rgba(0, 0, 0, 0.06)",
+          borderRadius: "10px",
         },
       },
     },

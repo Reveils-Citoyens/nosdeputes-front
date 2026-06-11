@@ -1,50 +1,27 @@
 import React from "react";
-
-import Typography from "@mui/material/Typography";
-import Stack from "@mui/material/Stack";
-
+import Link from "next/link";
 import Card from "@mui/material/Card";
 import CardActionArea from "@mui/material/CardActionArea";
-import Link from "next/link";
-import StatusChip, { Status } from "@/components/StatusChip";
 import Chip from "@mui/material/Chip";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import DossierBadge from "@/components/folders/DossierBadge";
+import { THEMES, isThemeSlug } from "@/data/themes";
+import { THEME_ICONS } from "@/app/themes/themeIcons";
 
-import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
-import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
+const MAX_THEMES = 3;
 
 type DossierCardProps = {
   href: string;
-  titre: null | string;
-  dateDernierActe: Date | null;
-  type: string;
-  // etape: null | string; //TODO: use an enum when the type of etape will be clear
-  thematique?: string; // TODO: use an enum latter – pour le moment en attendant Thomas
-  statusType?: Status;
-  statusLabel?: string | null;
-  interventions?: number;
-  amendements?: number;
+  titre: string | null;
+  typeLabel: string | null;
+  badge: string | null;
+  tldr: string | null;
+  themes: string[];
 };
-const DossierCard = (props: DossierCardProps) => {
-  const {
-    titre,
-    type,
-    href,
-    interventions,
-    amendements,
-    dateDernierActe,
-    statusLabel,
-    statusType,
-  } = props;
 
-  const formattedDate = dateDernierActe
-    ? dateDernierActe.toLocaleDateString("fr-FR", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : "";
-
-  const withStats = interventions !== undefined && amendements !== undefined;
+const DossierCard = ({ href, titre, typeLabel, badge, tldr, themes }: DossierCardProps) => {
+  const visibleThemes = themes.slice(0, MAX_THEMES);
 
   return (
     <Card
@@ -52,12 +29,8 @@ const DossierCard = (props: DossierCardProps) => {
       sx={{
         borderRadius: 3,
         height: "100%",
-        display: "flex",
-        flexDirection: "column",
         transition: "box-shadow 0.3s",
-        "&:hover": {
-          boxShadow: "0px 4px 20px rgba(0,0,0,0.08)",
-        },
+        "&:hover": { boxShadow: "0px 4px 20px rgba(0,0,0,0.08)" },
       }}
     >
       <CardActionArea
@@ -65,115 +38,104 @@ const DossierCard = (props: DossierCardProps) => {
         href={href}
         sx={{
           p: 2.5,
+          height: "100%",
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-start",
-          justifyContent: "space-between",
-          height: "100%",
-          gap: 2,
+          justifyContent: "flex-start",
+          gap: 1.5,
         }}
       >
-        {/* --- HAUT : Type & Date --- */}
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          width="100%"
-          alignItems="center"
-        >
-          <Chip
-            label={type}
-            size="small"
-            variant="outlined"
-            sx={{
-              fontSize: "0.7rem",
-              height: 24,
-              borderColor: "grey.300",
-              color: "text.secondary",
-            }}
-          />
-          {formattedDate && (
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <CalendarTodayOutlinedIcon
-                sx={{ fontSize: 14, color: "text.secondary" }}
-              />
-              <Typography variant="caption" color="text.secondary">
-                {formattedDate}
-              </Typography>
-            </Stack>
+        {/* Ligne haute : badge gauche, type droit */}
+        <Stack direction="row" justifyContent="space-between" alignItems="center" width="100%">
+          <DossierBadge badge={badge} />
+          {typeLabel && (
+            <Chip
+              label={typeLabel}
+              size="small"
+              variant="outlined"
+              sx={{
+                fontSize: "0.68rem",
+                height: 22,
+                borderColor: "grey.300",
+                color: "text.secondary",
+                maxWidth: 180,
+                "& .MuiChip-label": {
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                },
+              }}
+            />
           )}
         </Stack>
 
-        {/* --- MILIEU : Titre --- */}
+        {/* Titre */}
         <Typography
           variant="subtitle1"
           fontWeight="bold"
           sx={{
             lineHeight: 1.4,
-            overflow: "hidden",
-            flexGrow: 1,
             display: "-webkit-box",
             WebkitLineClamp: 3,
             WebkitBoxOrient: "vertical",
+            overflow: "hidden",
           }}
         >
           {titre}
         </Typography>
 
-        {/* --- BAS : Statut & Métriques --- */}
-        <Stack width="100%" spacing={1.5}>
-          {/* Ligne des badges */}
-          <Stack
-            direction="row"
-            spacing={1}
-            flexWrap="wrap"
-            useFlexGap
-            sx={{ rowGap: 1 }}
+        {/* TLDR */}
+        {tldr && (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              fontStyle: "italic",
+              lineHeight: 1.55,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
           >
-            {statusLabel && (
-              <StatusChip
-                size="small"
-                status={statusType || "review"}
-                label={statusLabel}
-              />
-            )}
-            {/* {thematique && (
-              <LabelChip size="small" label={thematique} />
-            )} */}
-          </Stack>
+            {tldr}
+          </Typography>
+        )}
 
-          {/* Ligne des compteurs discrets */}
-          {amendements !== undefined && amendements > 0 && (
-            <Stack
-              direction="row"
-              spacing={2}
-              alignItems="center"
-              sx={{
-                pt: 1,
-                borderTop: 1,
-                borderColor: "grey.100",
-                width: "100%",
-              }}
-            >
-              <Stack
-                direction="row"
-                spacing={0.5}
-                alignItems="center"
-                title={`${amendements} amendements détectés`}
-              >
-                <DescriptionOutlinedIcon
-                  sx={{ fontSize: 16, color: "text.secondary" }}
+        {/* Thèmes */}
+        {visibleThemes.length > 0 && (
+          <Stack direction="row" gap={0.75} sx={{ flexWrap: "nowrap", minWidth: 0, width: "100%", mt: "auto" }}>
+            {visibleThemes.map((slug) => {
+              const isValid = isThemeSlug(slug);
+              const Icon = isValid ? THEME_ICONS[slug] : null;
+              return (
+                <Chip
+                  key={slug}
+                  label={isValid ? THEMES[slug].label : slug}
+                  size="small"
+                  variant="outlined"
+                  icon={Icon ? <Icon style={{ fontSize: 13 }} /> : undefined}
+                  sx={{
+                    fontSize: "0.75rem",
+                    height: 26,
+                    borderColor: "grey.300",
+                    color: "text.secondary",
+                    pointerEvents: "none",
+                    flexShrink: 1,
+                    minWidth: 0,
+                    "& .MuiChip-icon": { color: "primary.main", ml: 0.75 },
+                    "& .MuiChip-label": {
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    },
+                  }}
                 />
-                <Typography
-                  variant="caption"
-                  fontWeight="medium"
-                  color="text.secondary"
-                >
-                  {amendements} amendements
-                </Typography>
-              </Stack>
-            </Stack>
-          )}
-        </Stack>
+              );
+            })}
+          </Stack>
+        )}
       </CardActionArea>
     </Card>
   );

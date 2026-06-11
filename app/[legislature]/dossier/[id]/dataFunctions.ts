@@ -13,16 +13,39 @@ export const statusInfo: Record<string, { label: string; status: Status }> = {
   SN3: { label: "3e lecture SN", status: "review" },
   CMP: { label: "Commission Mixte Paritaire", status: "review" },
   PROM: { label: "Promulguée", status: "validated" },
+  ADOPTEE: { label: "Adoptée", status: "validated" },
+  ANLUNI: { label: "Lecture unique", status: "review" },
+  RETIRE: { label: "Retrait de l'initiative", status: "dropped" },
 };
 
 export function getCurrentStatus(acts: ActeLegislatif[]) {
+  // Adoption en lecture unique (résolutions) : signal final positif
+  const adopted = acts.some(
+    (act) => act.codeActe === "ANLUNI-DEBATS-DEC" && act.adoption === true,
+  );
+  if (adopted) return "ADOPTEE";
+
   const codes = acts.map((act) => act.codeActe);
+
+  // Retrait : prioritaire sur la position dans la navette
+  // On vérifie à la fois codeActe et nomCanonique car le code peut être générique (ex. AN1-TEXTEDEP)
+  const hasRetrait = acts.some(
+    (act) =>
+      act.codeActe?.toUpperCase().includes("RETRAIT") ||
+      act.nomCanonique?.toLowerCase().includes("retrait"),
+  );
+  if (hasRetrait) return "RETIRE";
 
   for (let i = 0; i < statusOrder.length; i += 1) {
     const status = statusOrder[statusOrder.length - 1 - i];
     if (codes.some((code) => code.startsWith(status))) {
       return status;
     }
+  }
+
+  // Fallback : lecture unique en cours (pas encore adoptée/rejetée)
+  if (codes.some((code) => code.startsWith("ANLUNI"))) {
+    return "ANLUNI";
   }
 }
 

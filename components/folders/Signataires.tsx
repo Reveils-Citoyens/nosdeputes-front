@@ -5,7 +5,7 @@ import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
-import InfoIcon from "@/icons/InfoIcon";
+import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
 import { ActeurCard } from "./ActeurCard";
 
 export default function Signataires(props: {
@@ -22,7 +22,11 @@ export default function Signataires(props: {
           <Typography variant="body2" fontWeight="light" color="grey.600">
             Co-signataires
           </Typography>
-          <InfoIcon sx={{ fontSize: "14px" }} />
+          <InfoDialogIcon
+            sx={{ fontSize: "14px" }}
+            category="dossier"
+            item="cosignataires"
+          />
         </Stack>
 
         {signataireUids

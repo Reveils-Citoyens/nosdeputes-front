@@ -7,7 +7,6 @@ import AccordionDetails from "@mui/material/AccordionDetails";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import Box from "@mui/material/Box";
-import InfoIcon from "@/icons/InfoIcon";
 
 import CommissionItem from "./CommissionItem";
 
@@ -77,8 +76,8 @@ export const CommissionsCard = async ({
                 </Typography>
                 <InfoDialogIcon
                   sx={{ fontSize: "14px" }}
-                  category="test"
-                  item="test2"
+                  category="dossier"
+                  item="commission_fond"
                 />
               </Stack>
               {commissionFondIds.map((commissionId) => (
@@ -113,7 +112,11 @@ export const CommissionsCard = async ({
                   Commission{commissionAvisIds.length > 1 ? "s" : ""} saisie{commissionAvisIds.length > 1 ? "s" : ""} pour
                   avis
                 </Typography>
-                <InfoIcon sx={{ fontSize: "14px" }} />
+                <InfoDialogIcon
+                  sx={{ fontSize: "14px" }}
+                  category="dossier"
+                  item="commission_avis"
+                />
               </Stack>
               <Stack direction="column" spacing={1} alignItems="start">
                 {commissionAvisIds.map((commissionId) => (

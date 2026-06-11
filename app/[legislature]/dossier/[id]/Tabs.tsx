@@ -12,11 +12,15 @@ import { getDebats, ReturnedDebat } from "@/data/getDebats";
 export default function DossiersTabs(props: {
   legislature: string;
   dossierUid: string;
+  showApercu: boolean;
   showDebats: boolean;
   showAmendements: boolean;
   showVotes: boolean;
+  showComptesRendus?: boolean;
+  hasAmendements: boolean;
+  hasVotes: boolean;
 }) {
-  const { legislature, dossierUid, showDebats, showAmendements, showVotes } =
+  const { legislature, dossierUid, showApercu, showDebats, showAmendements, showVotes, showComptesRendus, hasAmendements, hasVotes } =
     props;
   const segment = useSelectedLayoutSegment();
 
@@ -25,32 +29,50 @@ export default function DossiersTabs(props: {
     queryFn: async () => await getDebats(dossierUid),
   });
 
-  const debatsDisponibles = debats?.filter(
-    (compteRendu: ReturnedDebat) => compteRendu._count.paragraphes > 0,
+  const seanceDebats = debats?.filter(
+    (d: ReturnedDebat) => d.debateType === "seance" && d._count.paragraphes > 0,
+  );
+  const commissionDebats = debats?.filter(
+    (d: ReturnedDebat) => d.debateType === "commission" && d._count.paragraphes > 0,
   );
 
   const rootPathName = `/${legislature}/dossier/${dossierUid}/`;
 
   const tabs = [
-    { value: "", label: "Aperçu", href: rootPathName, visible: true },
-    {
-      value: "debat",
-      label: "Débats",
-      href: `${rootPathName}debat`,
-      visible: showDebats,
-      disabled: debatsDisponibles != null && debatsDisponibles.length === 0,
-    },
+    { value: "", label: "Aperçu", href: rootPathName, visible: showApercu },
     {
       value: "amendement",
-      label: "Amendements",
+      label: "Texte & amendements",
       href: `${rootPathName}amendement`,
       visible: showAmendements,
+      disabled: !hasAmendements,
+    },
+    {
+      value: "commission",
+      label: "Commission",
+      href: `${rootPathName}commission`,
+      visible: showDebats,
+      disabled: commissionDebats != null && commissionDebats.length === 0,
+    },
+    {
+      value: "debat",
+      label: "Séance",
+      href: `${rootPathName}debat`,
+      visible: showDebats,
+      disabled: seanceDebats != null && seanceDebats.length === 0,
     },
     {
       value: "votes",
       label: "Votes",
       href: `${rootPathName}votes`,
       visible: showVotes,
+      disabled: !hasVotes,
+    },
+    {
+      value: "comptes-rendus",
+      label: "Comptes-rendus",
+      href: `${rootPathName}comptes-rendus`,
+      visible: !!showComptesRendus,
     },
   ];
 

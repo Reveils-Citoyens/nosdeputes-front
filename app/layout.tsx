@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Raleway } from "next/font/google";
 import "./globals.css";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
@@ -26,14 +27,14 @@ export const metadata: Metadata = {
   description: "Observatoire citoyen de l'activité parlementaire",
 
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     site: "@ReveilsCitoyens",
     title: "NosDéputés.fr par @ReveilsCitoyens",
     description:
       "Observatoire citoyen de l'activité parlementaire à l'Assemblée nationale",
     images: {
-      url: "https://www.nosdeputes.fr/images/xneth/bouton_logo.png",
-      type: "image/png",
+      url: "https://www.nosdeputes.fr/preview.jpg",
+      type: "image/jpeg",
     },
   },
   openGraph: {
@@ -42,16 +43,18 @@ export const metadata: Metadata = {
     siteName: "NosDéputés.fr",
     description:
       "Observatoire citoyen de l'activité parlementaire à l'Assemblée nationale",
-    url: "https://www.NosDéputés.fr",
+    url: "https://www.nosdeputes.fr",
     locale: "fr_FR",
-    images: "https://www.nosdeputes.fr/images/xneth/bouton_logo.png",
+    images: "https://www.nosdeputes.fr/preview.jpg",
   },
 };
 
 const navigation: NavigationItem[] = [
   { name: "Députés", href: "/deputes" },
-  { name: "Dossiers", href: "/dossiers" }, // old url is "/dossiers/date"
-  { name: "À Propos", href: "/about" }
+  { name: "Dossiers", href: "/dossiers" },
+  { name: "Thèmes", href: "/themes" },
+  { name: "Comprendre", href: "/comprendre" },
+  { name: "À Propos", href: "/about" },
 ];
 
 export default function RootLayout({
@@ -77,6 +80,11 @@ export default function RootLayout({
             </AppRouterCacheProvider>
           </InfoDialogProvider>
         </NuqsAdapter>
+        <Script
+          src="https://burrowing-partridge.pikapod.net/script.js"
+          data-website-id="48ac37d3-b378-4072-b628-b69f5b91f843"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

@@ -1,34 +1,49 @@
-import * as React from "react";
 import { Acteur, Mandat, Organe } from "@prisma/client";
 import { getOrgane } from "./getOrgane";
+import { resolveAuGouvernement } from "./helpers/resolveAuGouvernement";
 
-async function getActeurUnCached(uid: string): Promise<
-  | (Acteur & {
-      groupeParlementaire: Organe | null;
-      mandatPrincipal: Mandat | null;
-    })
-  | null
-> {
+export type ReturnedActeur = Acteur & {
+  groupeParlementaire: Organe | null;
+  mandatPrincipal: Mandat | null;
+  auGouvernement: boolean;
+};
+
+async function fetchActeur(uid: string): Promise<ReturnedActeur | null> {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/acteurs/${uid}?include=mandatPrincipal`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/acteurs/${uid}?include=mandatPrincipal`,
     );
+    if (!rep.ok) return null;
 
     const { data } = await rep.json();
+    if (!data) return null;
 
     data.groupeParlementaire = null;
     if (data.groupeParlementaireUid) {
       data.groupeParlementaire = await getOrgane(data.groupeParlementaireUid);
     }
-    return data;
+    return await resolveAuGouvernement(data);
   } catch (error) {
-    console.error("Error fetching dossier:", error);
+    // Échec réseau non bloquant : l'appelant gère le null (carte acteur masquée).
+    console.warn("getActeur: échec de récupération", uid, error);
     return null;
   }
 }
 
-export type ReturnedActeur = Acteur & {
-  groupeParlementaire: Organe | null;
-  mandatPrincipal: Mandat | null;
-};
-export const getActeur = React.cache(getActeurUnCached);
+// Cache mémoire partagé (client et serveur) avec dédoublonnage des requêtes
+// concurrentes : un même auteur revient sur des dizaines d'amendements, on ne
+// veut pas le re-fetcher à chaque carte. Les échecs ne sont pas conservés pour
+// permettre un nouvel essai.
+const cache = new Map<string, Promise<ReturnedActeur | null>>();
+
+export function getActeur(uid: string): Promise<ReturnedActeur | null> {
+  const cached = cache.get(uid);
+  if (cached) return cached;
+
+  const p = fetchActeur(uid).then((res) => {
+    if (res == null) cache.delete(uid);
+    return res;
+  });
+  cache.set(uid, p);
+  return p;
+}

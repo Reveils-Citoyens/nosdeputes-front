@@ -15,14 +15,21 @@ import Typography from "@mui/material/Typography";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import Link from "next/link";
-import { ReturnedDebat } from "@/data/getDebats";
+
+/** Élément minimal affiché dans le sélecteur (un débat ou un compte rendu). */
+type DebatLike = {
+  uid: string;
+  dateSeanceJour?: string | null;
+};
 
 type DebateFilterBarProps = {
-  debats: ReturnedDebat[];
+  debats: DebatLike[];
+  /** Segment de base pour les liens (défaut: "debat") */
+  basePath?: string;
 };
 
 export const DebateFilterBar = (props: DebateFilterBarProps) => {
-  const { debats } = props;
+  const { debats, basePath = "debat" } = props;
   const sceanceUid = useSelectedLayoutSegment();
 
   const debatIndex = debats.findIndex((debat) => debat.uid === sceanceUid);
@@ -32,7 +39,7 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
       if (sceanceUid) {
         permanentRedirect(`${debats[0].uid}`);
       } else {
-        permanentRedirect(`debat/${debats[0].uid}`);
+        permanentRedirect(`${basePath}/${debats[0].uid}`);
       }
     }
   }

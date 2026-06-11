@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   searchAmendement,
   sortAmendementPossible,
+  type AmendementWithDossierRef,
 } from "@/data/searchAmendement";
 import { useParams } from "next/navigation";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
@@ -11,17 +12,17 @@ import AmendementCard from "@/components/folders/AmendementCard";
 import {
   Stack,
   Select,
-  Input,
   MenuItem,
   Typography,
-  Container,
+  Box,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
+import SearchInput from "@/components/SearchInput";
 import debounce from "@/utils/debounce";
 import Pagination from "@/components/Pagination";
 
 export default function Amendements() {
   const { slug } = useParams<{ slug: string }>();
+  const [value, setValue] = React.useState("");
   const [search, setSearch] = React.useState("");
   const [sortAmendement, setSortAmendement] = React.useState("");
   const [page, setPage] = React.useState(1);
@@ -51,14 +52,19 @@ export default function Amendements() {
   const data = result?.data ?? [];
   const pagination = result?.pagination;
 
-  const handleSearchChange = React.useMemo(
+  const debouncedSetSearch = React.useMemo(
     () =>
-      debounce((value: string) => {
-        setSearch(value);
+      debounce((next: string) => {
+        setSearch(next);
         setPage(1);
       }, 300),
     [],
   );
+
+  const handleSearchChange = (next: string) => {
+    setValue(next);
+    debouncedSetSearch(next);
+  };
 
   const handleSortChange = (newSort: string) => {
     setSortAmendement(newSort);
@@ -66,37 +72,37 @@ export default function Amendements() {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ p: { xs: 2, md: 4 } }}>
+    <Box sx={{ width: "100%" }}>
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 3 }}>
-        <Input
-          fullWidth
-          onChange={(event) => handleSearchChange(event.target.value)}
-          startAdornment={
-            <SearchIcon sx={{ mr: 1, color: "text.secondary" }} />
-          }
-          placeholder="Rechercher par mot-clé ou numéro..."
-          sx={{
-            bgcolor: "background.paper",
-            borderRadius: 1,
-            px: 2,
-            py: 0.5,
-            border: "1px solid",
-            borderColor: "divider",
-            flexGrow: 1,
-          }}
-          disableUnderline
+        <SearchInput
+          value={value}
+          onChange={handleSearchChange}
+          placeholder="Rechercher par mot-clé ou numéro…"
         />
         <Select
           value={sortAmendement}
           onChange={(e) => handleSortChange(e.target.value)}
           displayEmpty
-          sx={{
-            minWidth: 220,
-            bgcolor: "background.paper",
-            borderRadius: 1,
-          }}
           variant="outlined"
           size="small"
+          sx={{
+            minWidth: 220,
+            borderRadius: "30px",
+            bgcolor: "white",
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "grey.200",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: "grey.300",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              borderColor: "grey.700",
+              borderWidth: "1px",
+            },
+            "& .MuiSelect-select": {
+              pl: 2,
+            },
+          }}
         >
           <MenuItem value="">Tous les statuts</MenuItem>
           {sortAmendementPossible.map((sort) => (
@@ -107,14 +113,11 @@ export default function Amendements() {
         </Select>
       </Stack>
 
-      <Pagination
-        {...pagination}
-        page={page}
-        setPage={setPage}
-        isPending={isPending}
-      />
-      {data.map((amendement) => {
-        const titre = `Amendement N°${amendement.numeroOrdreDepot}`;
+      {(data as AmendementWithDossierRef[]).map((amendement) => {
+        const dossierTitre = amendement.dossierRef?.titre;
+        const titre = dossierTitre
+          ? `${dossierTitre} — N°${amendement.numeroOrdreDepot}`
+          : `Amendement N°${amendement.numeroOrdreDepot}`;
 
         return (
           <AmendementCard
@@ -144,6 +147,6 @@ export default function Amendements() {
         setPage={setPage}
         isPending={isPending}
       />
-    </Container>
+    </Box>
   );
 }

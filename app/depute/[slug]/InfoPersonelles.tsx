@@ -123,12 +123,12 @@ export default async function InfoPersonelles({
               <InfoDialogIcon category="organe" item="GP" />
             </Box>
           </Typography>
-          <Chip 
-              label={derniergroupeParlementaire.organeRef?.libelle ?? '-'}
+          <Chip
+              label={derniergroupeParlementaire?.organeRef?.libelle ?? '-'}
               size="small"
               sx={{
-                backgroundColor: derniergroupeParlementaire.organeRef?.couleurAssociee || "#e0e0e0",
-                color: derniergroupeParlementaire.organeRef?.couleurAssociee ? "#fff" : "rgba(0, 0, 0, 0.87)",
+                backgroundColor: derniergroupeParlementaire?.organeRef?.couleurAssociee || "#e0e0e0",
+                color: derniergroupeParlementaire?.organeRef?.couleurAssociee ? "#fff" : "rgba(0, 0, 0, 0.87)",
                 fontWeight: 600,
                 fontSize: "0.8rem",
                 height: "30px",

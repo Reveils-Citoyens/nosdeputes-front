@@ -35,6 +35,27 @@ function getStatus(label: string | null) {
   }
 }
 
+function getAmendementTooltip(label: string | null): string {
+  switch (label) {
+    case "Adopté":
+      return "L'amendement a été mis aux voix et adopté par l'assemblée.";
+    case "Rejeté":
+      return "L'amendement a été mis aux voix et rejeté par l'assemblée.";
+    case "Irrecevable":
+      return "L'amendement a été déclaré irrecevable avant examen, pour non-conformité aux règles de procédure.";
+    case "Irrecevable 40":
+      return "Irrecevable au titre de l'article 40 de la Constitution : l'amendement augmenterait les dépenses publiques ou réduirait les recettes.";
+    case "Tombé":
+      return "L'amendement est devenu sans objet suite à l'adoption ou au rejet d'un amendement incompatible.";
+    case "Non soutenu":
+      return "L'auteur n'était pas présent en séance pour défendre son amendement ; il n'a pas été mis aux voix.";
+    case "Retiré":
+      return "L'auteur a retiré son amendement avant qu'il soit mis aux voix.";
+    default:
+      return "L'amendement a été déposé et attend d'être examiné en séance.";
+  }
+}
+
 type AmendementCardProps = {
   amendement: Amendement & { dossierRef?: Dossier | null };
   acteurUid: null | string;
@@ -60,7 +81,7 @@ function GouvernementAvatar(props: { sx?: React.CSSProperties }) {
           minWidth: 0,
         }}
       >
-        <Typography variant="body2" fontWeight="medium" sx={{ mb: "1rem" }}>
+        <Typography variant="body2" fontWeight="medium">
           Gouvernement
         </Typography>
       </Box>
@@ -83,6 +104,7 @@ export default function AmendementCard(props: AmendementCardProps) {
         "&:before": { display: "none" },
         borderBottom: "1px solid",
         borderColor: "divider",
+        "&:last-child": { borderBottom: "none" },
         "&.Mui-expanded": {
           bgcolor: "rgba(0, 0, 0, 0.01)",
         },
@@ -95,10 +117,13 @@ export default function AmendementCard(props: AmendementCardProps) {
         sx={{
           px: 2,
           minHeight: 60,
+          cursor: "pointer",
           "& .MuiAccordionSummary-content": {
-            flexWrap: "wrap",
             alignItems: "center",
             gap: 1,
+            cursor: "pointer",
+            minWidth: 0,
+            overflow: "hidden",
           },
         }}
       >
@@ -109,7 +134,6 @@ export default function AmendementCard(props: AmendementCardProps) {
             flexGrow: 1,
             minWidth: 0,
             justifyContent: "space-between",
-            flexWrap: "wrap",
             gap: 1,
           }}
         >
@@ -120,40 +144,44 @@ export default function AmendementCard(props: AmendementCardProps) {
               gap: 2,
               minWidth: 0,
               flex: 1,
+              overflow: "hidden",
             }}
           >
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 700,
-                whiteSpace: "nowrap",
-                minWidth: "auto",
-              }}
-            >
-              {titre || `N°${amendement.numeroLong}`}
-            </Typography>
-
+            {titre && (
+              <Typography
+                variant="subtitle2"
+                noWrap
+                sx={{ fontWeight: 700, minWidth: 0 }}
+              >
+                {titre}
+              </Typography>
+            )}
+            {/* stopPropagation : le clic sur le nom/avatar navigue sans toggler l'accordion */}
             <Box
+              onClick={(e) => e.stopPropagation()}
               sx={{
                 flexGrow: 0,
                 minWidth: 0,
                 maxWidth: isMobile ? 150 : "auto",
               }}
             >
-              {acteurUid && (
-                <ActeurCard id={acteurUid} smallGroupColor link="name" />
-              )}
-              {!acteurUid && amendement.typeAuteur === "Gouvernement" && (
+              {amendement.typeAuteur === "Gouvernement" ? (
                 <GouvernementAvatar />
-              )}
+              ) : acteurUid ? (
+                <ActeurCard id={acteurUid} smallGroupColor link="name" />
+              ) : !titre ? (
+                // Contexte dossier (pas de titre prop) : pas d'acteur identifié = amendement gouvernemental
+                <GouvernementAvatar />
+              ) : null}
             </Box>
           </Box>
 
-          <Box sx={{ flexShrink: 0 }}>
+          <Box sx={{ flexShrink: 0, mr: 1 }}>
             <StatusChip
               size="small"
               label={amendement.sortAmendement}
               status={getStatus(amendement.sortAmendement)}
+              tooltip={getAmendementTooltip(amendement.sortAmendement)}
             />
           </Box>
         </Box>
@@ -216,6 +244,7 @@ export default function AmendementCard(props: AmendementCardProps) {
                 }}
               >
                 <Typography
+                  component="div"
                   variant="body2"
                   sx={{ lineHeight: 1.7 }}
                   dangerouslySetInnerHTML={{ __html: amendement.dispositif }}
@@ -238,6 +267,7 @@ export default function AmendementCard(props: AmendementCardProps) {
                 Exposé Sommaire
               </Typography>
               <Typography
+                component="div"
                 variant="body2"
                 sx={{ lineHeight: 1.8, color: "text.primary" }}
                 dangerouslySetInnerHTML={{ __html: amendement.exposeSommaire }}
@@ -252,6 +282,7 @@ export default function AmendementCard(props: AmendementCardProps) {
               spacing={{ xs: 2, sm: 0 }}
               sx={{ bgcolor: "grey.100", p: 1.5, borderRadius: 1 }}
             >
+              <MetaItem label="Numéro" value={`N°${amendement.numeroLong}`} />
               <MetaItem
                 label="Signataires"
                 value={
@@ -268,14 +299,12 @@ export default function AmendementCard(props: AmendementCardProps) {
                     : "-"
                 }
               />
-              <MetaItem
-                label="Examen"
-                value={
-                  amendement.dateSort
-                    ? new Date(amendement.dateSort).toLocaleDateString("fr-FR")
-                    : "-"
-                }
-              />
+              {amendement.dateSort && (
+                <MetaItem
+                  label="Examen"
+                  value={new Date(amendement.dateSort).toLocaleDateString("fr-FR")}
+                />
+              )}
             </Stack>
           </Box>
         </Stack>

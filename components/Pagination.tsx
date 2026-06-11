@@ -1,8 +1,7 @@
 import * as React from "react";
-import Stack from "@mui/material/Stack";
-import Button from "@mui/material/Button";
+import MuiPagination from "@mui/material/Pagination";
 import { PaginationMetadata } from "@/data/pagination";
-import { LinearProgress, Typography } from "@mui/material";
+import { Box, LinearProgress } from "@mui/material";
 
 export interface PaginationProps extends Partial<PaginationMetadata> {
   page: number;
@@ -13,36 +12,27 @@ export interface PaginationProps extends Partial<PaginationMetadata> {
 export default function Pagination(props: PaginationProps) {
   const { page, setPage, totalPage = 1, isPending } = props;
 
-  return (
-    <div>
-      <Stack
-        justifyContent="space-between"
-        direction="row"
-        alignItems="center"
-        mt={2}
-      >
-        <Button
-          disabled={isPending || page === 1}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          &lt; Page précédente
-        </Button>
-        <Typography>
-          Page {page} sur {totalPage}
-        </Typography>
-        <Button
-          disabled={isPending || page >= totalPage}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Page suivante &gt;
-        </Button>
-      </Stack>
+  if (totalPage <= 1 && !isPending) return null;
 
+  return (
+    <Box>
+      <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
+        <MuiPagination
+          count={totalPage}
+          page={page}
+          onChange={(_, value) => setPage(value)}
+          disabled={isPending}
+          siblingCount={1}
+          boundaryCount={1}
+          shape="rounded"
+          color="primary"
+        />
+      </Box>
       {isPending ? (
         <LinearProgress />
       ) : (
         <div style={{ width: "100%", height: 4 }} />
       )}
-    </div>
+    </Box>
   );
 }

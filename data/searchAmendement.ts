@@ -1,5 +1,9 @@
-import { Amendement } from "@prisma/client";
+import { Amendement, Dossier } from "@prisma/client";
 import { PaginatedResponse, extractPaginationMetadata } from "./pagination";
+
+export type AmendementWithDossierRef = Amendement & {
+  dossierRef?: Dossier | null;
+};
 
 type SearchAmendementParams = {
   /**

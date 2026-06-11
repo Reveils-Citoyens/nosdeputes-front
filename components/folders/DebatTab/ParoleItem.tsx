@@ -11,8 +11,8 @@ import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
 import CircleDiv from "@/icons/CircleDiv";
+import MicIcon from "@mui/icons-material/Mic";
 import Link from "next/link";
-import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { getActeur } from "@/data/getActeur";
 
@@ -67,24 +67,25 @@ export default function ParoleItem(props: ParoleItemProps) {
           }}
         >
           <Avatar
-            sx={{ height: 40, width: 40, bgcolor: "white" }}
+            sx={{ height: 40, width: 40, bgcolor: "white", color: "grey.600" }}
             alt={`${acteur?.prenom ?? ""} ${acteur?.nom ?? ""}`}
-            src={acteur?.urlImage ?? ""}
+            src={
+              acteur?.urlImage && !acteur.urlImage.includes("marianne")
+                ? acteur.urlImage
+                : undefined
+            }
           >
             {acteur ? (
-              // Cas Député sans image : Initiales
-              <>
-                {acteur.prenom?.[0]?.toUpperCase()}
-                {acteur.nom?.[0]?.toUpperCase()}
-              </>
-            ) : isPending ? null : (
-              // Cas Invité ou autre personne non identifiée (acteur est null) : Icône micro
-              <Image
-                src="/microphone.jpg"
-                alt="Microphone"
-                width={30}
-                height={30}
-              />
+              acteur.prenom?.[0] || acteur.nom?.[0] ? (
+                <>
+                  {acteur.prenom?.[0]?.toUpperCase()}
+                  {acteur.nom?.[0]?.toUpperCase()}
+                </>
+              ) : (
+                <MicIcon sx={{ fontSize: 22, color: "grey.500" }} />
+              )
+            ) : acteurUid !== null && isPending ? null : (
+              <MicIcon sx={{ fontSize: 22, color: "grey.500" }} />
             )}
           </Avatar>
         </Box>

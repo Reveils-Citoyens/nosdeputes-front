@@ -29,11 +29,14 @@ const VOTE_LABEL = {
 function getScrutinStatus(label: string | null, pour: number, contre: number) {
   if (label) {
     const s = label.toLowerCase();
-    if (s.includes("adopté")) return { status: "validated" as const, label };
-    if (s.includes("rejeté")) return { status: "refused" as const, label };
+    // Tester "n'a pas adopté" AVANT "adopté" pour éviter le faux positif
+    if (s.includes("n'a pas adopté") || s.includes("na pas adopté") || s.includes("rejeté"))
+      return { status: "error" as const, label };
+    if (s.includes("adopté"))
+      return { status: "validated" as const, label };
   }
   if (pour > contre) return { status: "validated" as const, label: "Adopté" };
-  return { status: "refused" as const, label: "Rejeté" };
+  return { status: "error" as const, label: "Rejeté" };
 }
 
 type ScrutinWithDossier = Scrutin & {
@@ -69,14 +72,13 @@ export function DeputeVoteCard({
         gap: 2
       }}
     >
-      {/* En-tête : Titre et Résultat Global */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
-        <Box>
-          <Stack direction="row" alignItems="center" spacing={1.5} mb={1} flexWrap="wrap" useFlexGap>
+      {/* En-tête : numéro + badge sur une ligne, titre en pleine largeur dessous */}
+      <Box>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} mb={1} flexWrap="wrap" useFlexGap>
+          <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap" useFlexGap>
             <Typography variant="caption" color="text.secondary" fontWeight="bold" sx={{ textTransform: "uppercase" }}>
               Scrutin n°{scrutin.numero} • {scrutin.dateScrutin?.toLocaleDateString("fr-FR") ?? ''}
             </Typography>
-            
             {scrutin.dossierRef && (
               <Chip
                 label="Voir le dossier"
@@ -86,33 +88,33 @@ export function DeputeVoteCard({
                 variant="outlined"
                 size="small"
                 clickable
-                sx={{ 
-                    height: 24, 
-                    fontSize: "0.7rem", 
-                    fontWeight: 600,
-                    borderColor: "grey.300",
-                    color: "text.secondary",
-                    "& .MuiChip-icon": { color: "inherit" },
-                    "&:hover": { 
-                        bgcolor: "grey.50", 
-                        borderColor: "primary.main", 
-                        color: "primary.main" 
-                    } 
+                sx={{
+                  height: 24,
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  borderColor: "grey.300",
+                  color: "text.secondary",
+                  "& .MuiChip-icon": { color: "inherit" },
+                  "&:hover": {
+                    bgcolor: "grey.50",
+                    borderColor: "primary.main",
+                    color: "primary.main",
+                  },
                 }}
               />
             )}
           </Stack>
+          <StatusChip
+            label={scrutinMeta.label}
+            status={scrutinMeta.status}
+            size="small"
+            sx={{ flexShrink: 0, fontWeight: "bold" }}
+          />
+        </Stack>
 
-          <Typography variant="subtitle1" fontWeight="bold" sx={{ lineHeight: 1.3 }}>
-            {scrutin.titre}
-          </Typography>
-        </Box>
-        <StatusChip 
-          label={scrutinMeta.label} 
-          status={scrutinMeta.status} 
-          size="small"
-          sx={{ flexShrink: 0, fontWeight: "bold" }}
-        />
+        <Typography variant="subtitle1" fontWeight="bold" sx={{ lineHeight: 1.3 }}>
+          {scrutin.titre ? scrutin.titre.charAt(0).toUpperCase() + scrutin.titre.slice(1) : ""}
+        </Typography>
       </Box>
 
       {/* Cœur de la carte */}

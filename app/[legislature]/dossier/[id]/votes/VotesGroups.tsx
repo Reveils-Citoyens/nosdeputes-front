@@ -10,6 +10,22 @@ import CircleDiv from "@/icons/CircleDiv";
 import DeputeCard from "@/components/folders/DeputeCard";
 import { VoteWithActeur } from "./votes.type";
 
+/**
+ * Quand un député est membre du gouvernement, l'API substitue l'avatar par
+ * marianne.webp. On rétablit l'URL standard de la photo et on flag le cas.
+ */
+function fixGouvernementAvatar(
+  acteurRef: { uid?: string; urlImage?: string | null } | null | undefined,
+): { url: string; auGouvernement: boolean } {
+  const url = acteurRef?.urlImage ?? "";
+  const auGouvernement = url.includes("marianne.webp");
+  if (!auGouvernement || !acteurRef?.uid) {
+    return { url, auGouvernement };
+  }
+  const standard = `https://tricoteuses-assets.s3.fr-par.scw.cloud/photos/${acteurRef.uid.replace(/^PA/, "")}_124x124.jpg`;
+  return { url: standard, auGouvernement: true };
+}
+
 type GroupInfo = {
   groupId: string;
   pour: number;
@@ -54,7 +70,12 @@ export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
 
     return Object.values(groups)
       .map((group) => {
-        if (group.shortName === "NI") {
+        // Pas de "position majoritaire" pour les groupes d'indépendants :
+        // - NI : Non-inscrits, par définition pas de ligne commune
+        // - LIOT : Libertés, Indépendants, Outre-mer et Territoires —
+        //   regroupement d'indépendants sans discipline de groupe
+        // → évite de marquer ces députés comme "dissidents" à tort.
+        if (group.shortName === "NI" || group.shortName === "LIOT") {
           return { ...group, positionMajoritaire: undefined };
         }
 
@@ -186,19 +207,36 @@ export function VotesGroups({ votes }: { votes: VoteWithActeur[] }) {
                     columnGap: 1.5,
                   }}
                 >
-                  {votes.map(({ uid, positionVote, acteurRef }) => (
-                    <DeputeCard
-                      key={uid}
-                      slug={acteurRef?.slug ?? ""}
-                      urlImage={acteurRef?.urlImage ?? ""}
-                      prenom={acteurRef?.prenom ?? ""}
-                      nom={acteurRef?.nom ?? ""}
-                      vote={positionVote}
-                      showVote
-                      isFullCardLink
-                      groupPosition={positionMajoritaire}
-                    />
-                  ))}
+                  {[...votes]
+                    .sort((a, b) => {
+                      // Dissidents en premier (vote différent de la position
+                      // majoritaire, en excluant les non-votants neutres).
+                      const isDissident = (v: VoteWithActeur) =>
+                        positionMajoritaire !== undefined &&
+                        v.positionVote !== positionMajoritaire &&
+                        v.positionVote !== "nonVotant";
+                      const aD = isDissident(a) ? 0 : 1;
+                      const bD = isDissident(b) ? 0 : 1;
+                      return aD - bD;
+                    })
+                    .map(({ uid, positionVote, acteurRef }) => {
+                      const { url, auGouvernement } =
+                        fixGouvernementAvatar(acteurRef);
+                      return (
+                        <DeputeCard
+                          key={uid}
+                          slug={acteurRef?.slug ?? ""}
+                          urlImage={url}
+                          prenom={acteurRef?.prenom ?? ""}
+                          nom={acteurRef?.nom ?? ""}
+                          auGouvernement={auGouvernement}
+                          vote={positionVote}
+                          showVote
+                          isFullCardLink
+                          groupPosition={positionMajoritaire}
+                        />
+                      );
+                    })}
                 </Box>
               </AccordionDetails>
             </Accordion>

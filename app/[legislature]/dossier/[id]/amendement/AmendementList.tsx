@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import Stack from "@mui/material/Stack";
+import Box from "@mui/material/Box";
 import AmendementCard from "@/components/folders/AmendementCard";
 import { Typography } from "@mui/material";
 import { searchAmendement } from "@/data/searchAmendement";
@@ -36,7 +37,7 @@ export default function AmendementsList(props: { dossierUid: string }) {
     queryFn: () =>
       searchAmendement({
         page,
-        perPage: 20,
+        perPage: 10,
         dossierUid,
         sortAmendement: status ?? "",
         documentRefUid: documentUid ?? "",
@@ -51,20 +52,22 @@ export default function AmendementsList(props: { dossierUid: string }) {
 
   return (
     <Stack>
+      {isPending && <Typography>Chargement des amendements...</Typography>}
+      <Box>
+        {amendements.map((amendement) => (
+          <AmendementCard
+            amendement={amendement}
+            acteurUid={amendement.acteurRefUid}
+            key={amendement.uid}
+          />
+        ))}
+      </Box>
       <Pagination
         {...pagination}
         page={page}
         setPage={setPage}
         isPending={isPending}
       />
-      {isPending && <Typography>Chargement des amendements...</Typography>}
-      {amendements.map((amendement) => (
-        <AmendementCard
-          amendement={amendement}
-          acteurUid={amendement.acteurRefUid}
-          key={amendement.uid}
-        />
-      ))}
     </Stack>
   );
 }

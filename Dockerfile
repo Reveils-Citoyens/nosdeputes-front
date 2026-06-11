@@ -24,6 +24,10 @@ RUN npm install --frozen-lockfile
 # Copy the rest of the application code
 COPY . .
 
+ENV MONGODB_URI="mongodb://localhost:27017/fake-db-build"
+ENV RESEND_API_KEY="re_fake_ApiKeyForBuild"
+ENV CRON_SECRET="fake_cron_secret"
+
 # Build the Next.js application
 RUN npm run build
 

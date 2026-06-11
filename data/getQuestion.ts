@@ -6,7 +6,8 @@ import { extractPaginationMetadata, PaginatedResponse } from "./pagination";
 type GetQuestionsParams = {
   perPage?: number;
   page?: number;
-  sort?: string
+  sort?: string;
+  search?: string;
 }
 
 async function getQuestionsUnCached(
@@ -17,7 +18,8 @@ async function getQuestionsUnCached(
   const {
     perPage = 10,
     page = 1,
-    sort = "dateDepot.desc"
+    sort = "dateDepot.desc",
+    search,
   } = params
   try {
     if (acteurUid === "") {
@@ -31,6 +33,9 @@ async function getQuestionsUnCached(
       sort,
       dataset: "17",
     });
+    if (search) {
+      searchParams.set("search", search);
+    }
 
     const rep = await fetch(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/questions/?${searchParams.toString()}`

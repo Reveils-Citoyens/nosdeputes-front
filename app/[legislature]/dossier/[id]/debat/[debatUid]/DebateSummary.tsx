@@ -10,19 +10,12 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useTheme } from "@mui/material/styles";
 
-import { ClockMovingIcon } from "@/icons/ClockMovingIcon";
-
 import throttle from "lodash/throttle";
-import { WORDS_PER_MINUTES } from "../../../../../../components/const";
 import { cleanText } from "../../../../../../components/folders/DebatTab/cleanText";
 import { Paragraphe } from "@prisma/client";
 
-const getDuration = (wordCount: number) =>
-  Math.round(wordCount / WORDS_PER_MINUTES);
-
 type DebateSummaryProps = {
   sections: Paragraphe[];
-  wordsCounts?: Record<string, number>;
 };
 
 const noop = () => {};
@@ -67,7 +60,7 @@ export function samePageLinkNavigation(event: React.MouseEvent<HTMLElement>) {
 }
 
 export const DebateSummary = (props: DebateSummaryProps) => {
-  const { sections, wordsCounts } = props;
+  const { sections } = props;
   const theme = useTheme();
 
   const [activeState, setActiveState] = React.useState<string | null>(null);
@@ -160,7 +153,14 @@ export const DebateSummary = (props: DebateSummaryProps) => {
       >
         <Typography>Sommaire</Typography>
       </AccordionSummary>
-      <AccordionDetails>
+      <AccordionDetails
+        sx={{
+          // Sommaire potentiellement plus haut que l'écran sur les longs débats :
+          // on borne la hauteur (sticky top:50 + header) et on scrolle en interne.
+          maxHeight: "calc(100vh - 120px)",
+          overflowY: "auto",
+        }}
+      >
         <Stack direction="column" spacing={2} pb={3}>
           {sections.map(({ uid, texte }, index) =>
             activeState === uid || (activeState === null && index === 0) ? (
@@ -176,31 +176,20 @@ export const DebateSummary = (props: DebateSummaryProps) => {
                   color="#fff"
                   component="a"
                   href={`#${uid}`}
-                  dangerouslySetInnerHTML={{ __html: cleanText(texte!) }}
-                />
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <ClockMovingIcon sx={{ fontSize: "12px" }} fill="white" />
-                  {wordsCounts && (
-                    <Typography
-                      color="#fff"
-                      variant="caption"
-                      fontWeight="light"
-                    >
-                      {getDuration(wordsCounts[uid]) ?? "?"} minute
-                      {getDuration(wordsCounts[uid]) === 1 ? "" : "s"}
-                    </Typography>
-                  )}
-                </Stack>
+                >
+                  {cleanText(texte!, true)}
+                </Typography>
               </Box>
             ) : (
               <Typography
                 key={uid}
                 component="a"
                 href={`#${uid}`}
-                dangerouslySetInnerHTML={{ __html: cleanText(texte!) }}
                 variant="body2"
                 onClick={handleClick(uid)}
-              />
+              >
+                {cleanText(texte!, true)}
+              </Typography>
             ),
           )}
         </Stack>

@@ -19,6 +19,13 @@ async function getDocumentUnCached(
 
     const { data } = await rep.json();
 
+    if (!data) return null;
+
+    // L'API n'inclut pas toujours `_count` (notamment hors include single-document).
+    // On le normalise pour que tous les consommateurs puissent lire
+    // `_count.amendements` sans crash (cf. erreur prod r._count.amendements).
+    data._count = { amendements: data?._count?.amendements ?? 0 };
+
     return data;
   } catch (error) {
     console.error("Error fetching documents:", error);
