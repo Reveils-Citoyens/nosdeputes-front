@@ -179,6 +179,34 @@ function DossierRow({
   );
 }
 
+// ─── Dédoublonnage par dossier ───────────────────────────────────────────────
+// L'API renvoie un document distinct par étape d'un même texte (B = déposé,
+// BTC = adopté en commission…) plus l'avis du Conseil d'État (AVCE). Pour une
+// liste « propositions initiées », on ne veut qu'UNE entrée par proposition :
+// on regroupe par dossier et on garde le texte initial déposé (segment « B »,
+// préfixe PION/PRJL) comme représentant ; à défaut, le premier du groupe.
+function dedupeByDossier<
+  T extends { uid: string; dossierRefUid?: string | null; dateCreation?: Date | null },
+>(docs: T[]): T[] {
+  const isInitialDeposit = (uid: string) =>
+    /^(?:PION|PRJL)ANR5L\d{2}B\d{4}$/.test(uid);
+
+  const groups = new Map<string, T[]>();
+  for (const d of docs) {
+    const key = d.dossierRefUid ?? d.uid; // sans dossier : on conserve tel quel
+    (groups.get(key) ?? groups.set(key, []).get(key)!).push(d);
+  }
+
+  const result = Array.from(groups.values()).map(
+    (group) => group.find((d) => isInitialDeposit(d.uid)) ?? group[0],
+  );
+
+  // Tri du plus récent au plus ancien sur la date du représentant retenu.
+  return result.sort(
+    (a, b) => (b.dateCreation?.getTime() ?? 0) - (a.dateCreation?.getTime() ?? 0),
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Travaux() {
@@ -196,6 +224,7 @@ export default function Travaux() {
       return await searchDocument({
         perPage: 100,
         auteurPrincipalUid: acteur.uid,
+        sort: "dateCreation.desc",
       });
     },
     enabled: !!acteur?.uid,
@@ -216,13 +245,15 @@ export default function Travaux() {
   const documents = documentsResult?.data ?? [];
   const dossiers = dossiersResult?.data ?? [];
 
-  const propositionsDeLoi = documents.filter(
-    (doc) => doc.classeCode === "PIONLOI",
+  const propositionsDeLoi = dedupeByDossier(
+    documents.filter((doc) => doc.classeCode === "PIONLOI"),
   );
   const rapports = documents.filter(
     (doc) => doc.classeCode === "RAPPORT" || doc.classeCode === "RAPINF",
   );
-  const resolutions = documents.filter((doc) => doc.classeCode === "RES");
+  const resolutions = dedupeByDossier(
+    documents.filter((doc) => doc.classeCode === "RES"),
+  );
 
   const isLoading = acteurIsPending || docsIsPending || dossierIsPending;
 

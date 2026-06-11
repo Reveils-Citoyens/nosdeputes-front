@@ -12,6 +12,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import Providers from "./providers";
 import InfoDialogProvider from "@/components/InfoDialog/InfoDialogProvider";
 import InfoDialog from "@/components/InfoDialog/InfoDialog";
+import { IS_INDEXABLE } from "@/lib/site";
 
 const raleway = Raleway({
   weight: ["400", "600", "700"],
@@ -22,7 +23,9 @@ const raleway = Raleway({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.nosdeputes.fr"),
-  robots: "index, follow",
+  // Indexation autorisée uniquement sur le domaine de prod canonique ; beta et
+  // autres environnements sont en noindex (cf. lib/site).
+  robots: IS_INDEXABLE ? "index, follow" : "noindex, nofollow",
   title: "NosDéputés.fr : Observatoire citoyen de l'activité parlementaire",
   description: "Observatoire citoyen de l'activité parlementaire",
 

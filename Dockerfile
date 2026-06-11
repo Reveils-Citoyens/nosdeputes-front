@@ -7,9 +7,11 @@ WORKDIR /usr/src/app
 
 # Declare build-time arguments for database configuration
 ARG NEXT_PUBLIC_TRICOTEUSES_API_URL=https://app-staging.tricoteuses.fr
+ARG NEXT_PUBLIC_BASE_URL=https://beta.nosdeputes.fr
 
 # Set the environment variables from build arguments
 ENV NEXT_PUBLIC_TRICOTEUSES_API_URL=${NEXT_PUBLIC_TRICOTEUSES_API_URL}
+ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
 
 # Copy package.json and package-lock.json
 COPY package*.json ./

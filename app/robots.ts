@@ -1,8 +1,15 @@
 import type { MetadataRoute } from "next";
-
-const BASE = process.env.NEXT_PUBLIC_BASE_URL || "https://www.nosdeputes.fr";
+import { SITE_URL, IS_INDEXABLE } from "@/lib/site";
 
 export default function robots(): MetadataRoute.Robots {
+  // Hors prod (beta.nosdeputes.fr, staging…) : on interdit tout le crawl pour
+  // ne pas indexer un environnement non canonique.
+  if (!IS_INDEXABLE) {
+    return {
+      rules: [{ userAgent: "*", disallow: "/" }],
+    };
+  }
+
   return {
     rules: [
       {
@@ -19,7 +26,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: `${BASE}/sitemap.xml`,
-    host: BASE,
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   };
 }
