@@ -421,16 +421,34 @@ BATCH_SIZE = 200
 LIMIT = 0  # 0 = tous
 
 WEIGHTS = {
-    "amendements_density": 0.40,
-    "debate_breadth": 0.30,
+    # Le score combine 4 signaux (somme = 1.0) :
+    #  - amendements_density : volume d'amendements / articles (rendements
+    #    décroissants, cf. diminishing) — plafonné pour ne pas écraser le reste ;
+    #  - debate_breadth      : nombre d'auteurs distincts (idem, diminishing) ;
+    #  - political_tension   : dissension dans les votes (clivage) ;
+    #  - impact              : gravité institutionnelle du texte, indépendante de
+    #    l'activité (cf. impact_gravite) — fait remonter les dossiers majeurs mais
+    #    consensuels (réforme constitutionnelle, budget, projet de loi…).
+    # Tension volontairement modérée (0.30) : à 0.40 elle sur-pénalisait les
+    # textes importants sans votes clivants (ex. loi constit. sur la Corse).
+    "amendements_density": 0.25,
+    "debate_breadth": 0.25,
     "political_tension": 0.30,
+    "impact": 0.20,
 }
 SCALE = {
+    # Pour `amendements_density` et `debate_breadth`, SCALE sert de « knee » à la
+    # courbe à rendements décroissants (cf. diminishing()), pas de plafond
+    # linéaire dur : la valeur n'atteint jamais tout à fait 1.0, ce qui évite
+    # qu'un volume démesuré d'amendements/d'auteurs écrase les autres composantes.
     "amendements_density": 30,
     "debate_breadth": 50,
     "political_tension": 0.30,
 }
-RECENCY_HALFLIFE_DAYS = 60
+# Demi-vie de récence ramenée 60 → 30 j : un dossier perd la moitié de son score
+# tous les 30 jours sans nouvel amendement/scrutin → la fraîcheur prime, et un
+# texte qui sature tous les signaux (ex. Fin de vie) cède plus vite une fois figé.
+RECENCY_HALFLIFE_DAYS = 30
 
 # Seuils pour le badge UI
 HEAT_BADGE_THRESHOLD = 0.30   # heatScore >= → "actif"
@@ -538,6 +556,21 @@ def days_since(date_str):
 
 def normalize(value, scale):
     return 0.0 if scale <= 0 else min(1.0, value / scale)
+
+
+def diminishing(value, knee):
+    """Rendements décroissants : 1 - exp(-value/knee).
+
+    Contrairement au clamp linéaire `normalize` (qui sature dur à 1.0 dès que
+    value >= scale), cette courbe plafonne en douceur sans jamais atteindre 1.0
+    et reste, à `knee` égal, sous la droite linéaire sur toute la plage utile.
+    Utilisée pour la densité d'amendements afin de plafonner l'effet du volume :
+    un texte hyper-amendé reste haut sans pour autant saturer le score et
+    écraser la tension / la récence.
+    """
+    if knee <= 0 or value <= 0:
+        return 0.0
+    return 1.0 - math.exp(-value / knee)
 
 
 def _to_int(v):
@@ -777,6 +810,44 @@ def derive_badge(
     return "inactif"
 
 
+# ─── Impact institutionnel (gravité) ─────────────────────────────────────────
+
+def impact_gravite(dossier):
+    """Gravité institutionnelle du texte, dans [0,1].
+
+    Capture l'enjeu structurel d'un dossier indépendamment de son activité
+    (amendements/votes) : une réforme constitutionnelle ou un budget pèsent même
+    sans amendements ni dissension. Combinée à la récence (multiplicative), elle
+    fait remonter les textes majeurs RÉCENTS sans ressusciter les dossiers figés.
+    Mappée sur `procedureParlementaire.libelle` (codeProcedure est vide en base).
+    """
+    lib = ((dossier.get("procedureParlementaire") or {}).get("libelle") or "").lower()
+    if "constitutionnelle" in lib:
+        return 1.0
+    # Budgets nationaux : PLF, PLFR, PLFSS, approbation des comptes.
+    if "finances" in lib or "financement de la sécurité" in lib or "approbation des comptes" in lib:
+        return 1.0
+    if "responsabilité gouvernementale" in lib:  # 49.3, motions de censure
+        return 0.9
+    if "organique" in lib:
+        return 0.85
+    if "ratification" in lib:  # traités et conventions
+        return 0.5
+    if "projet de loi" in lib:        # initiative gouvernementale
+        return 0.7
+    if "proposition de loi" in lib:   # initiative parlementaire (référence)
+        return 0.4
+    if "commission d'enquête" in lib:
+        return 0.4
+    if "résolution" in lib:
+        return 0.25
+    if "mission" in lib or "rapport d'information" in lib:
+        return 0.2
+    if "pétition" in lib or "allocution" in lib:
+        return 0.1
+    return 0.3
+
+
 # ─── Composition ─────────────────────────────────────────────────────────────
 
 def compute_score(dossier):
@@ -786,10 +857,17 @@ def compute_score(dossier):
     amend = compute_amendements_signals(texte_uids)
     tension = compute_political_tension(scrutin_uids)
 
+    gravite = impact_gravite(dossier)
     raw_score = (
-        WEIGHTS["amendements_density"] * normalize(amend["density"], SCALE["amendements_density"])
-        + WEIGHTS["debate_breadth"] * normalize(amend["n_auteurs"], SCALE["debate_breadth"])
+        # Densité d'amendements ET breadth (auteurs) : courbes à rendements
+        # décroissants (plafonnent le volume) plutôt qu'un clamp linéaire qui
+        # saturait à 1.0 dès qu'un texte était massivement amendé.
+        WEIGHTS["amendements_density"] * diminishing(amend["density"], SCALE["amendements_density"])
+        + WEIGHTS["debate_breadth"] * diminishing(amend["n_auteurs"], SCALE["debate_breadth"])
         + WEIGHTS["political_tension"] * normalize(tension["tension"], SCALE["political_tension"])
+        # Gravité institutionnelle : remonte les textes majeurs (lois constit.,
+        # budgets, projets de loi) même sans amendements ni dissension.
+        + WEIGHTS["impact"] * gravite
     )
     # Récence ancrée sur la dernière activité de débat (amendement/scrutin), et
     # NON sur le dernier acte administratif (sinon une promulgation re-gonfle le
@@ -827,6 +905,7 @@ def compute_score(dossier):
             "last_acte_date": last_date,
             "last_signal_date": signal_date,
             "recency_multiplier": round(multiplier, 3),
+            "impact_gravite": gravite,
             "raw_score": round(raw_score, 4),
             "closed_damping": closed_damping,
         },
