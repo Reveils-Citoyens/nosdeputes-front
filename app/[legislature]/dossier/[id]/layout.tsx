@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata } from "next";
 
 import { HeroSection } from "@/components/folders/HeroSection";
 import ComprendreBanner from "@/components/folders/ComprendreBanner";
@@ -12,6 +13,38 @@ import { dossierSettings } from "./dossierSettings";
 import { getAmendementCount, getScrutinCount } from "@/data/getDossierCounts";
 import { getDossierEnrichment } from "@/data/mongo/getDossierEnrichment";
 import { isThemeSlug } from "@/data/themes";
+import { SITE_URL } from "@/lib/site";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ legislature: string; id: string }>;
+}): Promise<Metadata> {
+  const { legislature, id } = await params;
+  const dossier = await getDossier(id);
+
+  if (dossier == null) {
+    return { title: "Dossier introuvable — NosDéputés.fr" };
+  }
+
+  const titre = dossier.titre?.trim() || "Dossier législatif";
+  const procedure = dossier.libelleProcedure?.trim();
+  const url = `${SITE_URL}/${legislature}/dossier/${id}`;
+
+  const description = `${procedure ? `${procedure} — ` : ""}${titre}. Suivez ce dossier législatif à l'Assemblée nationale : avancée du texte, amendements, votes et travaux en commission.`;
+
+  return {
+    title: `${titre} — Dossier législatif — NosDéputés.fr`,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      title: titre,
+      description,
+      url,
+    },
+  };
+}
 
 export default async function Dossier({
   children,

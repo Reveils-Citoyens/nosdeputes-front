@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata } from "next";
 import { Avatar, Box, Chip, Container, Stack, Tooltip, Typography } from "@mui/material";
 import {
   X as XIcon,
@@ -19,6 +20,53 @@ import { getActeurAdressesElectroniques } from "@/data/getActeurContacts";
 import { getActeurCollaborateurs } from "@/data/getActeurCollaborateurs";
 import CollaborateursSection from "./CollaborateursSection";
 import { formatCirco } from "@/utils/formatCirco";
+import { SITE_URL } from "@/lib/site";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const depute = await getActeurBySlug(slug);
+
+  if (depute === null) {
+    return { title: "Député introuvable — NosDéputés.fr" };
+  }
+
+  const nomComplet = `${depute.prenom} ${depute.nom}`;
+  const groupe = depute.groupeParlementaire?.libelle ?? null;
+  const circo = depute.mandatPrincipal
+    ? formatCirco(
+        depute.mandatPrincipal.numCirco,
+        depute.mandatPrincipal.departement,
+        depute.mandatPrincipal.numDepartement,
+      )
+    : null;
+
+  // Description : « <Nom>, député·e [de la <circo>] [(<groupe>)]. Activité… »
+  const qualite =
+    depute.chambre === "AN" ? "député" : "parlementaire";
+  const segments = [`${nomComplet}, ${qualite}`];
+  if (circo) segments.push(circo);
+  const intro = segments.join(" ");
+  const description = `${intro}${groupe ? ` (${groupe})` : ""}. Activité parlementaire à l'Assemblée nationale : votes, amendements, interventions, présence en commission et travaux.`;
+
+  const title = `${nomComplet}${circo ? ` — ${qualite} ${circo}` : ""} — NosDéputés.fr`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `${SITE_URL}/depute/${slug}` },
+    openGraph: {
+      type: "profile",
+      title: nomComplet,
+      description,
+      url: `${SITE_URL}/depute/${slug}`,
+      ...(depute.urlImage ? { images: depute.urlImage } : {}),
+    },
+  };
+}
 
 const SocialLink = ({
   Icon,

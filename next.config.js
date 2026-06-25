@@ -52,9 +52,35 @@ const securityHeaders = [
   },
 ];
 
+// Domaine canonique public (celui que Google doit indexer). Piloté par l'env,
+// même source de vérité que les liens d'e-mail (NEXT_PUBLIC_BASE_URL).
+const CANONICAL_URL = (
+  process.env.NEXT_PUBLIC_BASE_URL || "https://beta.nosdeputes.fr"
+).replace(/\/$/, "");
+
 const nextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+  },
+  // Redirection 301 de l'URL technique Scaleway (ex.
+  // nosdeputesx49wzdoj-nos-deputes-front.functions.fnc.fr-par.scw.cloud) vers le
+  // domaine canonique. Évite que Google indexe l'URL technique et la traite comme
+  // du duplicate content du vrai domaine. On matche tout l'espace d'hôtes des
+  // fonctions Scaleway pour rester robuste si le sous-domaine technique change.
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "(?<scwHost>.*\\.functions\\.fnc\\.fr-par\\.scw\\.cloud)",
+          },
+        ],
+        destination: `${CANONICAL_URL}/:path*`,
+        permanent: true,
+      },
+    ];
   },
 };
 
