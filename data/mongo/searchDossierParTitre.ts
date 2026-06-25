@@ -88,10 +88,15 @@ export async function searchDossierParTitre(
               },
             },
             {
+              // Match par préfixe : "Arcelor" → "ArcelorMittal". C'est un signal
+              // FORT (l'utilisateur tape le début d'un mot), donc on le booste
+              // pour qu'il passe le seuil MIN_SEARCH_SCORE (sinon score plat ~1.0,
+              // écarté comme du bruit).
               wildcard: {
                 query: `${query.toLowerCase()}*`,
                 path: ["titreDossier.titre", "titres.titrePrincipal", "titres.titrePrincipalCourt"],
                 allowAnalyzedField: true,
+                score: { boost: { value: 2 } },
               },
             },
           ],

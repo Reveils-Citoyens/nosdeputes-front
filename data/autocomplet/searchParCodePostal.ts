@@ -31,6 +31,42 @@ interface Suggestion {
   depute?: ApiActeur;
 }
 
+/** Normalise un nom de commune pour comparaison (majuscules, sans accents ni tirets). */
+function normalizeCommuneName(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // accents
+    .toUpperCase()
+    .replace(/[-']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Communes RÉELLEMENT rattachées à un code postal, via geo.api.gouv.fr (source
+ * autoritaire). Sert à éliminer les faux positifs de l'autocomplete amont, qui
+ * indexe aussi les codes INSEE : ceux-ci peuvent coïncider numériquement avec le
+ * code postal d'une AUTRE commune (ex. INSEE 33510 = Semens vs code postal
+ * 33510 = Andernos-les-Bains). Renvoie null si la vérification échoue, auquel
+ * cas on n'altère pas la liste (dégradation gracieuse).
+ */
+async function communesForCodePostal(codePostal: string): Promise<Set<string> | null> {
+  try {
+    const res = await fetch(
+      `https://geo.api.gouv.fr/communes?codePostal=${encodeURIComponent(codePostal)}&fields=nom`,
+      { next: { revalidate: 86400 } }
+    );
+    if (!res.ok) return null;
+    const communes = (await res.json()) as { nom?: string }[];
+    if (!Array.isArray(communes) || communes.length === 0) return null;
+    return new Set(
+      communes.map((c) => normalizeCommuneName(c.nom ?? "")).filter(Boolean)
+    );
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Recherche le(s) député(s) correspondant à un code postal via l'API
  * territoires.code4code.eu (Tricoteuses). Chaque suggestion retournée inclut
@@ -69,10 +105,23 @@ export async function searchActeurParCodePostalTricoteuses(
     s.autocompletion === codePostal
   );
 
+  // Recoupement geo.api.gouv.fr : l'autocomplete amont indexe aussi les codes
+  // INSEE, qui peuvent coïncider avec le code postal d'une AUTRE commune (ex.
+  // INSEE 33510 = Semens, alors que le code POSTAL 33510 = Andernos). On ne
+  // conserve que les suggestions dont la commune est réellement rattachée à ce
+  // code postal. Si la vérification échoue (null), on n'altère pas la liste.
+  const validCommunes = await communesForCodePostal(codePostal);
+  const verified = validCommunes
+    ? exact.filter((s) => {
+        const communePart = s.autocompletion.slice(codePostal.length).trim();
+        return communePart === "" || validCommunes.has(normalizeCommuneName(communePart));
+      })
+    : exact;
+
   const seen = new Set<string>();
   const results: ActeurSearchResult[] = [];
 
-  for (const suggestion of exact) {
+  for (const suggestion of verified) {
     const depute = suggestion.depute;
     if (!depute || seen.has(depute.uid)) continue;
     seen.add(depute.uid);

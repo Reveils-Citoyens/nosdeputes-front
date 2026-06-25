@@ -26,6 +26,7 @@ import { Acteur, Mandat, Organe } from "@prisma/client";
 import { DeputeFilterProps } from "./DeputesFilter";
 import { departements } from "./structureCircos";
 import { formatCirco } from "@/utils/formatCirco";
+import { normalizeForSearch } from "@/lib/strings";
 
 function GroupPolitiqueHeader({
   itemKey,
@@ -192,9 +193,9 @@ export default function DeputesView({
 
     if (
       search &&
-      !`${nom} ${prenom} ${mandatPrincipal?.departement ?? ""}`
-        .toLowerCase()
-        .includes(search.toLowerCase())
+      !normalizeForSearch(
+        `${nom} ${prenom} ${mandatPrincipal?.departement ?? ""}`
+      ).includes(normalizeForSearch(search))
     ) {
       return false;
     }
@@ -288,9 +289,9 @@ export default function DeputesView({
             .filter(({ nom, prenom, mandatPrincipal }) => {
               return (
                 (!search ||
-                  `${nom} ${prenom} ${mandatPrincipal?.departement ?? ""}`
-                    .toLowerCase()
-                    .includes(search.toLowerCase())) &&
+                  normalizeForSearch(
+                    `${nom} ${prenom} ${mandatPrincipal?.departement ?? ""}`
+                  ).includes(normalizeForSearch(search))) &&
                 (selectedDeptName === null ||
                   mandatPrincipal?.departement?.toLowerCase() === selectedDeptName.toLowerCase())
               );

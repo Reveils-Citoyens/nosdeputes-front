@@ -212,6 +212,10 @@ def build_assemblee_categories(data_dir: Path, legislature: str) -> dict[str, tu
             data_dir / f"Questions_ecrites_{leg_roman}.json",
             "questions", "uid",
         ),
+        "comptes_rendus": (
+            data_dir / f"Debats_En_Seance_Publique_{leg_roman}.json", 
+            "comptes_rendus", "uid",
+        ),
     }
 
 def build_senat_categories(data_dir: Path) -> dict[str, tuple]:
@@ -255,6 +259,7 @@ def ensure_indexes(db: Any) -> None:
         "scrutins":          [("uid", 1), ("dateScrutin", -1)],
         "amendements":       [("uid", 1), ("texteLegislatifRef", 1)],
         "dossiers":          [("uid", 1), ("legislature", 1)],
+        "comptes_rendus":    [("uid", 1), ("sessionRef", 1)],
         "reunions":          [("uid", 1), ("timestampDebut", -1)],
         "questions":         [("uid", 1), ("type", 1)],
         "senat_acteurs":     [("uid", 1)],
@@ -311,12 +316,12 @@ def parse_args():
     parser.add_argument(
         "--categories",
         nargs="+",
-        default=["acteurs", "organes", "scrutins"],
+        default=["acteurs", "organes", "scrutins", "comptes_rendus"],
         help=(
             "Catégories à charger. Assemblée : acteurs organes scrutins "
-            "amendements dossiers reunions questions. "
+            "amendements dossiers reunions questions comptes_rendus. "
             "Sénat : senat_acteurs senat_organes senat_amendements senat_dossiers. "
-            "(défaut: acteurs organes scrutins)"
+            "(défaut: acteurs organes scrutins comptes_rendus)"
         ),
     )
     parser.add_argument(
@@ -432,6 +437,10 @@ HEAT_BADGE_THRESHOLD = 0.30   # heatScore >= → "actif"
 EN_PAUSE_DAYS = 120           # last acte commission + > N jours → "en_pause"
 EN_COURS_DAYS = 120           # last acte < N jours (et pas actif) → "en_cours"
 
+# Amortissement du heatScore des dossiers clos (ne touche pas le badge).
+CLOSED_BADGES = {"promulgue", "rejete", "retire", "caduc", "termine"}
+CLOSED_HEAT_DAMPING = 0.3
+
 # Mapping codeActe → étape lisible.
 # Le préfixe avant le premier tiret donne la phase principale.
 STAGE_LABELS = {
@@ -542,7 +551,8 @@ def _to_int(v):
 
 def compute_amendements_signals(texte_uids):
     if not texte_uids:
-        return {"total": 0, "n_articles": 0, "n_auteurs": 0, "density": 0.0}
+        return {"total": 0, "n_articles": 0, "n_auteurs": 0, "density": 0.0,
+                "last_amend_date": None}
     pipeline = [
         {"$match": {"texteLegislatifRef": {"$in": list(texte_uids)}}},
         {"$group": {
@@ -550,24 +560,32 @@ def compute_amendements_signals(texte_uids):
             "total": {"$sum": 1},
             "articles": {"$addToSet": "$pointeurFragmentTexte.division.articleDesignation"},
             "auteurs": {"$addToSet": "$signataires.auteur.acteurRef"},
+            # Date du dépôt d'amendement le plus récent : ancrage de récence.
+            "last_amend_date": {"$max": "$cycleDeVie.dateDepot"},
         }},
     ]
     agg = next(db.amendements.aggregate(pipeline), None)
     if not agg:
-        return {"total": 0, "n_articles": 0, "n_auteurs": 0, "density": 0.0}
+        return {"total": 0, "n_articles": 0, "n_auteurs": 0, "density": 0.0,
+                "last_amend_date": None}
     n_articles = sum(1 for a in agg["articles"] if isinstance(a, str) and a)
     n_auteurs = sum(1 for a in agg["auteurs"] if isinstance(a, str) and a)
     density = agg["total"] / n_articles if n_articles > 0 else 0.0
+    last_amend_date = agg.get("last_amend_date")
+    if not isinstance(last_amend_date, str):
+        last_amend_date = None
     return {"total": agg["total"], "n_articles": n_articles,
-            "n_auteurs": n_auteurs, "density": density}
+            "n_auteurs": n_auteurs, "density": density,
+            "last_amend_date": last_amend_date}
 
 
 def compute_political_tension(scrutin_uids):
     if not scrutin_uids:
         return {"tension": 0.0, "scrutins": 0, "dissidents": 0, "total_votes": 0,
-                "derniere_decision": None}
+                "derniere_decision": None, "last_scrutin_date": None}
     total_dissidents = total_votes = nb_scrutins = 0
     derniere = None  # {date, sort, uid}
+    last_scrutin_date = None  # max dateScrutin (ancrage de récence)
     cursor = db.scrutins.find(
         {"uid": {"$in": list(scrutin_uids)}},
         {"uid": 1, "dateScrutin": 1, "sort": 1, "ventilationVotes": 1},
@@ -577,6 +595,8 @@ def compute_political_tension(scrutin_uids):
 
         # Suivi de la décision la plus récente (par dateScrutin)
         d = s.get("dateScrutin")
+        if isinstance(d, str) and (last_scrutin_date is None or d > last_scrutin_date):
+            last_scrutin_date = d
         sort_code = (s.get("sort") or {}).get("code")
         if isinstance(d, str) and sort_code:
             if derniere is None or d > derniere["date"]:
@@ -608,7 +628,7 @@ def compute_political_tension(scrutin_uids):
     tension = total_dissidents / total_votes if total_votes > 0 else 0.0
     return {"tension": tension, "scrutins": nb_scrutins,
             "dissidents": total_dissidents, "total_votes": total_votes,
-            "derniere_decision": derniere}
+            "derniere_decision": derniere, "last_scrutin_date": last_scrutin_date}
 
 
 # ─── Agrégats supplémentaires ────────────────────────────────────────────────
@@ -771,7 +791,12 @@ def compute_score(dossier):
         + WEIGHTS["debate_breadth"] * normalize(amend["n_auteurs"], SCALE["debate_breadth"])
         + WEIGHTS["political_tension"] * normalize(tension["tension"], SCALE["political_tension"])
     )
-    multiplier = recency_multiplier(last_date)
+    # Récence ancrée sur la dernière activité de débat (amendement/scrutin), et
+    # NON sur le dernier acte administratif (sinon une promulgation re-gonfle le
+    # score). Repli sur last_acte_date si aucun signal de débat.
+    signal_dates = [d for d in (amend["last_amend_date"], tension["last_scrutin_date"]) if d]
+    signal_date = max(signal_dates) if signal_dates else last_date
+    multiplier = recency_multiplier(signal_date)
     final_score = round(raw_score * multiplier, 4)
 
     badge = derive_badge(
@@ -781,6 +806,10 @@ def compute_score(dossier):
         current_legislature=LEGISLATURE,
         heat_score=final_score,
     )
+
+    # Amortissement des dossiers clos (ranking only ; le badge gère déjà l'état final).
+    closed_damping = CLOSED_HEAT_DAMPING if badge in CLOSED_BADGES else 1.0
+    final_score = round(final_score * closed_damping, 4)
 
     return {
         "heatScore": final_score,
@@ -796,8 +825,10 @@ def compute_score(dossier):
             "votes_total_exprimes": tension["total_votes"],
             "scrutins_analyses": tension["scrutins"],
             "last_acte_date": last_date,
+            "last_signal_date": signal_date,
             "recency_multiplier": round(multiplier, 3),
             "raw_score": round(raw_score, 4),
+            "closed_damping": closed_damping,
         },
         "procedureAcceleree": is_procedure_acceleree(dossier),
         "currentStage": derive_stage(actes_summary),
