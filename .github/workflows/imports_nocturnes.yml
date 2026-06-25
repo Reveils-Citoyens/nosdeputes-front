@@ -6,9 +6,9 @@ name: Imports Nocturnes de Données
 #   workflow_dispatch:
 
 on:
-  # push:
-  #   branches:
-  #     - 'modifs-sam-may26'
+  push:
+    branches:
+      - 'hot-fix'
   workflow_dispatch:
 
 jobs:
