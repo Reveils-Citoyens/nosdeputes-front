@@ -212,6 +212,10 @@ def build_assemblee_categories(data_dir: Path, legislature: str) -> dict[str, tu
             data_dir / f"Questions_ecrites_{leg_roman}.json",
             "questions", "uid",
         ),
+        "comptes_rendus": (
+            data_dir / f"Debats_En_Seance_Publique_{leg_roman}.json", 
+            "comptes_rendus", "uid",
+        ),
     }
 
 def build_senat_categories(data_dir: Path) -> dict[str, tuple]:
@@ -255,6 +259,7 @@ def ensure_indexes(db: Any) -> None:
         "scrutins":          [("uid", 1), ("dateScrutin", -1)],
         "amendements":       [("uid", 1), ("texteLegislatifRef", 1)],
         "dossiers":          [("uid", 1), ("legislature", 1)],
+        "comptes_rendus":    [("uid", 1), ("sessionRef", 1)],
         "reunions":          [("uid", 1), ("timestampDebut", -1)],
         "questions":         [("uid", 1), ("type", 1)],
         "senat_acteurs":     [("uid", 1)],
@@ -311,12 +316,12 @@ def parse_args():
     parser.add_argument(
         "--categories",
         nargs="+",
-        default=["acteurs", "organes", "scrutins"],
+        default=["acteurs", "organes", "scrutins", "comptes_rendus"],
         help=(
             "Catégories à charger. Assemblée : acteurs organes scrutins "
-            "amendements dossiers reunions questions. "
+            "amendements dossiers reunions questions comptes_rendus. "
             "Sénat : senat_acteurs senat_organes senat_amendements senat_dossiers. "
-            "(défaut: acteurs organes scrutins)"
+            "(défaut: acteurs organes scrutins comptes_rendus)"
         ),
     )
     parser.add_argument(
@@ -416,21 +421,43 @@ BATCH_SIZE = 200
 LIMIT = 0  # 0 = tous
 
 WEIGHTS = {
-    "amendements_density": 0.40,
-    "debate_breadth": 0.30,
+    # Le score combine 4 signaux (somme = 1.0) :
+    #  - amendements_density : volume d'amendements / articles (rendements
+    #    décroissants, cf. diminishing) — plafonné pour ne pas écraser le reste ;
+    #  - debate_breadth      : nombre d'auteurs distincts (idem, diminishing) ;
+    #  - political_tension   : dissension dans les votes (clivage) ;
+    #  - impact              : gravité institutionnelle du texte, indépendante de
+    #    l'activité (cf. impact_gravite) — fait remonter les dossiers majeurs mais
+    #    consensuels (réforme constitutionnelle, budget, projet de loi…).
+    # Tension volontairement modérée (0.30) : à 0.40 elle sur-pénalisait les
+    # textes importants sans votes clivants (ex. loi constit. sur la Corse).
+    "amendements_density": 0.25,
+    "debate_breadth": 0.25,
     "political_tension": 0.30,
+    "impact": 0.20,
 }
 SCALE = {
+    # Pour `amendements_density` et `debate_breadth`, SCALE sert de « knee » à la
+    # courbe à rendements décroissants (cf. diminishing()), pas de plafond
+    # linéaire dur : la valeur n'atteint jamais tout à fait 1.0, ce qui évite
+    # qu'un volume démesuré d'amendements/d'auteurs écrase les autres composantes.
     "amendements_density": 30,
     "debate_breadth": 50,
     "political_tension": 0.30,
 }
-RECENCY_HALFLIFE_DAYS = 60
+# Demi-vie de récence ramenée 60 → 30 j : un dossier perd la moitié de son score
+# tous les 30 jours sans nouvel amendement/scrutin → la fraîcheur prime, et un
+# texte qui sature tous les signaux (ex. Fin de vie) cède plus vite une fois figé.
+RECENCY_HALFLIFE_DAYS = 30
 
 # Seuils pour le badge UI
 HEAT_BADGE_THRESHOLD = 0.30   # heatScore >= → "actif"
 EN_PAUSE_DAYS = 120           # last acte commission + > N jours → "en_pause"
 EN_COURS_DAYS = 120           # last acte < N jours (et pas actif) → "en_cours"
+
+# Amortissement du heatScore des dossiers clos (ne touche pas le badge).
+CLOSED_BADGES = {"promulgue", "rejete", "retire", "caduc", "termine"}
+CLOSED_HEAT_DAMPING = 0.3
 
 # Mapping codeActe → étape lisible.
 # Le préfixe avant le premier tiret donne la phase principale.
@@ -531,6 +558,21 @@ def normalize(value, scale):
     return 0.0 if scale <= 0 else min(1.0, value / scale)
 
 
+def diminishing(value, knee):
+    """Rendements décroissants : 1 - exp(-value/knee).
+
+    Contrairement au clamp linéaire `normalize` (qui sature dur à 1.0 dès que
+    value >= scale), cette courbe plafonne en douceur sans jamais atteindre 1.0
+    et reste, à `knee` égal, sous la droite linéaire sur toute la plage utile.
+    Utilisée pour la densité d'amendements afin de plafonner l'effet du volume :
+    un texte hyper-amendé reste haut sans pour autant saturer le score et
+    écraser la tension / la récence.
+    """
+    if knee <= 0 or value <= 0:
+        return 0.0
+    return 1.0 - math.exp(-value / knee)
+
+
 def _to_int(v):
     try:
         return int(v)
@@ -542,7 +584,8 @@ def _to_int(v):
 
 def compute_amendements_signals(texte_uids):
     if not texte_uids:
-        return {"total": 0, "n_articles": 0, "n_auteurs": 0, "density": 0.0}
+        return {"total": 0, "n_articles": 0, "n_auteurs": 0, "density": 0.0,
+                "last_amend_date": None}
     pipeline = [
         {"$match": {"texteLegislatifRef": {"$in": list(texte_uids)}}},
         {"$group": {
@@ -550,24 +593,32 @@ def compute_amendements_signals(texte_uids):
             "total": {"$sum": 1},
             "articles": {"$addToSet": "$pointeurFragmentTexte.division.articleDesignation"},
             "auteurs": {"$addToSet": "$signataires.auteur.acteurRef"},
+            # Date du dépôt d'amendement le plus récent : ancrage de récence.
+            "last_amend_date": {"$max": "$cycleDeVie.dateDepot"},
         }},
     ]
     agg = next(db.amendements.aggregate(pipeline), None)
     if not agg:
-        return {"total": 0, "n_articles": 0, "n_auteurs": 0, "density": 0.0}
+        return {"total": 0, "n_articles": 0, "n_auteurs": 0, "density": 0.0,
+                "last_amend_date": None}
     n_articles = sum(1 for a in agg["articles"] if isinstance(a, str) and a)
     n_auteurs = sum(1 for a in agg["auteurs"] if isinstance(a, str) and a)
     density = agg["total"] / n_articles if n_articles > 0 else 0.0
+    last_amend_date = agg.get("last_amend_date")
+    if not isinstance(last_amend_date, str):
+        last_amend_date = None
     return {"total": agg["total"], "n_articles": n_articles,
-            "n_auteurs": n_auteurs, "density": density}
+            "n_auteurs": n_auteurs, "density": density,
+            "last_amend_date": last_amend_date}
 
 
 def compute_political_tension(scrutin_uids):
     if not scrutin_uids:
         return {"tension": 0.0, "scrutins": 0, "dissidents": 0, "total_votes": 0,
-                "derniere_decision": None}
+                "derniere_decision": None, "last_scrutin_date": None}
     total_dissidents = total_votes = nb_scrutins = 0
     derniere = None  # {date, sort, uid}
+    last_scrutin_date = None  # max dateScrutin (ancrage de récence)
     cursor = db.scrutins.find(
         {"uid": {"$in": list(scrutin_uids)}},
         {"uid": 1, "dateScrutin": 1, "sort": 1, "ventilationVotes": 1},
@@ -577,6 +628,8 @@ def compute_political_tension(scrutin_uids):
 
         # Suivi de la décision la plus récente (par dateScrutin)
         d = s.get("dateScrutin")
+        if isinstance(d, str) and (last_scrutin_date is None or d > last_scrutin_date):
+            last_scrutin_date = d
         sort_code = (s.get("sort") or {}).get("code")
         if isinstance(d, str) and sort_code:
             if derniere is None or d > derniere["date"]:
@@ -608,7 +661,7 @@ def compute_political_tension(scrutin_uids):
     tension = total_dissidents / total_votes if total_votes > 0 else 0.0
     return {"tension": tension, "scrutins": nb_scrutins,
             "dissidents": total_dissidents, "total_votes": total_votes,
-            "derniere_decision": derniere}
+            "derniere_decision": derniere, "last_scrutin_date": last_scrutin_date}
 
 
 # ─── Agrégats supplémentaires ────────────────────────────────────────────────
@@ -757,6 +810,44 @@ def derive_badge(
     return "inactif"
 
 
+# ─── Impact institutionnel (gravité) ─────────────────────────────────────────
+
+def impact_gravite(dossier):
+    """Gravité institutionnelle du texte, dans [0,1].
+
+    Capture l'enjeu structurel d'un dossier indépendamment de son activité
+    (amendements/votes) : une réforme constitutionnelle ou un budget pèsent même
+    sans amendements ni dissension. Combinée à la récence (multiplicative), elle
+    fait remonter les textes majeurs RÉCENTS sans ressusciter les dossiers figés.
+    Mappée sur `procedureParlementaire.libelle` (codeProcedure est vide en base).
+    """
+    lib = ((dossier.get("procedureParlementaire") or {}).get("libelle") or "").lower()
+    if "constitutionnelle" in lib:
+        return 1.0
+    # Budgets nationaux : PLF, PLFR, PLFSS, approbation des comptes.
+    if "finances" in lib or "financement de la sécurité" in lib or "approbation des comptes" in lib:
+        return 1.0
+    if "responsabilité gouvernementale" in lib:  # 49.3, motions de censure
+        return 0.9
+    if "organique" in lib:
+        return 0.85
+    if "ratification" in lib:  # traités et conventions
+        return 0.5
+    if "projet de loi" in lib:        # initiative gouvernementale
+        return 0.7
+    if "proposition de loi" in lib:   # initiative parlementaire (référence)
+        return 0.4
+    if "commission d'enquête" in lib:
+        return 0.4
+    if "résolution" in lib:
+        return 0.25
+    if "mission" in lib or "rapport d'information" in lib:
+        return 0.2
+    if "pétition" in lib or "allocution" in lib:
+        return 0.1
+    return 0.3
+
+
 # ─── Composition ─────────────────────────────────────────────────────────────
 
 def compute_score(dossier):
@@ -766,12 +857,24 @@ def compute_score(dossier):
     amend = compute_amendements_signals(texte_uids)
     tension = compute_political_tension(scrutin_uids)
 
+    gravite = impact_gravite(dossier)
     raw_score = (
-        WEIGHTS["amendements_density"] * normalize(amend["density"], SCALE["amendements_density"])
-        + WEIGHTS["debate_breadth"] * normalize(amend["n_auteurs"], SCALE["debate_breadth"])
+        # Densité d'amendements ET breadth (auteurs) : courbes à rendements
+        # décroissants (plafonnent le volume) plutôt qu'un clamp linéaire qui
+        # saturait à 1.0 dès qu'un texte était massivement amendé.
+        WEIGHTS["amendements_density"] * diminishing(amend["density"], SCALE["amendements_density"])
+        + WEIGHTS["debate_breadth"] * diminishing(amend["n_auteurs"], SCALE["debate_breadth"])
         + WEIGHTS["political_tension"] * normalize(tension["tension"], SCALE["political_tension"])
+        # Gravité institutionnelle : remonte les textes majeurs (lois constit.,
+        # budgets, projets de loi) même sans amendements ni dissension.
+        + WEIGHTS["impact"] * gravite
     )
-    multiplier = recency_multiplier(last_date)
+    # Récence ancrée sur la dernière activité de débat (amendement/scrutin), et
+    # NON sur le dernier acte administratif (sinon une promulgation re-gonfle le
+    # score). Repli sur last_acte_date si aucun signal de débat.
+    signal_dates = [d for d in (amend["last_amend_date"], tension["last_scrutin_date"]) if d]
+    signal_date = max(signal_dates) if signal_dates else last_date
+    multiplier = recency_multiplier(signal_date)
     final_score = round(raw_score * multiplier, 4)
 
     badge = derive_badge(
@@ -781,6 +884,10 @@ def compute_score(dossier):
         current_legislature=LEGISLATURE,
         heat_score=final_score,
     )
+
+    # Amortissement des dossiers clos (ranking only ; le badge gère déjà l'état final).
+    closed_damping = CLOSED_HEAT_DAMPING if badge in CLOSED_BADGES else 1.0
+    final_score = round(final_score * closed_damping, 4)
 
     return {
         "heatScore": final_score,
@@ -796,8 +903,11 @@ def compute_score(dossier):
             "votes_total_exprimes": tension["total_votes"],
             "scrutins_analyses": tension["scrutins"],
             "last_acte_date": last_date,
+            "last_signal_date": signal_date,
             "recency_multiplier": round(multiplier, 3),
+            "impact_gravite": gravite,
             "raw_score": round(raw_score, 4),
+            "closed_damping": closed_damping,
         },
         "procedureAcceleree": is_procedure_acceleree(dossier),
         "currentStage": derive_stage(actes_summary),

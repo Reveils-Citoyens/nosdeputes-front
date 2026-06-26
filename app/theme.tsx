@@ -2,6 +2,7 @@
 import { Raleway } from "next/font/google";
 import { SvgIconProps } from "@mui/material/SvgIcon";
 import { createTheme } from "@mui/material/styles";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import { MinusIcon } from "@/icons/MinusIcon";
 import { PlusIcon } from "@/icons/PlusIcon";
 import type {} from "@mui/lab/themeAugmentation";
@@ -169,6 +170,20 @@ const theme = createTheme({
       },
     },
     MuiSelect: {
+      defaultProps: {
+        // Chevron fin et arrondi (plus moderne que le triangle ArrowDropDown
+        // par défaut) pour tous les Select de l'app, y compris les TextField
+        // `select` des pages /deputes, /dossiers et /dossier.
+        IconComponent: KeyboardArrowDownRoundedIcon,
+      },
+    },
+    MuiAutocomplete: {
+      defaultProps: {
+        // Même chevron pour l'indicateur des Autocomplete (ex. filtre
+        // département sur /deputes). Les barres de recherche qui passent
+        // explicitement `popupIcon={null}` ne sont pas affectées.
+        popupIcon: <KeyboardArrowDownRoundedIcon />,
+      },
       styleOverrides: {
         root: {
           backgroundColor: "#F8F9FA",
