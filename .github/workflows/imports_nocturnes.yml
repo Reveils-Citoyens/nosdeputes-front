@@ -1,15 +1,15 @@
 name: Imports Nocturnes de Données
 
-# on:
-#   schedule:
-#     - cron: '0 2 * * *'
-#   workflow_dispatch:
-
 on:
-  push:
-    branches:
-      - 'hot-fix'
+  schedule:
+    - cron: '0 2 * * *'
   workflow_dispatch:
+
+# on:
+#   push:
+#     branches:
+#       - 'hot-fix'
+  # workflow_dispatch:
 
 jobs:
   run-pipeline:
