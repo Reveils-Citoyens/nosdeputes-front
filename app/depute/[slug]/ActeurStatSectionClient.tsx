@@ -1,11 +1,16 @@
 "use client";
 import * as React from "react";
-import { Metrique, Stats, StatsPeriode } from "@prisma/client";
+import type {
+  DistributionMesure,
+  MetriqueActeur,
+  PeriodeStatistique,
+} from "@/data/mongo/getStatistiquesMetriques";
 import Select from "@mui/material/Select";
 import {
   Box,
   Card,
   CardContent,
+  Chip,
   MenuItem,
   Stack,
   Tooltip,
@@ -22,7 +27,7 @@ const DEPUTE_STATS_METRICS = [
   "questions-ecrites",
   "questions-orales",
 ];
-const periodes: StatsPeriode[] = [
+const periodes: PeriodeStatistique[] = [
   "LEGISLATURE",
   "LAST_YEAR",
   "LAST_SIX_MONTHS",
@@ -45,8 +50,48 @@ const baselineTypeToInfo: Record<string, string> = {
   "documents-publies": "nb_documents_publie",
 };
 
-const MetriqueCard = (props: Stats & { valeurDepute: number }) => {
+type CarteMetrique = DistributionMesure & {
+  valeurDepute: number;
+  /** Prises de parole écartées parce que faites en présidant la séance. */
+  interventionsPresidence?: number;
+};
+
+/**
+ * Indique si le libellé occupe plus d'une ligne.
+ *
+ * Le retour à la ligne dépend de la largeur de la carte, donc de la grille
+ * responsive : aucun sélecteur CSS ne permet de le cibler, il faut le mesurer.
+ * Un libellé sur deux lignes remonte vers le nombre et s'y colle — c'est ce que
+ * l'espacement conditionnel vient corriger.
+ */
+function useLibelleSurPlusieursLignes() {
+  const ref = React.useRef<HTMLSpanElement>(null);
+  const [surPlusieursLignes, setSurPlusieursLignes] = React.useState(false);
+
+  React.useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const mesurer = () => {
+      const hauteurLigne = parseFloat(
+        window.getComputedStyle(element).lineHeight
+      );
+      if (!Number.isFinite(hauteurLigne)) return;
+      setSurPlusieursLignes(element.offsetHeight > hauteurLigne * 1.5);
+    };
+
+    mesurer();
+    const observateur = new ResizeObserver(mesurer);
+    observateur.observe(element);
+    return () => observateur.disconnect();
+  }, []);
+
+  return { ref, surPlusieursLignes };
+}
+
+const MetriqueCard = (props: CarteMetrique) => {
   const quantiles = [props.q20, props.q40, props.q60, props.q80, props.q100];
+  const libelle = useLibelleSurPlusieursLignes();
 
   const quantileIndex = Math.min(
     4,
@@ -55,24 +100,44 @@ const MetriqueCard = (props: Stats & { valeurDepute: number }) => {
 
   return (
     <Card
-      key={props.id}
+      key={props.mesure}
       variant="outlined"
       sx={{ borderRadius: 3, borderColor: "#e0e0e0", boxShadow: "none" }}
     >
       <CardContent>
-        <Typography
-          variant="h1"
-          fontWeight="medium"
-          sx={{ textAlign: "right", lineHeight: 1, mb: 0 }}
+        <Stack
+          direction="row"
+          alignItems="baseline"
+          justifyContent="flex-end"
+          spacing={1}
         >
-          {props.valeurDepute}
-        </Typography>
+          {props.interventionsPresidence ? (
+            // Sur la même ligne que le nombre : placé en dessous, ce complément
+            // décalait le libellé et désalignait la grille de cartes.
+            <Tooltip title="Interventions faites en présidant les débats">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ cursor: "help", whiteSpace: "nowrap" }}
+              >
+                +{props.interventionsPresidence}
+              </Typography>
+            </Tooltip>
+          ) : null}
+          <Typography
+            variant="h1"
+            fontWeight="medium"
+            sx={{ textAlign: "right", lineHeight: 1, mb: 0 }}
+          >
+            {props.valeurDepute}
+          </Typography>
+        </Stack>
         <Stack
           direction="row"
           spacing={1}
           alignItems="center"
           justifyContent="flex-end"
-          sx={{ mb: 1.5 }}
+          sx={{ mb: 1.5, pt: libelle.surPlusieursLignes ? 0.5 : 0 }}
         >
           <Box sx={{ display: "flex", flexShrink: 0 }}>
             <InfoDialogIcon
@@ -80,7 +145,11 @@ const MetriqueCard = (props: Stats & { valeurDepute: number }) => {
               item={baselineTypeToInfo[props.mesure]}
             />
           </Box>
-          <Typography variant="caption" sx={{ textAlign: "right" }}>
+          <Typography
+            ref={libelle.ref}
+            variant="caption"
+            sx={{ textAlign: "right", lineHeight: "1rem" }}
+          >
             {infoDialogContents.depute[baselineTypeToInfo[props.mesure]]
               ?.translation ?? props.mesure}
           </Typography>
@@ -143,41 +212,45 @@ const MetriqueCard = (props: Stats & { valeurDepute: number }) => {
 };
 
 export function ActeurStatSectionClient({
-  deputeMetriquesData,
-  deputeStatsData,
+  metriques,
+  distributions,
+  fonctionPresidence,
 }: {
-  deputeMetriquesData: Metrique[];
-  deputeStatsData: Stats[];
+  metriques: MetriqueActeur[];
+  distributions: DistributionMesure[];
+  fonctionPresidence?: string | null;
 }) {
-  const [periode, setPeriode] = React.useState<StatsPeriode>("LEGISLATURE");
+  const [periode, setPeriode] = React.useState<PeriodeStatistique>("LAST_YEAR");
 
   const metriquesValues = React.useMemo(() => {
-    const rep: Record<StatsPeriode, Record<string, number>> = {
+    const rep: Record<PeriodeStatistique, Record<string, MetriqueActeur>> = {
       LEGISLATURE: {},
       LAST_YEAR: {},
       LAST_SIX_MONTHS: {},
     };
 
-    for (const metrique of deputeMetriquesData) {
-      rep[metrique.periode][metrique.mesure] = metrique.valeur;
+    for (const metrique of metriques) {
+      rep[metrique.periode][metrique.mesure] = metrique;
     }
     return rep;
-  }, [deputeMetriquesData]);
+  }, [metriques]);
 
   const statsWithMetrique = React.useMemo(() => {
-    const metricToStats: Record<string, Stats & { valeurDepute: number }> = {};
-    deputeStatsData
+    const metricToStats: Record<string, CarteMetrique> = {};
+    distributions
       ?.filter((item) => item.periode === periode)
       ?.forEach((item) => {
         metricToStats[item.mesure] = {
           ...item,
-          valeurDepute: metriquesValues[item.periode][item.mesure] ?? 0,
+          valeurDepute: metriquesValues[item.periode][item.mesure]?.valeur ?? 0,
+          interventionsPresidence:
+            metriquesValues[item.periode][item.mesure]?.interventionsPresidence,
         };
       });
     return DEPUTE_STATS_METRICS.map((mesure) => metricToStats[mesure]).filter(
       (value) => value != null
     );
-  }, [deputeStatsData, metriquesValues, periode]);
+  }, [distributions, metriquesValues, periode]);
 
   return (
     <div>
@@ -191,12 +264,32 @@ export function ActeurStatSectionClient({
           mt: 5,
         }}
       >
-        <Typography variant="subtitle1" fontWeight={"bold"} component="h2">
-          Statistiques d&apos;activité
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+          <Typography variant="subtitle1" fontWeight={"bold"} component="h2">
+            Statistiques d&apos;activité
+          </Typography>
+          {fonctionPresidence ? (
+            // Nommer la fonction plutôt que laisser un compteur d'interventions
+            // à zéro parler à sa place.
+            <Stack direction="row" alignItems="center" spacing={0.25}>
+              <Chip
+                size="small"
+                label={fonctionPresidence}
+                sx={{ height: 22, fontSize: "0.75rem" }}
+              />
+              <InfoDialogIcon
+                category="depute"
+                item="interventions_presidence"
+                sx={{ p: 0.25 }}
+              />
+            </Stack>
+          ) : null}
+        </Stack>
         <Select
           value={periode}
-          onChange={(event) => setPeriode(event.target.value)}
+          onChange={(event) =>
+            setPeriode(event.target.value as PeriodeStatistique)
+          }
           disableUnderline
           variant="standard"
           sx={{
@@ -241,7 +334,7 @@ export function ActeurStatSectionClient({
         }}
       >
         {statsWithMetrique.map((item) => (
-          <MetriqueCard key={item.id} {...item} />
+          <MetriqueCard key={item.mesure} {...item} />
         ))}
       </Box>
     </div>

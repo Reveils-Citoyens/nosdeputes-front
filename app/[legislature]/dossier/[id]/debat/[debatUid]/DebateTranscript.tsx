@@ -15,8 +15,9 @@ import { DebateTimeline } from "@/app/[legislature]/dossier/[id]/debat/[debatUid
 import { ClockMovingIcon } from "@/icons/ClockMovingIcon";
 import { useTheme } from "@mui/material";
 import { WORDS_PER_MINUTES } from "@/components/const";
-import { Acteur, Organe, Paragraphe } from "@prisma/client";
-import { getOrgane } from "@/data/getOrgane";
+import { Paragraphe } from "@prisma/client";
+import LecteurSeance from "@/components/LecteurSeance";
+import type { Video } from "@/data/getVideoReunion";
 
 function getWordsPerActeur(paragraphes: Paragraphe[]) {
   const wordsPerActeur: Record<string, number> = {};
@@ -47,9 +48,16 @@ type DebateTranscriptProps = {
   paragraphes: Paragraphe[];
   wordsCounts: Record<string, number>;
   title: string;
+  /** Null quand la séance n'a pas de vidéo : aucun bouton ne s'affiche alors. */
+  video?: Video | null;
 };
 export const DebateTranscript = (props: DebateTranscriptProps) => {
-  const { paragraphes, wordsCounts, title } = props;
+  const { paragraphes, wordsCounts, title, video } = props;
+
+  // Seconde en cours de lecture. Le lecteur est ancré en bas de fenêtre : un
+  // compte rendu se parcourt sur des dizaines d'écrans, un lecteur posé dans le
+  // fil disparaîtrait au premier défilement.
+  const [seconde, setSeconde] = React.useState<number | null>(null);
 
   const wordsPerActeur = React.useMemo(
     () => getWordsPerActeur(paragraphes),
@@ -95,8 +103,20 @@ export const DebateTranscript = (props: DebateTranscriptProps) => {
         </AccordionDetails>
       </Accordion>
       <Box sx={{ mt: 2 }}>
-        <DebateTimeline paragraphes={paragraphes} />
+        <DebateTimeline
+          paragraphes={paragraphes}
+          onLire={video ? setSeconde : undefined}
+        />
       </Box>
+
+      {video && seconde !== null ? (
+        <LecteurSeance
+          video={video}
+          seconde={seconde}
+          legende={title}
+          onFermer={() => setSeconde(null)}
+        />
+      ) : null}
     </>
   );
 };

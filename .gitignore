@@ -38,3 +38,7 @@ next-env.d.ts
 scripts/compute_dossier_heat_score_notebook.py
 scripts/compute_dossier_heat_score.py
 .env*
+
+# python
+__pycache__/
+.venv/

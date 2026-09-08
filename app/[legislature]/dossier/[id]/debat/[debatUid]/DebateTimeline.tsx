@@ -12,8 +12,10 @@ import { SUMMARY_CODES } from "@/components/const";
 
 type DebateTimelineProps = {
   paragraphes: Paragraphe[];
+  /** Absent quand la séance n'a pas de vidéo : aucun bouton ne s'affiche alors. */
+  onLire?: (seconde: number) => void;
 };
-export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
+export const DebateTimeline = ({ paragraphes, onLire }: DebateTimelineProps) => (
   <Timeline
     sx={{
       [`& .${timelineItemClasses.root}:before`]: {
@@ -23,7 +25,7 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
     }}
   >
     {paragraphes.map(
-      ({ uid, codeGrammaire, acteurRefUid, roleDebat, texte }, index) => {
+      ({ uid, codeGrammaire, acteurRefUid, roleDebat, texte, stime }, index) => {
         switch (codeGrammaire) {
           case "PAROLE_GENERIQUE":
           case "INTERRUPTION_1_10":
@@ -34,6 +36,8 @@ export const DebateTimeline = ({ paragraphes }: DebateTimelineProps) => (
                 roleDebat={roleDebat}
                 texte={texte}
                 isFirst={index === 0}
+                seconde={stime != null ? Number(stime) : null}
+                onLire={onLire}
               />
             );
 

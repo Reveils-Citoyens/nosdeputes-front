@@ -4,6 +4,10 @@ import { SUMMARY_CODES } from "@/components/const";
 import { DebateTranscript } from "./DebateTranscript";
 import { getInterventions } from "@/data/getInterventions";
 import { getDebats } from "@/data/getDebats";
+import { getVideoReunion } from "@/data/getVideoReunion";
+import { getFiabiliteCompteRendu } from "@/data/getFiabiliteCompteRendu";
+import AlerteCompteRenduNonCertifie from "@/components/AlerteCompteRenduNonCertifie";
+import BoutonVideoReunion from "@/components/BoutonVideoReunion";
 
 export default async function Page({
   params,
@@ -16,6 +20,9 @@ export default async function Page({
   const debats = await getDebats(dossierUid);
 
   const debat = debats?.find((d) => d.uid === debatUid);
+  // La vidéo est portée par la réunion, pas par le compte rendu.
+  const video = await getVideoReunion(debat?.reunionRefUid);
+  const fiabilite = await getFiabiliteCompteRendu(debatUid);
 
   if (!interventions || interventions.length === 0) {
     return <p>Aucun débat trouvé pour cette séance.</p>;
@@ -53,6 +60,11 @@ export default async function Page({
 
   const hasSummary = sections.length > 0;
 
+  // Aucune intervention horodatée : c'est une réunion de commission, dont les
+  // comptes rendus ne portent pas de `stime`. La vidéo reste accessible, mais
+  // d'un seul tenant.
+  const aucunCalage = !interventions.some((p) => p.stime != null);
+
   return (
     <>
       {/* On n'affiche la colonne de gauche que s'il y a un sommaire associé */}
@@ -80,10 +92,25 @@ export default async function Page({
           width: "100%",
         }}
       >
+        {video && aucunCalage ? (
+          // Cette même page sert les débats en séance et les réunions de
+          // commission. En séance, chaque prise de parole porte son horodatage
+          // et donc son propre bouton dans le fil : un bouton global ferait
+          // doublon. En commission, `stime` est vide partout — sans ce bouton,
+          // la vidéo existe mais rien ne permet de l'atteindre.
+          <div style={{ marginBottom: 16 }}>
+            <BoutonVideoReunion
+              video={video}
+              legende={debat?.dateSeanceJour ?? "Réunion"}
+            />
+          </div>
+        ) : null}
+        <AlerteCompteRenduNonCertifie fiabilite={fiabilite} />
         <DebateTranscript
           title={debat?.dateSeanceJour ?? ""}
           paragraphes={interventions}
           wordsCounts={wordsCounts}
+          video={video}
         />
       </div>
     </>

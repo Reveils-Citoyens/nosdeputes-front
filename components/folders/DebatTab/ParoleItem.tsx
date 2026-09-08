@@ -10,8 +10,9 @@ import Chip from "@mui/material/Chip";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
-import CircleDiv from "@/icons/CircleDiv";
 import MicIcon from "@mui/icons-material/Mic";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import IconButton from "@mui/material/IconButton";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getActeur } from "@/data/getActeur";
@@ -21,9 +22,13 @@ interface ParoleItemProps {
   roleDebat: string | null;
   texte: string | null;
   isFirst?: boolean;
+  /** Position de cette prise de parole dans la vidéo, en secondes. */
+  seconde?: number | null;
+  /** Fourni seulement si la séance a une vidéo consultable. */
+  onLire?: (seconde: number) => void;
 }
 export default function ParoleItem(props: ParoleItemProps) {
-  const { acteurUid, roleDebat, texte, isFirst = false } = props;
+  const { acteurUid, roleDebat, texte, isFirst = false, seconde, onLire } = props;
 
   const { data: acteur, isPending } = useQuery({
     queryKey: ["acteur", acteurUid],
@@ -150,6 +155,29 @@ export default function ParoleItem(props: ParoleItemProps) {
                 </Tooltip>
               )}
             {roleDebat && <Typography>{roleDebat}</Typography>}
+
+            {onLire && seconde != null ? (
+              // Le glyphe seul, sans cadre : l'icône porte déjà un cercle, et le
+              // thème arrondit les IconButton en carré — l'encadrer donnait une
+              // pastille grise qui se lisait comme un second badge à côté du
+              // groupe politique. Le fond n'apparaît qu'au survol.
+              // grey.700 tient 6,2:1 sur blanc, au-delà des 3:1 requis d'un
+              // contrôle d'interface ; grey.500 n'était qu'à 2,7:1.
+              <Tooltip title="Écouter cette intervention" placement="top">
+                <IconButton
+                  onClick={() => onLire(seconde)}
+                  aria-label="Écouter cette intervention"
+                  sx={{
+                    color: "grey.700",
+                    p: 0.5,
+                    ml: -0.25,
+                    "&:hover": { color: "common.black", bgcolor: "grey.100" },
+                  }}
+                >
+                  <PlayCircleOutlineIcon sx={{ fontSize: 22 }} />
+                </IconButton>
+              </Tooltip>
+            ) : null}
           </Stack>
 
           <Typography

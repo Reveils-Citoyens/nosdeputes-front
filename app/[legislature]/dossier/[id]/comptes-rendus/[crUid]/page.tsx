@@ -3,6 +3,10 @@ import { getInterventions } from "@/data/getInterventions";
 import { SUMMARY_CODES } from "@/components/const";
 import { DebateTranscript } from "../../debat/[debatUid]/DebateTranscript";
 import { DebateSummary } from "../../debat/[debatUid]/DebateSummary";
+import { getFiabiliteCompteRendu } from "@/data/getFiabiliteCompteRendu";
+import AlerteCompteRenduNonCertifie from "@/components/AlerteCompteRenduNonCertifie";
+import { getVideoDuCompteRendu } from "@/data/getVideoReunion";
+import BoutonVideoReunion from "@/components/BoutonVideoReunion";
 
 function formatDate(value: unknown): string | null {
   if (!value) return null;
@@ -17,7 +21,11 @@ export default async function CompteRenduPage({
   params: Promise<{ crUid: string }>;
 }) {
   const { crUid } = await params;
-  const interventions = await getInterventions(crUid);
+  const [interventions, fiabilite, video] = await Promise.all([
+    getInterventions(crUid),
+    getFiabiliteCompteRendu(crUid),
+    getVideoDuCompteRendu(crUid),
+  ]);
 
   if (!interventions || interventions.length === 0) {
     return <p>Le compte rendu de cette réunion n&apos;est pas disponible.</p>;
@@ -62,6 +70,19 @@ export default async function CompteRenduPage({
           width: "100%",
         }}
       >
+        {video ? (
+          // Placé avant l'alerte de provenance : celle-ci porte sur le texte,
+          // pas sur la captation, qui est la source primaire et n'appelle
+          // aucune réserve. C'est aussi le seul accès à la vidéo de la page —
+          // il doit se voir sans qu'on le cherche.
+          <div style={{ marginBottom: 16 }}>
+            <BoutonVideoReunion
+              video={video}
+              legende={dateLabel ? `Réunion du ${dateLabel}` : "Réunion"}
+            />
+          </div>
+        ) : null}
+        <AlerteCompteRenduNonCertifie fiabilite={fiabilite} />
         <DebateTranscript
           title={dateLabel ?? "Compte rendu"}
           paragraphes={interventions}

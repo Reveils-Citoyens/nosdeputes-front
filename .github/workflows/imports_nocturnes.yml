@@ -32,18 +32,59 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pymongo beautifulsoup4 requests
+        pip install -r requirements.txt
 
     - name: Clone and Run Tricoteuses Downloader
       run: |
         git clone https://git.tricoteuses.fr/logiciels/tricoteuses-assemblee.git
         cd tricoteuses-assemblee
         npm install
-        mkdir ../assemblee-data/
+        mkdir -p ../assemblee-data/
         npm run data:download ../assemblee-data -- --legislature 17
+
+    # Les comptes rendus de commission ne sont pas dans l'open data de
+    # l'Assemblée : elle ne les publie qu'en HTML sur son site. Tricoteuses les
+    # moissonne et les republie dans un dépôt git, qui est leur seul canal de
+    # distribution — `data:download` les ignore explicitement (cf. le filtre sur
+    # Comptes_Rendus_Commissions_ dans reorganize_data.ts).
+    # Clone superficiel : ~300 Mo et une poignée de secondes, l'historique du
+    # dépôt ne nous sert à rien.
+    #
+    # L'échec du clone n'arrête pas le job : le reste des données a sa valeur,
+    # et ND.py détecte le répertoire manquant puis envoie l'alerte.
+    - name: Fetch commission meeting reports
+      continue-on-error: true
+      run: |
+        git clone --depth 1 \
+          https://git.tricoteuses.fr/assemblee/Comptes_Rendus_Commissions_XVII.git \
+          assemblee-data/Comptes_Rendus_Commissions_XVII
+        rm -rf assemblee-data/Comptes_Rendus_Commissions_XVII/.git
+
+    # Vérifie le calcul des statistiques sur les fichiers bruts qu'on vient de
+    # télécharger, avant toute écriture en base. C'est le seul moment où les
+    # deux sont réunis : le calcul lit ensuite MongoDB, où l'on ne distingue
+    # plus les données du jour de celles de la veille.
+    #
+    # `--alerter` fait sortir le script en 0 même en échec : une vérification
+    # qui tombe ne doit pas priver le site d'une nuit de mise à jour. Elle
+    # signale que les chiffres n'ont pas été validés, ce qui n'est pas la même
+    # chose que de les savoir faux.
+    - name: Verify activity statistics
+      env:
+        RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        RESEND_FROM: ${{ secrets.RESEND_FROM }}
+        ALERTE_IMPORT_EMAIL: ${{ secrets.ALERTE_IMPORT_EMAIL }}
+      run: |
+        python test_statistiques_activite.py \
+          --assemblee-data ./assemblee-data \
+          --legislature 17 \
+          --alerter
 
     - name: Run ND.py Pipeline
       env:
         MONGO_URI: ${{ secrets.MONGO_URI }}
+        RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        RESEND_FROM: ${{ secrets.RESEND_FROM }}
+        ALERTE_IMPORT_EMAIL: ${{ secrets.ALERTE_IMPORT_EMAIL }}
       run: |
         python ND.py
