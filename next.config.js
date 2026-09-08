@@ -17,6 +17,13 @@ try {
 const ASSETS_HOST = "https://tricoteuses-assets.s3.fr-par.scw.cloud";
 // Serveur Umami (analytics sans cookie, hébergé sur Pikapods).
 const UMAMI_HOST = "https://burrowing-partridge.pikapod.net";
+// Diffuseur des vidéos de séance de l'Assemblée nationale. Le lecteur y récupère
+// le manifeste HLS et les segments : sans lui dans connect-src, la requête est
+// bloquée par la CSP et hls.js échoue sur un `manifestLoadError` en 10 ms, sans
+// que rien ne distingue ce cas d'une vidéo réellement absente.
+const VIDEO_HOST = "https://videos-an.vodalys.com";
+// Portail vidéo de l'Assemblée : il héberge les vignettes des séances.
+const VIDEO_PORTAL = "https://videos.assemblee-nationale.fr";
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -31,10 +38,14 @@ const contentSecurityPolicy = [
   // MUI / Emotion injecte des styles inline.
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
-  `img-src 'self' data: blob: ${ASSETS_HOST}`,
+  `img-src 'self' data: blob: ${ASSETS_HOST} ${VIDEO_PORTAL}`,
   // Appels client : nos routes /api + API Tricoteuses + APIs géo (code postal)
   // + Umami /api/send (POST des events analytics).
-  `connect-src 'self' https://geo.api.gouv.fr https://territoires.code4code.eu ${UMAMI_HOST}${apiOrigin ? ` ${apiOrigin}` : ""}`,
+  `connect-src 'self' https://geo.api.gouv.fr https://territoires.code4code.eu ${UMAMI_HOST} ${VIDEO_HOST}${apiOrigin ? ` ${apiOrigin}` : ""}`,
+  // Vidéos de séance : `blob:` pour les segments remis au lecteur par hls.js via
+  // Media Source Extensions, l'hôte pour la lecture native de Safari. Sans
+  // media-src explicite, la règle retombe sur default-src 'self' et rien ne joue.
+  `media-src 'self' blob: ${VIDEO_HOST}`,
 ].join("; ");
 
 const securityHeaders = [

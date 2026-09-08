@@ -50,7 +50,7 @@ export const SpeakingTime = (props: SpeakingTimeCardProps) => {
   const loaded = acteurQueries.every((acteurQuery) => !acteurQuery.isPending);
 
   if (!loaded) {
-    return <p>loading...</p>;
+    return <p>Chargement ...</p>;
   }
 
   acteurQueries.forEach((acteurQuery) => {

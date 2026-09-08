@@ -2,6 +2,7 @@ import React from "react";
 import WeeklyActivitySection from "./WeeklyActivity/WeeklyActivitySection";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
 import { ActeurStatsSection } from "./ActeurStatsSection";
+import { DernieresPrisesDeParoleSection } from "./DernieresPrisesDeParoleSection";
 
 export default async function Page({
   params,
@@ -20,6 +21,7 @@ export default async function Page({
     <div>
       <WeeklyActivitySection acteurUid={acteur.uid} />
       <ActeurStatsSection acteurUid={acteur.uid} />
+      <DernieresPrisesDeParoleSection acteurUid={acteur.uid} />
     </div>
   );
 }

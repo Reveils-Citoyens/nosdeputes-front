@@ -116,6 +116,11 @@ export default function SearchBar() {
   return (
     <Box sx={{ maxWidth: 709, width: "100%" }}>
       <Autocomplete
+        // Identifiant fixe plutôt que dérivé de `useId` : celui-ci encode la
+        // position dans l'arbre React, qui diffère entre le rendu serveur en
+        // flux et l'hydratation, d'où une erreur d'hydratation sur l'`id` de
+        // l'input. Même raison que dans NavSearchBar.
+        id="recherche-accueil"
         getOptionLabel={(option) => {
           if (typeof option === "string") return option;
           if (isActeur(option)) return `${option.prenom} ${option.nom}`;

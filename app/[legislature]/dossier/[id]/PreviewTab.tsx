@@ -22,6 +22,7 @@ import { EnrichmentCard } from "./EnrichmentCard";
 import { getDossierEnrichment } from "@/data/mongo/getDossierEnrichment";
 import { buildDocumentVersionLabels } from "./documentVersions";
 import { getMissionReunions } from "@/data/mongo/getMissionReunions";
+import { getVideosDesReunions } from "@/data/getVideoReunion";
 import { MissionReunionsCard } from "@/components/folders/MissionReunionsCard";
 import { EmptyState } from "@/components/folders/EmptyState";
 import EventBusyOutlinedIcon from "@mui/icons-material/EventBusyOutlined";
@@ -51,6 +52,14 @@ export const PreviewTab = async ({ dossier }: PreviewTabProps) => {
   const missionReunions = isMissionOuCE
     ? await getMissionReunions(dossier!.titre, dossier!.legislature)
     : [];
+
+  // Les liens vidéo n'existent que dans l'API Tricoteuses : la collection
+  // `reunions` de MongoDB, issue des données brutes de l'Assemblée, n'a aucun
+  // champ vidéo. On les résout en une requête groupée plutôt qu'une par
+  // audition — une commission d'enquête en tient des dizaines.
+  const videosReunions = await getVideosDesReunions(
+    missionReunions.map((r) => r.uid)
+  );
 
   const commissionFondIds = getCommissionUids(actesLegislatifs, "FOND");
   const commissionAvisIds = getCommissionUids(actesLegislatifs, "AVIS");
@@ -108,6 +117,7 @@ export const PreviewTab = async ({ dossier }: PreviewTabProps) => {
             <MissionReunionsCard
               reunions={missionReunions}
               linkBase={`/${dossier!.legislature}/dossier/${dossier!.uid}/comptes-rendus`}
+              videos={videosReunions}
             />
           ) : (
             <EmptyState

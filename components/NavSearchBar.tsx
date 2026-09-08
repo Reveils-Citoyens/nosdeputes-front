@@ -58,6 +58,23 @@ const fetchDossiers = debounce(
 const MIN_CHARS = 5;
 const emptyOptions = [] as const;
 
+/**
+ * Identifiants fixes des deux champs de recherche de la barre de navigation.
+ *
+ * Sans eux, MUI les dérive de `useId`, dont la valeur encode la position du
+ * composant dans l'arbre React — y compris les frontières de Suspense que
+ * Next.js ouvre pendant le rendu en flux. La barre de navigation vit dans le
+ * layout racine, donc au-dessus des pages qui streament : sur certaines pages
+ * député, l'arbre du serveur compte une frontière de plus que celui du client,
+ * les deux `useId` divergent, et React signale une erreur d'hydratation sur
+ * l'attribut `id` de l'input.
+ *
+ * Une valeur écrite en dur ne dépend de rien. Les deux variantes coexistent
+ * dans le DOM — l'une masquée par media query — d'où deux identifiants.
+ */
+const ID_RECHERCHE_BUREAU = "recherche-nav";
+const ID_RECHERCHE_MOBILE = "recherche-nav-mobile";
+
 // Height matches the nav pill container (p-1 + py-2.5 + text ≈ 44px outer)
 const PILL_HEIGHT = 50;
 const EXPANDED_WIDTH = 360;
@@ -197,6 +214,7 @@ export default function NavSearchBar({ mobile = false }: { mobile?: boolean }) {
         }}
       >
         <Autocomplete
+          id={ID_RECHERCHE_BUREAU}
           getOptionLabel={(option) => {
             if (typeof option === "string") return option;
             if (isActeur(option)) return `${option.prenom} ${option.nom}`;
@@ -389,6 +407,7 @@ function MobileSearch({
 }) {
   return (
     <Autocomplete
+      id={ID_RECHERCHE_MOBILE}
       getOptionLabel={(option) => {
         if (typeof option === "string") return option;
         if (isActeur(option)) return `${option.prenom} ${option.nom}`;

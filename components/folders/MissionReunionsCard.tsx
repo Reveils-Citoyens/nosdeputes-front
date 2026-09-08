@@ -8,6 +8,8 @@ import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import { CardLayout } from "@/components/folders/CardLayout";
 import type { MissionReunion } from "@/data/mongo/getMissionReunions";
+import type { Video } from "@/data/getVideoReunion";
+import BoutonVideoReunion from "@/components/BoutonVideoReunion";
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
@@ -24,10 +26,17 @@ function formatDate(iso: string | null): string | null {
 export function MissionReunionsCard({
   reunions,
   linkBase,
+  videos = {},
 }: {
   reunions: MissionReunion[];
   /** Base d'URL des liens compte rendu (ex. tab dossier "/L/dossier/ID/comptes-rendus"). */
   linkBase: string;
+  /**
+   * Vidéos par uid de réunion. Toutes n'en ont pas : environ huit auditions de
+   * commission d'enquête sur dix sont filmées, et l'archive du diffuseur ne
+   * conserve qu'un an. Une réunion absente de cet objet n'affiche pas de bouton.
+   */
+  videos?: Record<string, Video>;
 }) {
   return (
     <CardLayout title={`Réunions et auditions (${reunions.length})`}>
@@ -62,28 +71,46 @@ export function MissionReunionsCard({
                 </Stack>
               )}
 
-              {r.compteRenduRefUid && (
-                <Box sx={{ pl: 3.25, mt: 1 }}>
-                  <Typography
-                    component={Link}
-                    href={`${linkBase}/${r.compteRenduRefUid}`}
-                    data-umami-event="compte-rendu-ouvert"
-                    data-umami-event-source="dossier"
-                    variant="caption"
-                    sx={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                      color: "primary.main",
-                      fontWeight: 600,
-                      textDecoration: "none",
-                      "&:hover": { textDecoration: "underline" },
-                    }}
-                  >
-                    <DescriptionOutlinedIcon sx={{ fontSize: 15 }} />
-                    Lire le compte rendu
-                  </Typography>
-                </Box>
+              {(r.compteRenduRefUid || videos[r.uid]) && (
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1.5}
+                  flexWrap="wrap"
+                  useFlexGap
+                  sx={{ pl: 3.25, mt: 1 }}
+                >
+                  {videos[r.uid] && (
+                    <BoutonVideoReunion
+                      video={videos[r.uid]}
+                      legende={
+                        dateLabel ? `Réunion du ${dateLabel}` : "Réunion"
+                      }
+                      taille="liste"
+                    />
+                  )}
+                  {r.compteRenduRefUid && (
+                    <Typography
+                      component={Link}
+                      href={`${linkBase}/${r.compteRenduRefUid}`}
+                      data-umami-event="compte-rendu-ouvert"
+                      data-umami-event-source="dossier"
+                      variant="caption"
+                      sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                        color: "primary.main",
+                        fontWeight: 600,
+                        textDecoration: "none",
+                        "&:hover": { textDecoration: "underline" },
+                      }}
+                    >
+                      <DescriptionOutlinedIcon sx={{ fontSize: 15 }} />
+                      Lire le compte rendu
+                    </Typography>
+                  )}
+                </Stack>
               )}
             </Box>
           );

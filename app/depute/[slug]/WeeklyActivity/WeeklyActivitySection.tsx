@@ -1,52 +1,34 @@
 import * as React from "react";
 import WeeklyActivitySectionClient from "./WeeklyActivitySectionClient";
-import { StateHebdoType } from "@prisma/client";
+import {
+  getStatistiquesHebdomadaires,
+  type TypeStatistique,
+} from "@/data/mongo/getStatistiquesHebdomadaires";
 
-const types: StateHebdoType[] = [
-  "presenceDetectee",
-  "presenceCommision",
-  "amendementDepose",
-];
-
-const getHebdoStates = async (
-  acteurUid: string,
-  type: StateHebdoType,
-  size: number = 100
-) => {
-  const rep = await fetch(
-    `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/statistiqueHebdomadaire/?dataset=17&acteurUid=${acteurUid}&type=${type}&sort=semaineIndex.desc&perPage=${size}`
-  );
-
-  const { data = [] } = await rep.json();
-  return data;
-};
+// Les deux indicateurs de présence reposent sur un identifiant fourni par
+// l'Assemblée — prise de parole horodatée en séance publique, relevé nominatif
+// en commission. Les interventions ne sont pas affichées ici : elles mesurent
+// un volume de parole, pas une présence, et les mélanger était précisément le
+// défaut qu'on a corrigé.
+const TYPES: TypeStatistique[] = ["presenceSeancePublique", "presenceCommission"];
 
 export default async function WeeklyActivitySection(props: {
   acteurUid: string;
 }) {
-  const [
-    presenceDetectee,
-    presenceCommision,
-    presenceDetecteeMax,
-    presenceDetecteeMediane,
-    presenceCommisionMax,
-    presenceCommisionMediane,
-  ] = await Promise.all([
-    getHebdoStates(props.acteurUid, "presenceDetectee"),
-    getHebdoStates(props.acteurUid, "presenceCommision"),
-    getHebdoStates("max", "presenceDetectee"),
-    getHebdoStates("median", "presenceDetectee"),
-    getHebdoStates("max", "presenceCommision"),
-    getHebdoStates("median", "presenceCommision"),
-  ]);
+  const statistiques = await getStatistiquesHebdomadaires(props.acteurUid, TYPES);
+
+  // Sans données — import nocturne qui n'a pas tourné, MongoDB injoignable — le
+  // graphe afficherait une série à zéro sur toutes les semaines, ce qui se lit
+  // comme un député totalement absent. Mieux vaut ne rien montrer qu'accuser à
+  // tort : on masque la section.
+  if (statistiques.length === 0) {
+    return null;
+  }
+
   return (
     <WeeklyActivitySectionClient
-      presenceDetectee={presenceDetectee}
-      presenceCommision={presenceCommision}
-      presenceDetecteeMax={presenceDetecteeMax}
-      presenceDetecteeMediane={presenceDetecteeMediane}
-      presenceCommisionMax={presenceCommisionMax}
-      presenceCommisionMediane={presenceCommisionMediane}
+      acteurUid={props.acteurUid}
+      statistiques={statistiques}
     />
   );
 }

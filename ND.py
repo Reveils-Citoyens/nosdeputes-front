@@ -18,6 +18,9 @@ from pymongo.collection import Collection
 from pymongo.errors import BulkWriteError
 from pprint import pprint
 
+import alertes_import
+import statistiques_activite
+
 
 MONGO_URI = os.environ.get("MONGO_URI")
 
@@ -137,9 +140,17 @@ def ingest_category(
     label: str,
     id_field: str = "uid",
     batch_size: int = 500,
-) -> None:
+    extra_fields: dict | None = None,
+) -> int:
     """
     Parcourt data_dir, charge les JSON et les upserte en batch dans collection.
+
+    `extra_fields` est fusionné dans chaque document : sert à marquer la
+    provenance quand plusieurs catégories alimentent une même collection.
+
+    Renvoie le nombre de documents traités. Zéro n'est pas une erreur ici — la
+    décision appartient à l'appelant, qui seul sait si la catégorie est
+    critique (cf. CATEGORIES_CRITIQUES).
     """
     log.info("▶ %s → collection '%s'", label, collection.name)
     batch: list[dict] = []
@@ -151,6 +162,8 @@ def ingest_category(
         if len(doc) == 1:
             doc = next(iter(doc.values()))
         doc = flatten_uid(doc)
+        if extra_fields:
+            doc.update(extra_fields)
 
         batch.append(doc)
         if len(batch) >= batch_size:
@@ -162,6 +175,7 @@ def ingest_category(
         total += upsert_batch(collection, batch, id_field)
 
     log.info("✔ %s : %d documents chargés", label, total)
+    return total
 
 
 # ---------------------------------------------------------------------------
@@ -212,11 +226,52 @@ def build_assemblee_categories(data_dir: Path, legislature: str) -> dict[str, tu
             data_dir / f"Questions_ecrites_{leg_roman}.json",
             "questions", "uid",
         ),
+        # Comptes rendus de séance publique. Produits par `data:download` à partir
+        # du syceron brut de l'open data AN (dossier reorganisé, sans suffixe).
+        # ⚠️ Pointait auparavant sur "Debats_En_Seance_Publique_XVII.json", un
+        # répertoire que le téléchargeur ne produit pas : la collection restait
+        # vide sans autre signal qu'un warning.
         "comptes_rendus": (
-            data_dir / f"Debats_En_Seance_Publique_{leg_roman}.json", 
+            data_dir / f"Comptes_Rendus_Seances_{leg_roman}",
+            "comptes_rendus", "uid",
+        ),
+        # Comptes rendus de commission. Absents de l'open data AN : l'Assemblée
+        # ne les publie qu'en HTML sur son site. Tricoteuses les moissonne et
+        # les republie dans un dépôt git, seul canal de distribution — d'où le
+        # `git clone` dans le workflow d'imports nocturnes.
+        "comptes_rendus_commissions": (
+            data_dir / f"Comptes_Rendus_Commissions_{leg_roman}",
             "comptes_rendus", "uid",
         ),
     }
+
+
+# Champs ajoutés à l'ingestion pour distinguer des documents de même schéma
+# stockés dans une même collection. Le préfixe de l'uid (CRS…/CRC…) porte déjà
+# l'information, mais un champ explicite est indexable et se lit sans décodeur.
+CATEGORY_EXTRA_FIELDS: dict[str, dict] = {
+    "comptes_rendus": {"typeCompteRendu": "seance_publique"},
+    "comptes_rendus_commissions": {"typeCompteRendu": "commission"},
+}
+
+
+# Catégories dont l'absence corrompt les statistiques d'activité sans rien
+# casser d'autre. Une catégorie qui n'ingère rien laisse la collection intacte —
+# `ingest_category` ne fait que des upserts — donc les chiffres deviennent
+# obsolètes, pas faux. C'est précisément ce qui rend la panne difficile à voir :
+# le site continue d'afficher des nombres plausibles.
+#
+# La liste tient à ce dont dépend statistiques_activite.py : les comptes rendus
+# pour les interventions, les réunions pour l'émargement en commission, les
+# acteurs et organes pour la population de référence.
+CATEGORIES_CRITIQUES = frozenset({
+    "acteurs",
+    "organes",
+    "reunions",
+    "comptes_rendus",
+    "comptes_rendus_commissions",
+})
+
 
 def build_senat_categories(data_dir: Path) -> dict[str, tuple]:
     """
@@ -259,8 +314,8 @@ def ensure_indexes(db: Any) -> None:
         "scrutins":          [("uid", 1), ("dateScrutin", -1)],
         "amendements":       [("uid", 1), ("texteLegislatifRef", 1)],
         "dossiers":          [("uid", 1), ("legislature", 1)],
-        "comptes_rendus":    [("uid", 1), ("sessionRef", 1)],
-        "reunions":          [("uid", 1), ("timestampDebut", -1)],
+        "comptes_rendus":    [("uid", 1), ("sessionRef", 1), ("typeCompteRendu", 1)],
+        "reunions":          [("uid", 1), ("timeStampDebut", -1)],
         "questions":         [("uid", 1), ("type", 1)],
         "senat_acteurs":     [("uid", 1)],
         "senat_organes":     [("uid", 1)],
@@ -374,17 +429,68 @@ def main():
         sys.exit(1)
 
     # Ingestion
+    ingeres: dict[str, int] = {}
     for cat_key in args.categories:
         data_path, coll_name, id_field = all_categories[cat_key]
-        ingest_category(
+        ingeres[cat_key] = ingest_category(
             collection=db[coll_name],
             data_dir=data_path,
             label=cat_key,
             id_field=id_field,
             batch_size=args.batch_size,
+            extra_fields=CATEGORY_EXTRA_FIELDS.get(cat_key),
         )
 
     log.info("✅ Ingestion terminée.")
+    return ingeres
+
+
+def verifier_ingestion(
+    ingeres: dict[str, int], all_categories: dict[str, tuple], db: Any
+) -> list[str]:
+    """
+    Liste ce qui a manqué parmi les catégories critiques.
+
+    Deux symptômes distincts, qui n'ont pas la même cause :
+
+      - le répertoire source est absent : le téléchargement ou le clone a
+        échoué, ou le chemin attendu a changé de nom en amont ;
+      - le répertoire existe mais rien n'a été ingéré : les fichiers sont là,
+        illisibles ou d'un format inattendu.
+
+    Un troisième cas mérite d'être signalé à part : une collection vide en base.
+    Là, ce n'est plus une nuit ratée mais une donnée qui n'est jamais arrivée —
+    c'est l'état dans lequel `comptes_rendus` est resté des mois.
+    """
+    anomalies: list[str] = []
+
+    for cat_key in sorted(CATEGORIES_CRITIQUES):
+        if cat_key not in ingeres:
+            continue  # non demandée dans cette exécution
+
+        data_path, coll_name, _ = all_categories[cat_key]
+        if not Path(data_path).exists():
+            anomalies.append(
+                f"{cat_key} : répertoire source introuvable ({data_path}) — "
+                f"téléchargement ou clone en échec."
+            )
+        elif ingeres[cat_key] == 0:
+            anomalies.append(
+                f"{cat_key} : répertoire présent ({data_path}) mais aucun "
+                f"document ingéré — fichiers illisibles ou format inattendu."
+            )
+
+        try:
+            if db[coll_name].estimated_document_count() == 0:
+                anomalies.append(
+                    f"{cat_key} : la collection '{coll_name}' est VIDE en base. "
+                    f"Les statistiques qui en dépendent sont fausses, pas "
+                    f"seulement obsolètes."
+                )
+        except Exception as erreur:  # noqa: BLE001 — la vérification ne doit rien casser
+            log.warning("Comptage de '%s' impossible : %s", coll_name, erreur)
+
+    return anomalies
 
 #####
 
@@ -925,9 +1031,43 @@ sys.argv = [
     "ingest_tricoteuses.py",
     "--assemblee-data", "./assemblee-data",
     "--legislature", "17",
-    "--categories", "questions_orales", "questions_ecrites", "questions_gouvernement", "amendements", "reunions", "dossiers", "reunions", "scrutins" , "acteurs", "organes"
+    # "documents" et "comptes_rendus" manquaient : leurs collections étaient
+    # vides en production, sans autre signal qu'un warning au chargement.
+    "--categories", "questions_orales", "questions_ecrites", "questions_gouvernement", "amendements", "reunions", "dossiers", "documents", "reunions", "scrutins" , "acteurs", "organes", "comptes_rendus", "comptes_rendus_commissions"
 ]
-main()
+_ingeres = main()
+
+# ─── Surveillance des sources ────────────────────────────────────────────────
+# L'import ne s'interrompt pas quand une source manque : les collections
+# gardent les documents de la veille, donc les chiffres deviennent obsolètes
+# et non faux. Mais personne ne doit l'apprendre par un député mécontent.
+
+_anomalies = verifier_ingestion(
+    _ingeres,
+    build_assemblee_categories(Path("./assemblee-data"), LEGISLATURE),
+    db,
+)
+if _anomalies:
+    alertes_import.signaler(
+        "Import nocturne dégradé : sources manquantes",
+        _anomalies,
+        contexte=(
+            "Documents ingérés par catégorie :\n"
+            + "\n".join(f"  {cle:<28} {valeur:>8}" for cle, valeur in sorted(_ingeres.items()))
+        ),
+    )
+
+# ─── Statistiques de présence ────────────────────────────────────────────────
+# Recalculées à partir des données brutes de l'Assemblée qu'on vient d'ingérer,
+# plutôt que reprises de l'API Tricoteuses : ce sont les chiffres les plus
+# exposés à la contestation, il faut pouvoir les justifier ligne à ligne.
+# Voir statistiques_activite.py pour les règles de calcul.
+#
+# Recalculées même en cas d'anomalie : le calcul lit MongoDB, pas les fichiers
+# téléchargés. Une source manquante le prive des nouveautés du jour, pas de
+# l'historique — s'en abstenir figerait aussi tout le reste.
+
+statistiques_activite.calculer_et_stocker(db, legislature=int(LEGISLATURE))
 
 # Ensuite, on peut calculer les heat scores + agrégats sur tous les dossiers (ou limiter à N pour tester).
 

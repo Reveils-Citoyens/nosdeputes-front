@@ -1,0 +1,12 @@
+# Dépendances Python de l'import nocturne (cf. .github/workflows/imports_nocturnes.yml).
+#
+#   python3 -m venv .venv
+#   .venv/bin/pip install -r requirements.txt
+#
+# pymongo seul suffit pour scripts/recalculer_statistiques.py et pour
+# test_statistiques_activite.py, qui travaillent hors ligne. beautifulsoup4 sert
+# au scraping de la Cour des comptes dans ND.py ; requests, à ce scraping et à
+# l'envoi des alertes d'import (alertes_import.py).
+pymongo
+beautifulsoup4
+requests
