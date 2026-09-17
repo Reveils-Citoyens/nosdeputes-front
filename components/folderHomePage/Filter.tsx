@@ -38,6 +38,7 @@ export const Filter = () => {
       >
         <MenuItem value="popular">Les plus discutés</MenuItem>
         <MenuItem value="recent">Activité récente</MenuItem>
+        <MenuItem value="agenda">Prochainement à l’agenda</MenuItem>
       </TextField>
 
       <TextField

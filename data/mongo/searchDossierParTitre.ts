@@ -7,8 +7,11 @@ export type DossierSearchResult = {
   typeLibelle: string | null;
   score: number;
   heatScore: number;
+  discussionScore: number;
   amendementsTotal: number;
   auteursUniques: number;
+  scrutinsTotal: number;
+  nextAgendaDate: string | null;
   badge: string | null;
 };
 
@@ -44,7 +47,7 @@ export async function searchDossierParTitre(
     limit?: number;
     skip?: number;
     legislature?: string;
-    sort?: "relevance" | "date";
+    sort?: "relevance" | "date" | "agenda";
     codeProcedure?: string;
     badge?: string;
     theme?: string;
@@ -118,18 +121,57 @@ export async function searchDossierParTitre(
       },
     },
     {
-      // Combine relevance textuelle et heat score pour le tri final.
       $addFields: {
-        _searchScore: { $meta: "searchScore" },
-        _finalScore: {
-          $add: [
-            { $meta: "searchScore" },
-            {
-              $multiply: [
-                { $ifNull: ["$heatScore", 0] },
-                HEAT_BOOST_FACTOR,
+        _hasDiscussion: {
+          $or: [
+            { $gt: [{ $ifNull: ["$heatComponents.amendements_total", 0] }, 0] },
+            { $gt: [{ $ifNull: ["$heatComponents.n_scrutins", 0] }, 0] },
+          ],
+        },
+        _nextAgendaDate: {
+          $let: {
+            vars: {
+              candidate: { $ifNull: ["$nextAgendaDate", "$heatComponents.last_acte_date"] },
+            },
+            in: {
+              $cond: [
+                {
+                  $gt: [
+                    { $convert: { input: "$$candidate", to: "date", onError: null, onNull: null } },
+                    new Date(),
+                  ],
+                },
+                "$$candidate",
+                null,
               ],
             },
+          },
+        },
+      },
+    },
+    {
+      // La pertinence textuelle reste prioritaire, mais seuls des signaux de
+      // discussion réels peuvent apporter un bonus de popularité.
+      $addFields: {
+        _searchScore: { $meta: "searchScore" },
+        _discussionScore: {
+          $cond: [
+            "$_hasDiscussion",
+            { $ifNull: ["$discussionScore", { $ifNull: ["$heatScore", 0] }] },
+            0,
+          ],
+        },
+        _lastSignalDate: {
+          $cond: ["$_hasDiscussion", "$heatComponents.last_signal_date", null],
+        },
+      },
+    },
+    {
+      $addFields: {
+        _finalScore: {
+          $add: [
+            "$_searchScore",
+            { $multiply: ["$_discussionScore", HEAT_BOOST_FACTOR] },
           ],
         },
       },
@@ -137,19 +179,14 @@ export async function searchDossierParTitre(
     // Seuil de pertinence : on écarte les matchs trop faibles (wildcard seul, faute
     // tolérée sur mot court, 1 mot sur 5…). Affecte également le total retourné.
     { $match: { _searchScore: { $gte: MIN_SEARCH_SCORE } } },
-    // En mode "date", tri par date du dernier acte législatif (heatComponents.last_acte_date),
-    // tie-breaker sur _finalScore. Les dossiers sans date remontent en dernier ($ifNull → "").
-    {
-      $addFields:
-        sort === "date"
-          ? { _lastActeDate: { $ifNull: ["$heatComponents.last_acte_date", ""] } }
-          : {},
-    },
+    { $match: sort === "agenda" ? { _nextAgendaDate: { $ne: null } } : {} },
     {
       $sort:
-        sort === "date"
-          ? { _lastActeDate: -1, _finalScore: -1 }
-          : { _finalScore: -1 },
+        sort === "agenda"
+          ? { _nextAgendaDate: 1, _finalScore: -1 }
+          : sort === "date"
+            ? { _lastSignalDate: -1, _finalScore: -1 }
+            : { _finalScore: -1 },
     },
     {
       $facet: {
@@ -172,8 +209,11 @@ export async function searchDossierParTitre(
               },
               score: "$_searchScore",
               heatScore: { $ifNull: ["$heatScore", 0] },
+              discussionScore: "$_discussionScore",
               amendementsTotal: { $ifNull: ["$heatComponents.amendements_total", 0] },
               auteursUniques: { $ifNull: ["$heatComponents.n_auteurs_uniques", 0] },
+              scrutinsTotal: { $ifNull: ["$heatComponents.n_scrutins", 0] },
+              nextAgendaDate: "$_nextAgendaDate",
               badge: { $ifNull: ["$dossierBadge", null] },
             },
           },

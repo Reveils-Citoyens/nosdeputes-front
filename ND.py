@@ -508,6 +508,8 @@ Prérequis dans le notebook :
 Champs écrits sur chaque dossier (tous via $set → idempotent, ré-exécutable
 sans accumulation) :
   - heatScore (0-1)
+  - discussionScore (0-1)             — activité parlementaire réelle uniquement
+  - nextAgendaDate (str | null)        — prochaine date future connue
   - heatComponents (détail signaux)
   - procedureAcceleree (bool)
   - currentStage (str | null)         — ex. "1re lecture Assemblée nationale"
@@ -555,6 +557,16 @@ SCALE = {
 # tous les 30 jours sans nouvel amendement/scrutin → la fraîcheur prime, et un
 # texte qui sature tous les signaux (ex. Fin de vie) cède plus vite une fois figé.
 RECENCY_HALFLIFE_DAYS = 30
+
+# Le classement « Les plus discutés » conserve la formule historique du
+# notebook canonique. Il est volontairement distinct du heatScore, qui ajoute
+# l'impact institutionnel et décroît plus vite.
+DISCUSSION_WEIGHTS = {
+    "amendements_density": 0.40,
+    "debate_breadth": 0.30,
+    "political_tension": 0.30,
+}
+DISCUSSION_RECENCY_HALFLIFE_DAYS = 60
 
 # Seuils pour le badge UI
 HEAT_BADGE_THRESHOLD = 0.30   # heatScore >= → "actif"
@@ -641,14 +653,17 @@ def parse_iso_date(s):
             return None
 
 
-def recency_multiplier(date_str):
+def recency_multiplier(date_str, half_life_days=RECENCY_HALFLIFE_DAYS):
     dt = parse_iso_date(date_str)
     if dt is None:
         return 0.05
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    age_days = (datetime.now(timezone.utc) - dt).total_seconds() / 86400
-    return math.exp(-age_days / RECENCY_HALFLIFE_DAYS)
+    # Une date future signifie « prochainement à l'agenda », pas « plus
+    # récent que maintenant ». Sans ce plancher, exp(-age) dépasse 1 et donne
+    # un bonus artificiel aux dossiers qui ne contiennent encore aucun débat.
+    age_days = max(0.0, (datetime.now(timezone.utc) - dt).total_seconds() / 86400)
+    return math.exp(-age_days / half_life_days)
 
 
 def days_since(date_str):
@@ -658,6 +673,22 @@ def days_since(date_str):
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return (datetime.now(timezone.utc) - dt).total_seconds() / 86400
+
+
+def next_future_date(actes_summary):
+    """Première date d'acte strictement future, pour le tri « à l'agenda »."""
+    now = datetime.now(timezone.utc)
+    futures = []
+    for acte in actes_summary:
+        date_str = acte.get("date")
+        dt = parse_iso_date(date_str)
+        if dt is None:
+            continue
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        if dt > now:
+            futures.append((dt, date_str))
+    return min(futures, key=lambda item: item[0])[1] if futures else None
 
 
 def normalize(value, scale):
@@ -959,6 +990,7 @@ def impact_gravite(dossier):
 def compute_score(dossier):
     texte_uids, scrutin_uids, actes_summary = extract_links(dossier)
     last_date = (latest_act(actes_summary) or {}).get("date")
+    next_agenda_date = next_future_date(actes_summary)
 
     amend = compute_amendements_signals(texte_uids)
     tension = compute_political_tension(scrutin_uids)
@@ -975,13 +1007,29 @@ def compute_score(dossier):
         # budgets, projets de loi) même sans amendements ni dissension.
         + WEIGHTS["impact"] * gravite
     )
+
+    # Score employé par le tri « Les plus discutés ». Contrairement au
+    # heatScore, il exclut l'importance institutionnelle : un texte organique
+    # simplement inscrit à l'agenda ne doit pas devancer un texte effectivement
+    # amendé ou voté.
+    discussion_raw_score = (
+        DISCUSSION_WEIGHTS["amendements_density"] * normalize(amend["density"], SCALE["amendements_density"])
+        + DISCUSSION_WEIGHTS["debate_breadth"] * normalize(amend["n_auteurs"], SCALE["debate_breadth"])
+        + DISCUSSION_WEIGHTS["political_tension"] * normalize(tension["tension"], SCALE["political_tension"])
+    )
     # Récence ancrée sur la dernière activité de débat (amendement/scrutin), et
     # NON sur le dernier acte administratif (sinon une promulgation re-gonfle le
     # score). Repli sur last_acte_date si aucun signal de débat.
     signal_dates = [d for d in (amend["last_amend_date"], tension["last_scrutin_date"]) if d]
-    signal_date = max(signal_dates) if signal_dates else last_date
-    multiplier = recency_multiplier(signal_date)
+    signal_date = max(signal_dates) if signal_dates else None
+    heat_date = signal_date or last_date
+    multiplier = recency_multiplier(heat_date)
     final_score = round(raw_score * multiplier, 4)
+    discussion_multiplier = (
+        recency_multiplier(signal_date, DISCUSSION_RECENCY_HALFLIFE_DAYS)
+        if signal_date else 0.0
+    )
+    discussion_score = round(discussion_raw_score * discussion_multiplier, 4)
 
     badge = derive_badge(
         actes_summary,
@@ -994,9 +1042,12 @@ def compute_score(dossier):
     # Amortissement des dossiers clos (ranking only ; le badge gère déjà l'état final).
     closed_damping = CLOSED_HEAT_DAMPING if badge in CLOSED_BADGES else 1.0
     final_score = round(final_score * closed_damping, 4)
+    discussion_score = round(discussion_score * closed_damping, 4)
 
     return {
         "heatScore": final_score,
+        "discussionScore": discussion_score,
+        "nextAgendaDate": next_agenda_date,
         "heatComponents": {
             "n_textes": len(texte_uids),
             "n_scrutins": len(scrutin_uids),
@@ -1011,6 +1062,8 @@ def compute_score(dossier):
             "last_acte_date": last_date,
             "last_signal_date": signal_date,
             "recency_multiplier": round(multiplier, 3),
+            "discussion_raw_score": round(discussion_raw_score, 4),
+            "discussion_recency_multiplier": round(discussion_multiplier, 3),
             "impact_gravite": gravite,
             "raw_score": round(raw_score, 4),
             "closed_damping": closed_damping,
@@ -1100,6 +1153,8 @@ if ops:
 
 # Index utiles (create_index est idempotent)
 db.dossiers.create_index([("heatScore", -1)])
+db.dossiers.create_index([("discussionScore", -1)])
+db.dossiers.create_index([("nextAgendaDate", 1)])
 db.dossiers.create_index([("currentStatus", 1), ("heatScore", -1)])
 db.dossiers.create_index([("dossierBadge", 1), ("heatScore", -1)])
 db.dossiers.create_index([("procedureAcceleree", 1), ("heatScore", -1)])

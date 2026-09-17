@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
   const codeProcedure = sp.get("codeProcedure") ?? "";
   const badge = sp.get("badge") ?? "";
   const theme = sp.get("theme") ?? "";
-  const sort = sp.get("sort") === "recent" ? "recent" : "popular";
+  const sortParam = sp.get("sort");
+  const sort = sortParam === "recent" || sortParam === "agenda" ? sortParam : "popular";
   const skip = Math.max(parseInt(sp.get("skip") ?? "0", 10) || 0, 0);
   const limit = Math.min(parseInt(sp.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT, MAX_LIMIT);
 
@@ -38,39 +39,104 @@ export async function GET(request: NextRequest) {
     matchFilter["uid"] = { $in: uids };
   }
 
-  const [items, totalArr] = await Promise.all([
-    db.collection("dossiers")
-      .find(matchFilter, {
-        projection: {
-          _id: 0,
-          uid: 1,
-          legislature: 1,
-          "titreDossier.titre": 1,
-          "procedureParlementaire.libelle": 1,
-          heatScore: 1,
-          dossierBadge: 1,
-          "heatComponents.amendements_total": 1,
-          "heatComponents.n_auteurs_uniques": 1,
+  const now = new Date();
+  const sortSpec: Record<string, 1 | -1> =
+    sort === "agenda"
+      ? { _nextAgendaDate: 1, _discussionScore: -1, uid: 1 }
+      : sort === "recent"
+        ? { _lastSignalDate: -1, _discussionScore: -1, uid: 1 }
+        : { _discussionScore: -1, _lastSignalDate: -1, heatScore: -1, uid: 1 };
+
+  const pipeline: Record<string, unknown>[] = [
+    { $match: matchFilter },
+    {
+      // Compatibilité avec les documents calculés avant l'ajout de
+      // discussionScore/nextAgendaDate : on reconstruit des clés sûres à
+      // partir des compteurs existants jusqu'au prochain import nocturne.
+      $addFields: {
+        _hasDiscussion: {
+          $or: [
+            { $gt: [{ $ifNull: ["$heatComponents.amendements_total", 0] }, 0] },
+            { $gt: [{ $ifNull: ["$heatComponents.n_scrutins", 0] }, 0] },
+          ],
         },
-      })
-      .sort(sort === "recent" ? { "heatComponents.last_acte_date": -1 } : { heatScore: -1 })
-      .skip(skip)
-      .limit(limit)
-      .toArray(),
-    db.collection("dossiers").countDocuments(matchFilter),
-  ]);
+        _nextAgendaDate: {
+          $let: {
+            vars: {
+              candidate: {
+                $ifNull: ["$nextAgendaDate", "$heatComponents.last_acte_date"],
+              },
+            },
+            in: {
+              $cond: [
+                {
+                  $gt: [
+                    {
+                      $convert: {
+                        input: "$$candidate",
+                        to: "date",
+                        onError: null,
+                        onNull: null,
+                      },
+                    },
+                    now,
+                  ],
+                },
+                "$$candidate",
+                null,
+              ],
+            },
+          },
+        },
+      },
+    },
+    {
+      $addFields: {
+        _discussionScore: {
+          $cond: [
+            "$_hasDiscussion",
+            { $ifNull: ["$discussionScore", { $ifNull: ["$heatScore", 0] }] },
+            0,
+          ],
+        },
+        _lastSignalDate: {
+          $cond: ["$_hasDiscussion", "$heatComponents.last_signal_date", null],
+        },
+      },
+    },
+    ...(sort === "agenda" ? [{ $match: { _nextAgendaDate: { $ne: null } } }] : []),
+    { $sort: sortSpec },
+    {
+      $facet: {
+        items: [
+          { $skip: skip },
+          { $limit: limit },
+          {
+            $project: {
+              _id: 0,
+              uid: 1,
+              titre: { $ifNull: ["$titreDossier.titre", ""] },
+              legislature: 1,
+              typeLibelle: { $ifNull: ["$procedureParlementaire.libelle", null] },
+              score: { $literal: 0 },
+              heatScore: { $ifNull: ["$heatScore", 0] },
+              discussionScore: "$_discussionScore",
+              amendementsTotal: { $ifNull: ["$heatComponents.amendements_total", 0] },
+              auteursUniques: { $ifNull: ["$heatComponents.n_auteurs_uniques", 0] },
+              scrutinsTotal: { $ifNull: ["$heatComponents.n_scrutins", 0] },
+              nextAgendaDate: "$_nextAgendaDate",
+              badge: { $ifNull: ["$dossierBadge", null] },
+            },
+          },
+        ],
+        total: [{ $count: "n" }],
+      },
+    },
+  ];
 
-  const results: DossierSearchResult[] = items.map((d) => ({
-    uid: d.uid,
-    titre: d.titreDossier?.titre ?? "",
-    legislature: d.legislature,
-    typeLibelle: d.procedureParlementaire?.libelle ?? null,
-    score: 0,
-    heatScore: d.heatScore ?? 0,
-    amendementsTotal: d.heatComponents?.amendements_total ?? 0,
-    auteursUniques: d.heatComponents?.n_auteurs_uniques ?? 0,
-    badge: (d.dossierBadge as string | undefined) ?? null,
-  }));
+  const [facet] = await db.collection("dossiers").aggregate(pipeline).toArray();
+  const results = (facet?.items ?? []) as DossierSearchResult[];
+  const total = (facet?.total?.[0]?.n ?? 0) as number;
 
-  return NextResponse.json({ items: results, total: totalArr });
+  return NextResponse.json({ items: results, total });
 }

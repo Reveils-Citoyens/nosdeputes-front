@@ -13,7 +13,12 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(parseInt(sp.get("limit") ?? "5", 10) || 5, 20);
   const skip = Math.max(parseInt(sp.get("skip") ?? "0", 10) || 0, 0);
   const legislature = sp.get("legislature") ?? "17";
-  const sort = sp.get("sort") === "date" ? "date" : "relevance";
+  const sortParam = sp.get("sort");
+  const sort = sortParam === "recent" || sortParam === "date"
+    ? "date"
+    : sortParam === "agenda"
+      ? "agenda"
+      : "relevance";
   const codeProcedure = sp.get("codeProcedure") ?? undefined;
   const badge = sp.get("badge") ?? undefined;
   const theme = sp.get("theme") ?? undefined;
