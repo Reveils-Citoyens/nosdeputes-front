@@ -7,6 +7,7 @@ import { permanentRedirect } from "next/navigation";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import IconButton from "@mui/material/IconButton";
+import ListSubheader from "@mui/material/ListSubheader";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
@@ -20,17 +21,68 @@ import Link from "next/link";
 type DebatLike = {
   uid: string;
   dateSeanceJour?: string | null;
+  dateSeance?: string | Date | null;
+  reunionDate?: string | null;
+  lectureLabel?: string | null;
 };
 
 type DebateFilterBarProps = {
   debats: DebatLike[];
   /** Segment de base pour les liens (défaut: "debat") */
   basePath?: string;
+  /** Chemin absolu du groupe de réunions, utilisé pendant les transitions. */
+  baseHref?: string;
+  /** Navigation contrôlée permettant au layout d'afficher son skeleton. */
+  onNavigate?: (href: string) => void;
 };
 
+function formatReunionDate(debat: DebatLike): string {
+  const rawDate = debat.reunionDate ?? debat.dateSeance;
+  if (!rawDate) return debat.dateSeanceJour ?? "Réunion";
+
+  const date = new Date(rawDate);
+  if (Number.isNaN(date.getTime())) return debat.dateSeanceJour ?? "Réunion";
+
+  const formatted = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Paris",
+  }).format(date);
+
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
+export function formatDebateOptionLabel(debat: DebatLike): string {
+  return formatReunionDate(debat);
+}
+
 export const DebateFilterBar = (props: DebateFilterBarProps) => {
-  const { debats, basePath = "debat" } = props;
+  const { debats, basePath = "debat", baseHref, onNavigate } = props;
   const sceanceUid = useSelectedLayoutSegment();
+
+  const getHref = (uid: string) =>
+    baseHref ? `${baseHref}/${uid}` : uid;
+  const handleNavigation = (
+    event: React.MouseEvent<HTMLElement>,
+    href: string
+  ) => {
+    if (
+      !onNavigate ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    event.preventDefault();
+    onNavigate(href);
+  };
 
   const debatIndex = debats.findIndex((debat) => debat.uid === sceanceUid);
   if (!sceanceUid || debatIndex < 0) {
@@ -69,15 +121,41 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
           justifyContent="space-between"
           sx={{ width: "100%" }}
         >
-          <Select value={sceanceUid} displayEmpty sx={{ flex: 1 }}>
-            {debats.map((debat) => {
-              return (
+          <Select
+            value={sceanceUid}
+            displayEmpty
+            inputProps={{ "aria-label": "Choisir une réunion" }}
+            sx={{ flex: 1 }}
+          >
+            {debats.flatMap((debat, index) => {
+              const previousLecture = debats[index - 1]?.lectureLabel;
+              const startsLectureGroup =
+                debat.lectureLabel && debat.lectureLabel !== previousLecture;
+
+              return [
+                startsLectureGroup ? (
+                    <ListSubheader
+                      key={`lecture-${debat.lectureLabel}-${index}`}
+                      sx={{
+                        color: "text.primary",
+                        fontWeight: 700,
+                        lineHeight: 3,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      {debat.lectureLabel}
+                    </ListSubheader>
+                ) : null,
                 // @ts-ignore
                 <MenuItem
                   key={debat.uid}
                   value={debat.uid}
                   component={Link}
-                  href={debat.uid}
+                  href={getHref(debat.uid)}
+                  onClick={(event) =>
+                    handleNavigation(event, getHref(debat.uid))
+                  }
                 >
                   <Typography
                     variant="caption"
@@ -88,10 +166,10 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
                       },
                     }}
                   >
-                    {debat.dateSeanceJour}
+                    {formatDebateOptionLabel(debat)}
                   </Typography>
-                </MenuItem>
-              );
+                </MenuItem>,
+              ];
             })}
           </Select>
           <Stack
@@ -109,7 +187,17 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
             <IconButton
               size="small"
               component={Link}
-              href={debatIndex <= 0 ? "" : debats[debatIndex - 1].uid!}
+              href={
+                debatIndex <= 0 ? "" : getHref(debats[debatIndex - 1].uid)
+              }
+              onClick={(event) => {
+                if (debatIndex > 0) {
+                  handleNavigation(
+                    event,
+                    getHref(debats[debatIndex - 1].uid)
+                  );
+                }
+              }}
               disabled={debatIndex <= 0}
             >
               <ArrowBackIcon fontSize="small" />
@@ -120,8 +208,16 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
               href={
                 debatIndex >= debats.length - 1
                   ? ""
-                  : debats[debatIndex + 1].uid!
+                  : getHref(debats[debatIndex + 1].uid)
               }
+              onClick={(event) => {
+                if (debatIndex < debats.length - 1) {
+                  handleNavigation(
+                    event,
+                    getHref(debats[debatIndex + 1].uid)
+                  );
+                }
+              }}
               disabled={debatIndex >= debats.length - 1}
             >
               <ArrowForwardIcon fontSize="small" />

@@ -2,8 +2,8 @@ import React from "react";
 import Container from "@mui/material/Container";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import { EmptyState } from "@/components/folders/EmptyState";
-import { DebateFilterBar } from "../debat/DebateFilterBar";
 import { getDebats } from "@/data/getDebats";
+import CommissionNavigationShell from "./CommissionNavigationShell";
 
 export default async function Layout({
   params,
@@ -12,7 +12,7 @@ export default async function Layout({
   params: Promise<{ legislature: string; id: string }>;
   children: React.ReactNode;
 }) {
-  const { id } = await params;
+  const { legislature, id } = await params;
 
   const debats = await getDebats(id);
 
@@ -33,9 +33,11 @@ export default async function Layout({
   }
 
   return (
-    <>
-      <DebateFilterBar debats={commissionDebats} basePath="commission" />
-      <div className="container">{children}</div>
-    </>
+    <CommissionNavigationShell
+      debats={commissionDebats}
+      baseHref={`/${legislature}/dossier/${id}/commission`}
+    >
+      {children}
+    </CommissionNavigationShell>
   );
 }

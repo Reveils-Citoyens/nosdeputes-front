@@ -106,6 +106,24 @@ export default function DossiersTabs(props: {
               component={Link}
               href={tab.href}
               disabled={tab.disabled}
+              sx={{
+                // Trois niveaux nettement distincts : sélectionné (noir +
+                // indicateur), disponible (gris soutenu) et indisponible
+                // (gris très clair). Le thème global donnait auparavant une
+                // teinte trop proche aux deux derniers états.
+                "&:not(.Mui-selected):not(.Mui-disabled)": {
+                  color: "grey.700",
+                },
+                "&.Mui-selected": {
+                  color: "common.black",
+                  fontWeight: 700,
+                },
+                "&.Mui-disabled": {
+                  color: "grey.300",
+                  fontWeight: 500,
+                  opacity: 1,
+                },
+              }}
             />
           ) : null,
         )}

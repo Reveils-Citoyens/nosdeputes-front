@@ -28,8 +28,9 @@ export default function AlerteCompteRenduNonCertifie({
 }: {
   fiabilite: FiabiliteCompteRendu | null;
 }) {
-  // Fiabilité inconnue — API injoignable, compte rendu absent : on avertit
-  // quand même. Au moindre doute, mieux vaut une mention de trop.
+  // Les UID `CR…` sont officiels et masquent l'alerte ; les UID `TR…` sont des
+  // transcriptions et l'affichent. Pour un format inconnu, la validité de l'API
+  // sert de repli ; si elle est elle aussi inconnue, on avertit par précaution.
   if (fiabilite?.certifie) return null;
 
   return (

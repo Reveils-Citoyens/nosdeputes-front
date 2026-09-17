@@ -1,40 +1,20 @@
 import * as React from "react";
 
 /**
- * Le compte rendu affiché provient-il des données ouvertes de l'Assemblée ?
+ * Le document affiché est-il un compte rendu officiel ou une transcription ?
  *
- * L'API ne dit pas comment un compte rendu a été produit. Le champ qui s'en
- * approche — `transcriptionRefUid` sur la réunion — est bien alimenté (64 des
- * 126 réunions de commission récentes échantillonnées), mais il pointe vers une
- * ressource que l'API n'expose pas : `/transcriptions/<uid>` répond 404. Il est
- * donc inexploitable en l'état.
+ * Une réunion porte deux références distinctes dans les données Tricoteuses :
+ * `compteRenduRefUid` pour le compte rendu officiel et `transcriptionRefUid`
+ * pour la transcription. Leur UID permet de les distinguer sans ambiguïté :
+ * les premiers commencent par `CR`, les secondes par `TR`.
  *
- * ⚠️ Ce champ n'existe pas non plus dans les données brutes de l'Assemblée que
- * nous ingérons : la collection `reunions` de MongoDB ne le porte pas. Il est
- * ajouté par Tricoteuses. Le chercher côté Mongo donne zéro et fait croire à
- * tort qu'il n'est jamais renseigné.
+ * Le préfixe est donc le signal primaire. Le champ `validite` de l'API n'est
+ * consulté qu'en repli pour un ancien identifiant ou un format encore inconnu.
+ * Une panne de l'API ne doit notamment pas transformer un UID `CR…` connu en
+ * document incertain.
  *
- * On s'appuie donc sur la signature des métadonnées, qui sépare nettement les
- * sources.
- *
- * Sur les 601 comptes rendus de séance de l'Assemblée, tous portent
- * `validite: "valide"`, `version: "avant_JO"` — la version officielle publiée
- * avant le Journal officiel. Les 2 762 comptes rendus de commission ont ces
- * champs vides : Tricoteuses les collecte sur le site de l'Assemblée.
- *
- * ⚠️ Ce n'est pas une différence d'auteur. Vérification faite sur 25 comptes
- * rendus de commission : tous sont rédigés par le service des comptes rendus
- * (heures en toutes lettres, mentions de présidence, narration à la troisième
- * personne). Ce qui change est le canal d'obtention, et ce qu'il coûte : les
- * orateurs y sont sans identifiant, donc rattachés par rapprochement de noms.
- *
- * La règle est volontairement défensive et tournée vers l'avenir : tout ce qui
- * n'est pas explicitement `valide` est présenté comme non certifié. Si des
- * transcriptions automatiques apparaissent un jour côté séance publique, elles
- * seront signalées sans qu'il faille toucher au code.
- *
- * ⚠️ `validite: "non-certifie"` existe aussi, mais uniquement sur les commissions
- * du Sénat : c'est une convention sénatoriale, pas un marqueur de transcription.
+ * Tout format inconnu reste traité de manière défensive : sans UID reconnu ni
+ * `validite: "valide"`, l'explication est affichée.
  */
 
 export type FiabiliteCompteRendu = {
@@ -45,12 +25,35 @@ export type FiabiliteCompteRendu = {
 };
 
 const CERTIFIE = "valide";
+const PREFIXE_COMPTE_RENDU = "CR";
+const PREFIXE_TRANSCRIPTION = "TR";
+
+/**
+ * Renvoie le statut porté par l'UID, ou `null` si son format est inconnu.
+ * Cette fonction est exportée pour verrouiller la convention CR/TR par test.
+ */
+export function estCertifieDepuisUid(compteRenduUid: string): boolean | null {
+  const uid = compteRenduUid.trim().toUpperCase();
+  if (uid.startsWith(PREFIXE_TRANSCRIPTION)) return false;
+  if (uid.startsWith(PREFIXE_COMPTE_RENDU)) return true;
+  return null;
+}
 
 async function getFiabiliteCompteRenduUnCached(
   compteRenduUid: string
 ): Promise<FiabiliteCompteRendu | null> {
   if (!compteRenduUid) return null;
 
+  const certifieDepuisUid = estCertifieDepuisUid(compteRenduUid);
+  if (certifieDepuisUid !== null) {
+    return {
+      certifie: certifieDepuisUid,
+      validite: null,
+      version: null,
+    };
+  }
+
+  // Repli pour les formats historiques ou futurs ne respectant pas CR/TR.
   try {
     const reponse = await fetch(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/debats/${compteRenduUid}?select=uid,validite,version`,

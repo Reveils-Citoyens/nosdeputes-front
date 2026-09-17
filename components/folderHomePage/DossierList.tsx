@@ -20,9 +20,22 @@ import type { DossierSearchResult } from "@/data/mongo/searchDossierParTitre";
 const PAGE_SIZE = 20;
 const MIN_SEARCH_CHARS = 5;
 
+function formatAgendaDate(value: string | null): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: date.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
+  });
+}
+
 // ─── Card row (identique à DossiersSection dans /recherche) ──────────────────
 
 function DossierRow({ d }: { d: DossierSearchResult }) {
+  const agendaDate = formatAgendaDate(d.nextAgendaDate);
+
   return (
     <Link
       href={`/${d.legislature}/dossier/${d.uid}`}
@@ -58,6 +71,16 @@ function DossierRow({ d }: { d: DossierSearchResult }) {
               <Typography variant="caption" color="text.secondary">
                 · {d.amendementsTotal} amendement
                 {d.amendementsTotal > 1 ? "s" : ""}
+              </Typography>
+            )}
+            {d.scrutinsTotal > 0 && (
+              <Typography variant="caption" color="text.secondary">
+                · {d.scrutinsTotal} scrutin{d.scrutinsTotal > 1 ? "s" : ""}
+              </Typography>
+            )}
+            {agendaDate && (
+              <Typography variant="caption" color="primary.main" fontWeight={600}>
+                · À l’agenda le {agendaDate}
               </Typography>
             )}
           </Stack>
