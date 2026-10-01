@@ -1,15 +1,11 @@
 """
 Alerte par e-mail quand l'import nocturne s'est mal passé.
 
-L'import ne s'interrompt jamais pour autant. Une nuit dégradée vaut mieux
-qu'une nuit perdue : les collections MongoDB conservent les documents des
-exécutions précédentes — `ND.py` ne fait que des upserts, il ne supprime rien —
-donc une source manquante rend les données obsolètes, pas fausses. Le vrai
-danger n'est pas la panne, c'est qu'elle passe inaperçue : la collection
-`comptes_rendus` est restée vide des mois durant sans autre trace qu'un warning
-au milieu de milliers de lignes de log.
-
-D'où ce module : quelqu'un est prévenu, et le pipeline continue.
+Signale aussi bien une ingestion dégradée qu'un arrêt du workflow en amont
+(`interrompu=True`). Une source ignorée laisse les anciens documents en base,
+car ND.py procède par upserts ; les statistiques de la période peuvent alors
+être incomplètes. Un échec d'envoi de l'alerte est journalisé sans provoquer
+une nouvelle interruption du pipeline.
 
 Envoi par Resend, déjà utilisé par le front pour les alertes de suivi de
 dossier (cf. lib/resend.ts), via son API HTTP — `requests` est déjà une
@@ -37,7 +33,9 @@ URL_RESEND = "https://api.resend.com/emails"
 DELAI_MAX = 15
 
 
-def signaler(sujet: str, anomalies: list[str], contexte: str = "") -> bool:
+def signaler(
+    sujet: str, anomalies: list[str], contexte: str = "", *, interrompu: bool = False
+) -> bool:
     """
     Envoie une alerte et renvoie True si elle est partie.
 
@@ -48,7 +46,7 @@ def signaler(sujet: str, anomalies: list[str], contexte: str = "") -> bool:
     if not anomalies:
         return False
 
-    corps = _rediger(sujet, anomalies, contexte)
+    corps = _rediger(sujet, anomalies, contexte, interrompu=interrompu)
 
     # Journalisé dans tous les cas, y compris quand l'envoi réussit : les logs
     # du job restent la source de vérité si la boîte mail est perdue.
@@ -96,7 +94,9 @@ def signaler(sujet: str, anomalies: list[str], contexte: str = "") -> bool:
     return True
 
 
-def _rediger(sujet: str, anomalies: list[str], contexte: str) -> str:
+def _rediger(
+    sujet: str, anomalies: list[str], contexte: str, *, interrompu: bool = False
+) -> str:
     horodatage = datetime.now(timezone.utc).strftime("%d/%m/%Y à %H:%M UTC")
     lignes = [
         sujet,
@@ -113,8 +113,14 @@ def _rediger(sujet: str, anomalies: list[str], contexte: str) -> str:
         "",
         "---",
         "",
-        "L'import n'a pas été interrompu. Les collections conservent les données "
-        "des exécutions précédentes : les chiffres affichés sont donc obsolètes "
-        "sur les sources concernées, pas erronés.",
+        (
+            "L'import a échoué. Si l'échec précède l'ingestion, la base n'a pas "
+            "été modifiée par cette exécution. Sinon, la mise à jour peut être "
+            "partielle. Consulter les logs avant de relancer."
+            if interrompu
+            else "L'import continue avec les sources disponibles. Les données "
+            "précédentes sont conservées pour les sources manquantes ; les "
+            "statistiques peuvent être incomplètes sur la période concernée."
+        ),
     ]
     return "\n".join(lignes)

@@ -5,15 +5,23 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch:
 
-# on:
-#   push:
-#     branches:
-#       - 'hot-fix'
-  # workflow_dispatch:
+permissions:
+  contents: read
+
+# Les exécutions planifiées et manuelles partagent la même base MongoDB.
+concurrency:
+  group: imports-nocturnes-mongodb
+  cancel-in-progress: false
+
+env:
+  # Mettre à jour explicitement après vérification des commandes et formats.
+  TRICOTEUSES_COMMIT: 95555aaad0eb3dc55b45146c7985f04f396e6567
+  PYTHONUNBUFFERED: '1'
 
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     steps:
     - name: Checkout repository code
@@ -22,7 +30,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -30,35 +38,66 @@ jobs:
         python-version: '3.11'
 
     - name: Install Python dependencies
+      id: python-dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Clone and Run Tricoteuses Downloader
+    - name: Install pinned Tricoteuses downloader
       run: |
-        git clone https://git.tricoteuses.fr/logiciels/tricoteuses-assemblee.git
+        git init tricoteuses-assemblee
         cd tricoteuses-assemblee
-        npm install
+        git remote add origin https://git.tricoteuses.fr/logiciels/tricoteuses-assemblee.git
+        git fetch --depth 1 origin "$TRICOTEUSES_COMMIT"
+        git checkout --detach FETCH_HEAD
+        test "$(git rev-parse HEAD)" = "$TRICOTEUSES_COMMIT"
+        # Les CLI utilisent directement TypeScript : le build/formatage du
+        # hook prepare est inutile. Le lockfile fixe aussi les dépendances.
+        npm ci --ignore-scripts --no-audit --no-fund
         mkdir -p ../assemblee-data/
-        npm run data:download ../assemblee-data -- --legislature 17
+        echo "Tricoteuses : \`$TRICOTEUSES_COMMIT\`" >> "$GITHUB_STEP_SUMMARY"
 
     # Les comptes rendus de commission ne sont pas dans l'open data de
     # l'Assemblée : elle ne les publie qu'en HTML sur son site. Tricoteuses les
     # moissonne et les republie dans un dépôt git, qui est leur seul canal de
-    # distribution — `data:download` les ignore explicitement (cf. le filtre sur
-    # Comptes_Rendus_Commissions_ dans reorganize_data.ts).
-    # Clone superficiel : ~300 Mo et une poignée de secondes, l'historique du
-    # dépôt ne nous sert à rien.
+    # distribution. Une copie incomplète ou invalide ne doit jamais être
+    # visible par ND.py : validation dans un répertoire temporaire, puis déplacement.
     #
     # L'échec du clone n'arrête pas le job : le reste des données a sa valeur,
     # et ND.py détecte le répertoire manquant puis envoie l'alerte.
     - name: Fetch commission meeting reports
+      id: commissions
       continue-on-error: true
       run: |
+        mkdir -p "$RUNNER_TEMP/import-commissions"
         git clone --depth 1 \
           https://git.tricoteuses.fr/assemblee/Comptes_Rendus_Commissions_XVII.git \
-          assemblee-data/Comptes_Rendus_Commissions_XVII
-        rm -rf assemblee-data/Comptes_Rendus_Commissions_XVII/.git
+          "$RUNNER_TEMP/import-commissions/Comptes_Rendus_Commissions_XVII"
+        python scripts/verifier_sources_import.py \
+          --assemblee-data "$RUNNER_TEMP/import-commissions" --commissions-only
+        mv "$RUNNER_TEMP/import-commissions/Comptes_Rendus_Commissions_XVII" assemblee-data/
+
+    - name: Report unavailable commission data
+      if: steps.commissions.outcome == 'failure'
+      run: |
+        echo "::warning::Comptes rendus de commission indisponibles ou invalides. Les anciennes données seront conservées et ND.py enverra l'alerte."
+        echo "⚠️ Commissions : pas de mise à jour ; conservation des données en base." >> "$GITHUB_STEP_SUMMARY"
+
+    # ND.py lit les exports JSON décompressés et les CR de séance réorganisés,
+    # jamais les répertoires *_nettoye. Ne pas appeler data:download : son
+    # nettoyage exige les commissions même lorsque cette source est absente.
+    # Tout échec de ces deux étapes bloque l'ingestion (y compris le code 2
+    # du téléchargeur, qui indique un téléchargement partiel).
+    - name: Retrieve open data
+      working-directory: tricoteuses-assemblee
+      run: npm run data:retrieve_open_data -- ../assemblee-data --legislature 17
+
+    - name: Reorganize open data
+      working-directory: tricoteuses-assemblee
+      run: npm run data:reorganize_data -- ../assemblee-data --legislature 17
+
+    - name: Validate ingestion sources before database writes
+      run: python scripts/verifier_sources_import.py --assemblee-data ./assemblee-data
 
     # Vérifie le calcul des statistiques sur les fichiers bruts qu'on vient de
     # télécharger, avant toute écriture en base. C'est le seul moment où les
@@ -88,3 +127,25 @@ jobs:
         ALERTE_IMPORT_EMAIL: ${{ secrets.ALERTE_IMPORT_EMAIL }}
       run: |
         python ND.py
+
+    # ND.py ne peut pas alerter si la préparation échoue avant son lancement.
+    - name: Alert on pipeline failure
+      if: failure() && steps.python-dependencies.outcome == 'success'
+      env:
+        RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        RESEND_FROM: ${{ secrets.RESEND_FROM }}
+        ALERTE_IMPORT_EMAIL: ${{ secrets.ALERTE_IMPORT_EMAIL }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        python - <<'PY'
+        import os
+        import alertes_import
+
+        alertes_import.signaler(
+            "Échec de l'import nocturne",
+            ["Le workflow a échoué. Consulter l'étape en erreur dans GitHub Actions."],
+            contexte=f"Exécution : {os.environ['RUN_URL']}",
+            interrompu=True,
+        )
+        PY
+        echo "❌ Import en échec : consulter les étapes précédentes. Une ingestion déjà commencée peut être partielle." >> "$GITHUB_STEP_SUMMARY"

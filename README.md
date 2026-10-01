@@ -1,6 +1,38 @@
 
 # Documentation
 
+## Import nocturne
+
+Le workflow `.github/workflows/imports_nocturnes.yml` fixe la version de
+Tricoteuses avec `TRICOTEUSES_COMMIT` et installe son lockfile avec `npm ci`.
+Il récupère les commissions séparément, puis appelle `data:retrieve_open_data`
+et `data:reorganize_data`. Il n'appelle pas `data:download` : son nettoyage
+produit des fichiers `_nettoye` inutilisés par `ND.py` et exige les commissions
+même lorsqu'elles sont indisponibles.
+
+Avant toute ingestion, `scripts/verifier_sources_import.py` contrôle les
+répertoires consommés par `ND.py`, la lecture de chaque JSON et son UID. Ce
+contrôle ne garantit ni l'exhaustivité des exports ni leur validité métier.
+
+- Une récupération ou validation des commissions en échec laisse cette source
+  hors de l'import ; les anciens documents sont conservés et une alerte est émise.
+- Une erreur de téléchargement, de réorganisation ou de validation des autres
+  sources bloque l'ingestion. Le workflow reste en échec et tente une alerte
+  avec le lien vers les logs (si les dépendances Python sont installées).
+- Les alertes utilisent `RESEND_API_KEY`, `RESEND_FROM` et `ALERTE_IMPORT_EMAIL`.
+  Sans clé Resend, elles sont seulement journalisées.
+- Deux exécutions de ce workflow ne peuvent pas écrire simultanément en base.
+
+Tests hors ligne : `python -m unittest scripts.test_verifier_sources_import`.
+Avant de changer `TRICOTEUSES_COMMIT`, tester le téléchargement et la
+réorganisation dans un répertoire temporaire, puis la validation des fichiers,
+sans lancer `ND.py`. Pour prendre effet la nuit, la modification doit être
+intégrée à la branche par défaut du dépôt (`staging` actuellement), utilisée par
+les exécutions planifiées.
+Après correction d'une panne, une exécution manuelle du workflow complet permet
+de reprendre l'import. Une erreur dans `ND.py` lui-même peut laisser une mise
+à jour partielle ; consulter les logs avant de relancer.
+
 ## Run the project locally
 
 ### Get the code
