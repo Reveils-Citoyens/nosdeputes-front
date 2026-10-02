@@ -1,3 +1,4 @@
+import React from "react";
 import Box from "@mui/material/Box";
 import Skeleton from "@mui/material/Skeleton";
 import Stack from "@mui/material/Stack";
@@ -54,7 +55,7 @@ function ParoleSkeleton({ isFirst = false }: { isFirst?: boolean }) {
   );
 }
 
-export default function DebatePageSkeleton() {
+export default function DebatePageSkeleton({ fullWidth = false }: { fullWidth?: boolean }) {
   return (
     <Box
       aria-busy="true"
@@ -64,7 +65,7 @@ export default function DebatePageSkeleton() {
         flexDirection: "column",
         flex: 5,
         width: "100%",
-        maxWidth: 750,
+        maxWidth: fullWidth ? "none" : 750,
         minHeight: "70vh",
         mx: "auto",
       }}
@@ -74,7 +75,11 @@ export default function DebatePageSkeleton() {
         <Skeleton variant="text" width={160} height={20} />
       </Stack>
 
-      <Skeleton variant="rounded" height={48} sx={{ borderRadius: 1, mb: 2 }} />
+      <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, p: 2, mb: 2 }}>
+        <Skeleton width="45%" height={32} />
+        <Skeleton variant="rounded" height={12} sx={{ my: 2 }} />
+        <Stack direction="row" spacing={2}><Skeleton width={70} /><Skeleton width={70} /><Skeleton width={70} /></Stack>
+      </Box>
 
       <Box sx={{ mt: 1 }}>
         {Array.from({ length: 6 }).map((_, index) => (

@@ -60,6 +60,12 @@ export const getReunionsByOrgane = cache(
         )
         .toArray();
 
+      // Affichage chronologique (du plus ancien au plus récent), comme les
+      // débats des autres dossiers : une commission d'enquête se lit comme une
+      // progression d'auditions. La lecture reste triée du plus récent au plus
+      // ancien pour que la limite écarte les réunions les plus anciennes.
+      docs.reverse();
+
       return docs.map((r) => ({
         uid: String(r.uid),
         date: typeof r.timeStampDebut === "string" ? r.timeStampDebut : null,

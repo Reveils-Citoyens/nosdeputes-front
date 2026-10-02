@@ -25,14 +25,20 @@ function frDate(value: string | Date | null | undefined): string | null {
 
 /**
  * Compte les amendements AN déposés sur un dossier depuis `since`.
- * Chaîne de liaison : amendement.texteLegislatifRef → texte (dossiers, leg "17",
- * uid AN) → dossierRef = dossier suivi.
+ * Chaîne de liaison : amendement.texteLegislatifRef → texte (collection
+ * `documents`, textes de l'Assemblée) → dossierRef = dossier suivi.
+ *
+ * Les textes sont lus dans `documents`, alimentée par l'import nocturne, et
+ * non dans `dossiers`, qui n'en contient que d'anciens. Tous les types de
+ * textes AN comptent (propositions PION, projets PRJL, résolutions PNRE),
+ * y compris les textes de commission : l'ancienne chaîne, limitée aux PION
+ * présents dans `dossiers`, comptait 0 amendement sur les dossiers actifs.
  */
 async function countNewDossierAmendements(db: Db, dossierUid: string, since: Date): Promise<number> {
   const textes = await db
-    .collection("dossiers")
+    .collection("documents")
     .find(
-      { dossierRef: dossierUid, legislature: "17", uid: { $regex: /^PIONANR/ } },
+      { dossierRef: dossierUid, uid: { $regex: /^[A-Z]{4}ANR/ } },
       { projection: { _id: 0, uid: 1 } }
     )
     .toArray();

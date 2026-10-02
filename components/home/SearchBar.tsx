@@ -12,8 +12,8 @@ import {
 import { ArrowForward as ArrowForwardIcon } from "@mui/icons-material";
 import DossierBadge from "@/components/folders/DossierBadge";
 import debounce from "@/utils/debounce";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from "@/components/navigation/NavigationLink";
+import { useFeedbackRouter as useRouter } from "@/components/navigation/PageNavigation";
 import type { ActeurSearchResult } from "@/data/mongo/searchActeurParNom";
 import type { DossierSearchResult } from "@/data/mongo/searchDossierParTitre";
 

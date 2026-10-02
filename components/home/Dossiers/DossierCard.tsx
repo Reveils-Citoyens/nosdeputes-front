@@ -1,5 +1,5 @@
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/navigation/NavigationLink";
 import Card from "@mui/material/Card";
 import CardActionArea from "@mui/material/CardActionArea";
 import Chip from "@mui/material/Chip";

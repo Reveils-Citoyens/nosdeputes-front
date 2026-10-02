@@ -39,6 +39,10 @@ type DossierAct = {
 
 const DOSSIER_SPECIFIC_COMMISSION_TYPES = new Set(["CNPS", "COMNL"]);
 
+// Cache uniquement les réponses HTTP réussies, pas une liste agrégée qui
+// pourrait être incomplète après une panne. Fraîcheur bornée à une minute.
+const metadataFetchOptions = { next: { revalidate: 60 } };
+
 function debatesFromAgenda(
   agenda: AgendaWithDebates | null | undefined,
   fallbackOrganeLibelle: string | null = null,
@@ -186,7 +190,8 @@ async function getCommissionFallbackMeta(
 
   const directRequests = [...directReunionUids].map(async (reunionUid) => {
     const response = await fetch(
-      `${apiUrl}/reunions/${reunionUid}?include=compteRenduRef`
+      `${apiUrl}/reunions/${reunionUid}?include=compteRenduRef`,
+      metadataFetchOptions
     );
     if (!response.ok) return [];
     const body = (await response.json()) as { data?: AgendaWithDebates | null };
@@ -204,7 +209,7 @@ async function getCommissionFallbackMeta(
       include: "compteRenduRef",
       perPage: "100",
     });
-    const response = await fetch(`${apiUrl}/reunions/?${params}`);
+    const response = await fetch(`${apiUrl}/reunions/?${params}`, metadataFetchOptions);
     if (!response.ok) return [];
     const body = (await response.json()) as { data?: AgendaWithDebates[] };
     return (body.data ?? [])
@@ -237,33 +242,38 @@ export async function getDebatsUnCached(
 ): Promise<ReturnedDebat[] | null> {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL;
-    const rep = await fetch(
-      `${apiUrl}/points_odj/?dossierLegislatifUid=${dossierUid}&include=agendaRef.compteRenduRef&perPage=100`
-    );
-    if (!rep.ok) throw new Error(`points_odj: HTTP ${rep.status}`);
-
-    const pointsOdj = (await rep.json()) as {
-      data?: { agendaRef?: AgendaWithDebates }[];
-    };
-
-    let dossierActs: DossierAct[] = [];
-    try {
-      const dossierResponse = await fetch(
-        `${apiUrl}/dossiers/${dossierUid}?include=actesLegislatifs.organeRef`
+    // Ces deux sources sont indépendantes. Les actes restent facultatifs :
+    // leur indisponibilité ne doit pas masquer les points ODJ disponibles.
+    const pointsPromise = (async () => {
+      const rep = await fetch(
+        `${apiUrl}/points_odj/?dossierLegislatifUid=${dossierUid}&include=agendaRef.compteRenduRef&perPage=100`,
+        metadataFetchOptions
       );
-      if (dossierResponse.ok) {
-        const { data } = (await dossierResponse.json()) as {
-          data?: { actesLegislatifs?: DossierAct[] } | null;
-        };
-        dossierActs = data?.actesLegislatifs ?? [];
+      if (!rep.ok) throw new Error(`points_odj: HTTP ${rep.status}`);
+      return await rep.json() as { data?: { agendaRef?: AgendaWithDebates }[] };
+    })();
+    const actsPromise = (async (): Promise<DossierAct[]> => {
+      try {
+        const dossierResponse = await fetch(
+          `${apiUrl}/dossiers/${dossierUid}?include=actesLegislatifs.organeRef`,
+          metadataFetchOptions
+        );
+        if (dossierResponse.ok) {
+          const { data } = (await dossierResponse.json()) as {
+            data?: { actesLegislatifs?: DossierAct[] } | null;
+          };
+          return data?.actesLegislatifs ?? [];
+        }
+      } catch (error) {
+        console.warn(
+          "getDebats: échec de récupération des actes législatifs",
+          dossierUid,
+          error
+        );
       }
-    } catch (error) {
-      console.warn(
-        "getDebats: échec de récupération des actes législatifs",
-        dossierUid,
-        error
-      );
-    }
+      return [];
+    })();
+    const [pointsOdj, dossierActs] = await Promise.all([pointsPromise, actsPromise]);
 
     // Source principale : rattachement explicite du point d'ordre du jour.
     const pointOdjMeta = (pointsOdj.data ?? []).flatMap((point) => {
@@ -311,7 +321,8 @@ export async function getDebatsUnCached(
         async ({ uid, debateType, organeLibelle, reunionDate, lectureLabel }) => {
           try {
             const r = await fetch(
-              `${apiUrl}/debats/${uid}?include=_count.paragraphes`
+              `${apiUrl}/debats/${uid}?include=_count.paragraphes`,
+              metadataFetchOptions
             );
             if (!r.ok) return null;
             const { data } = await r.json();
@@ -362,4 +373,19 @@ export type ReturnedDebat = Debat & {
   lectureLabel: string | null;
 };
 
-export const getDebats = React.cache(getDebatsUnCached);
+export const getDebats = React.cache(async (dossierUid: string) => {
+  if (typeof window === "undefined") return getDebatsUnCached(dossierUid);
+  // Les consommateurs clients (onglets, chronologie, panneau député) passent
+  // par le même cache serveur au lieu de refaire tous les appels externes.
+  try {
+    const response = await fetch(`/api/dossiers/${encodeURIComponent(dossierUid)}/debats`);
+    if (!response.ok) return null;
+    const { items } = await response.json() as { items: ReturnedDebat[] };
+    return items.map((item) => ({
+      ...item,
+      dateSeance: item.dateSeance ? new Date(item.dateSeance) : item.dateSeance,
+    }));
+  } catch {
+    return null;
+  }
+});

@@ -23,28 +23,23 @@ const PER_SECTION = 5;
 
 /**
  * Recherche multi-catégories pour la page /recherche.
- * Tout est sourcé depuis MongoDB (Atlas Search pour les dossiers, regex pour
- * les questions, jointures pour les amendements). Plus de dépendance à
- * l'API Tricoteuses pour cette page.
+ * Les débats restent sourcés depuis Tricoteuses ; les autres catégories
+ * utilisent MongoDB. Chaque promesse peut être rendue indépendamment.
  */
 export type SortMode = "relevance" | "date";
 
-export async function searchAll(
+export function searchAllSections(
   query: string,
   options: { legislature?: string | null; sort?: SortMode | null } = {}
-): Promise<SearchAllResults> {
+) {
   const q = query.trim();
   if (q.length < 5) {
     return {
-      deputes: [],
-      dossiers: [],
-      dossiersTotal: 0,
-      amendements: [],
-      amendementsTotal: 0,
-      questions: [],
-      questionsTotal: 0,
-      debats: [],
-      debatsTotal: 0,
+      deputes: Promise.resolve([] as ActeurSearchResult[]),
+      dossiers: Promise.resolve({ items: [] as DossierSearchResult[], total: 0 }),
+      amendements: Promise.resolve({ items: [] as AmendementSearchResult[], total: 0 }),
+      questions: Promise.resolve({ items: [] as QuestionSearchResult[], total: 0 }),
+      debats: Promise.resolve({ items: [] as DebatSearchResult[], total: 0 }),
     };
   }
 
@@ -53,13 +48,26 @@ export async function searchAll(
     : "17";
   const sort: SortMode = options.sort === "date" ? "date" : "relevance";
 
+  return {
+    deputes: searchActeurParNom(q, PER_SECTION),
+    dossiers: searchDossierParTitre(q, { limit: PER_SECTION, legislature, sort }),
+    amendements: searchAmendementMongo(q, { limit: PER_SECTION, legislature, sort }),
+    questions: searchQuestion(q, { limit: PER_SECTION, legislature, sort }),
+    debats: searchInterventions(q, { perPage: PER_SECTION }),
+  };
+}
+
+export type SearchSections = ReturnType<typeof searchAllSections>;
+
+export async function searchAll(
+  query: string,
+  options: { legislature?: string | null; sort?: SortMode | null } = {}
+): Promise<SearchAllResults> {
+  const sections = searchAllSections(query, options);
   const [deputes, dossiersResp, amendementsResp, questionsResp, debatsResp] =
     await Promise.all([
-      searchActeurParNom(q, PER_SECTION),
-      searchDossierParTitre(q, { limit: PER_SECTION, legislature, sort }),
-      searchAmendementMongo(q, { limit: PER_SECTION, legislature, sort }),
-      searchQuestion(q, { limit: PER_SECTION, legislature, sort }),
-      searchInterventions(q, { perPage: PER_SECTION }),
+      sections.deputes, sections.dossiers, sections.amendements,
+      sections.questions, sections.debats,
     ]);
 
   return {

@@ -1,10 +1,10 @@
 "use client";
 
-import { useSelectedLayoutSegment } from "next/navigation";
-
+import React from "react";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Link from "next/link";
+import { useTabNavigation, type TabNavigateEvent } from "@/components/navigation/TabNavigation";
 
 /**
  * Segments qui correspondent à un onglet. Les autres pages de la fiche — le
@@ -15,8 +15,8 @@ import Link from "next/link";
 const ONGLETS = ["activites", "travaux", "amendements", "votes", "qag", "activite"];
 
 export default function DeputeTabs({ slug }: { slug: string }) {
-  const segment = useSelectedLayoutSegment();
-  const actif = segment ?? "activites";
+  const { segment, navigate } = useTabNavigation();
+  const actif = segment || "activites";
 
   return (
     <Tabs
@@ -25,6 +25,9 @@ export default function DeputeTabs({ slug }: { slug: string }) {
       sx={{
         borderBottom: 1,
         borderColor: "divider",
+        "& .MuiTabs-indicator": { display: "none" },
+        "& .MuiTab-root": { borderBottom: "2px solid transparent" },
+        "& .MuiTab-root.Mui-selected": { borderBottomColor: "common.black" },
       }}
     >
       <Tab
@@ -32,36 +35,42 @@ export default function DeputeTabs({ slug }: { slug: string }) {
         label="Activités"
         component={Link}
         href={`/depute/${slug}/`}
+        onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/`, "")}
       />
       <Tab
         value="travaux"
         label="Travaux"
         component={Link}
         href={`/depute/${slug}/travaux`}
+        onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/travaux`, "travaux")}
       />
       <Tab
         value="amendements"
         label="Amendements"
         component={Link}
         href={`/depute/${slug}/amendements`}
+        onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/amendements`, "amendements")}
       />
       <Tab
         value="votes"
         label="Votes"
         component={Link}
         href={`/depute/${slug}/votes`}
+        onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/votes`, "votes")}
       />
       <Tab
         value="qag"
         label="Questions"
         component={Link}
         href={`/depute/${slug}/qag`}
+        onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/qag`, "qag")}
       />
       <Tab
         value="activite"
         label="Détail"
         component={Link}
         href={`/depute/${slug}/activite`}
+        onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/activite`, "activite")}
       />
     </Tabs>
   );

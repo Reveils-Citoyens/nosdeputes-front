@@ -5,6 +5,7 @@ import {
   Mandat,
   Organe,
 } from "@prisma/client";
+import { cacheTricoteuses } from "./cacheTricoteuses";
 
 export type MandatWithOrgane = Mandat & {
   organeRef: Organe | null;
@@ -15,7 +16,8 @@ async function getActeurAdressesElectroniquesUnCached(
 ): Promise<AdresseElectronique[]> {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/adressesElectroniques?acteurRefUid=${acteurUid}`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/adressesElectroniques?acteurRefUid=${acteurUid}`,
+      cacheTricoteuses("stable")
     );
 
     const { data } = (await rep.json()) as { data: AdresseElectronique[] };
@@ -36,7 +38,8 @@ async function getActeurAdressesPostalesUnCached(
 ): Promise<AdressePostale[]> {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/adressesPostales?acteurRefUid=${acteurUid}`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/adressesPostales?acteurRefUid=${acteurUid}`,
+      cacheTricoteuses("stable")
     );
 
     const { data } = (await rep.json()) as { data: AdressePostale[] };

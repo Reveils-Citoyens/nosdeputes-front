@@ -19,6 +19,7 @@ import {
 import SearchInput from "@/components/SearchInput";
 import debounce from "@/utils/debounce";
 import Pagination from "@/components/Pagination";
+import { DeputeListSkeleton } from "@/components/navigation/DeputeTabSkeleton";
 
 export default function Amendements() {
   const { slug } = useParams<{ slug: string }>();
@@ -113,6 +114,7 @@ export default function Amendements() {
         </Select>
       </Stack>
 
+      {isPending && <DeputeListSkeleton variant="amendements" showFilters={false} />}
       {(data as AmendementWithDossierRef[]).map((amendement) => {
         const dossierTitre = amendement.dossierRef?.titre;
         const titre = dossierTitre
@@ -141,12 +143,12 @@ export default function Amendements() {
           Aucun amendement trouvé pour cette recherche.
         </Typography>
       )}
-      <Pagination
+      {!isPending && <Pagination
         {...pagination}
         page={page}
         setPage={setPage}
         isPending={isPending}
-      />
+      />}
     </Box>
   );
 }

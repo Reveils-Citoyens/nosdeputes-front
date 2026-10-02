@@ -1,6 +1,7 @@
 import { Dossier } from "@prisma/client";
 import { parseDossier } from "./parsers/parseDossier";
 import { PaginatedResponse, extractPaginationMetadata } from "./pagination";
+import { cacheTricoteuses } from "./cacheTricoteuses";
 
 interface SearchDossierParams {
   /**
@@ -59,7 +60,8 @@ export async function searchDossier(
 
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/?${searchParams}`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/?${searchParams}`,
+      cacheTricoteuses("contenu")
     );
 
     if (!rep.ok) {

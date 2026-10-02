@@ -128,6 +128,26 @@ jobs:
       run: |
         python ND.py
 
+    # Les vidéos des dernières prises de parole coûtent 2 à 5 s par fiche député
+    # lorsqu'elles sont calculées à la demande (Tricoteuses + portail vidéo de
+    # l'Assemblée). Le précalcul les écrit dans `prises_de_parole_video`.
+    # Non bloquant : en cas d'échec, les entrées de la veille restent servies
+    # et la fiche se replie sur le calcul à la demande au-delà de 7 jours.
+    - name: Precompute deputies' latest video speeches
+      id: prises-de-parole
+      continue-on-error: true
+      env:
+        MONGO_URI: ${{ secrets.MONGO_URI }}
+      run: |
+        npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+        node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/precalculer_prises_de_parole.mjs
+
+    - name: Report video speeches precompute failure
+      if: steps.prises-de-parole.outcome == 'failure'
+      run: |
+        echo "::warning::Précalcul des prises de parole vidéo en échec. Les entrées précédentes restent servies."
+        echo "⚠️ Prises de parole vidéo : pas de mise à jour." >> "$GITHUB_STEP_SUMMARY"
+
     # ND.py ne peut pas alerter si la préparation échoue avant son lancement.
     - name: Alert on pipeline failure
       if: failure() && steps.python-dependencies.outcome == 'success'

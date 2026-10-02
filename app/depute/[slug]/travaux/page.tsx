@@ -4,7 +4,6 @@ import React from "react";
 import {
   Box,
   Chip,
-  CircularProgress,
   Container,
   Stack,
   Typography,
@@ -23,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
 import { searchDocument } from "@/data/searchDocument";
 import { searchDossier } from "@/data/searchDossier";
+import { DeputeTravauxSkeleton } from "@/components/navigation/DeputeTabSkeleton";
 
 // ─── Section shell (identique à /recherche pour cohérence) ────────────────────
 
@@ -283,9 +283,7 @@ export default function Travaux() {
       </Stack>
 
       {isLoading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-          <CircularProgress size={32} />
-        </Box>
+        <DeputeTravauxSkeleton contentOnly />
       ) : (
         <Stack spacing={3}>
           <SectionShell

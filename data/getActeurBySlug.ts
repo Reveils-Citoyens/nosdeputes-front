@@ -2,6 +2,7 @@ import * as React from "react";
 import { Acteur, Mandat, Organe } from "@prisma/client";
 import { getOrgane } from "./getOrgane";
 import { resolveAuGouvernement } from "./helpers/resolveAuGouvernement";
+import { cacheTricoteuses } from "./cacheTricoteuses";
 
 async function getActeurBySlugUnCached(slug: string): Promise<
   | (Acteur & {
@@ -13,12 +14,13 @@ async function getActeurBySlugUnCached(slug: string): Promise<
 > {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/acteurs/?slug=${slug}&include=mandatPrincipal`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/acteurs/?slug=${slug}&include=mandatPrincipal`,
+      cacheTricoteuses("contenu")
     );
 
     const { data } = await rep.json();
 
-    if (data.lenght === 0) {
+    if (!Array.isArray(data) || data.length === 0) {
       // Pas d'acteur trouvé
       return null;
     }

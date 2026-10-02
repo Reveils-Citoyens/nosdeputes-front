@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/navigation/NavigationLink";
 import { Box, Container, Stack, Typography } from "@mui/material";
 import {
   ArrowForward as ArrowForwardIcon,

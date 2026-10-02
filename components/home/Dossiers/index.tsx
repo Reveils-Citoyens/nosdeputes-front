@@ -2,7 +2,7 @@ import * as React from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import Link from "next/link";
+import Link from "@/components/navigation/NavigationLink";
 
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import Dossiers from "./Dossiers";

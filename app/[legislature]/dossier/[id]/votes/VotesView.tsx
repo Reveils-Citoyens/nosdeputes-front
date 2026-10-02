@@ -8,7 +8,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import Button from "@mui/material/Button"; 
 
-import { DossierVotes } from "@/data/getDossierVotes";
+import type { DossierVotesSummary } from "@/data/getDossierVotesSummary";
 import { ScrutinCard } from "./ScrutinCard";
 
 // Dictionnaire enrichi pour traduire les codes techniques
@@ -61,7 +61,7 @@ function formatActeLabel(code: string, nomCanonique?: string | null) {
   return code;
 }
 
-export function VotesView({ dossier }: { dossier: DossierVotes }) {
+export function VotesView({ dossier }: { dossier: DossierVotesSummary }) {
   const actsWithVotes = React.useMemo(() => {
     return (
       dossier.actesLegislatifs

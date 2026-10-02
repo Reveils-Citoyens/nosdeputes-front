@@ -10,7 +10,10 @@ import Stack from "@mui/material/Stack";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import HowToVoteIcon from "@mui/icons-material/HowToVote";
 
-import { ScrutinComplet } from "@/data/getDossierVotes";
+import type { ScrutinSummary } from "@/data/getDossierVotesSummary";
+import type { VoteWithActeur } from "./votes.type";
+import { useQuery } from "@tanstack/react-query";
+import { Alert, Button, Skeleton } from "@mui/material";
 import StatusChip from "@/components/StatusChip";
 import { VotesGroups } from "./VotesGroups";
 
@@ -29,7 +32,20 @@ function getScrutinStatus(code: string | null) {
   return { status: "review" as const, label: "Résultat non communiqué" };
 }
 
-export function ScrutinCard({ scrutin }: { scrutin: ScrutinComplet }) {
+export function ScrutinCard({ scrutin }: { scrutin: ScrutinSummary }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const { data: votes, isPending, isError, refetch } = useQuery({
+    queryKey: ["scrutin-votes", scrutin.uid],
+    enabled: expanded,
+    staleTime: 60_000,
+    queryFn: async ({ signal }): Promise<VoteWithActeur[]> => {
+      const response = await fetch(`/api/scrutins/${encodeURIComponent(scrutin.uid)}/votes`, { signal });
+      if (!response.ok) throw new Error("Votes unavailable");
+      const data = await response.json();
+      if (!Array.isArray(data.votes)) throw new Error("Invalid votes response");
+      return data.votes;
+    },
+  });
   const totalVotes = scrutin.pour + scrutin.contre + scrutin.abstentions;
   const pctPour = totalVotes > 0 ? (scrutin.pour / totalVotes) * 100 : 0;
   const pctContre = totalVotes > 0 ? (scrutin.contre / totalVotes) * 100 : 0;
@@ -39,7 +55,8 @@ export function ScrutinCard({ scrutin }: { scrutin: ScrutinComplet }) {
     <Accordion
       elevation={0}
       disableGutters
-      defaultExpanded={false}
+      expanded={expanded}
+      onChange={(_event, value) => setExpanded(value)}
       sx={{
         border: "1px solid",
         borderColor: "divider",
@@ -158,7 +175,15 @@ export function ScrutinCard({ scrutin }: { scrutin: ScrutinComplet }) {
             <HowToVoteIcon fontSize="small" /> Détail par groupes politiques
           </Typography>
         </Box>
-        <VotesGroups votes={scrutin.votes} />
+        {expanded && (isError ? (
+          <Alert severity="warning" action={<Button onClick={() => void refetch()}>Réessayer</Button>}>
+            Impossible de charger le détail des votes.
+          </Alert>
+        ) : isPending ? (
+          <Box role="status" aria-label="Chargement du détail des votes" sx={{ p: 2 }}>
+            <Skeleton height={48} /><Skeleton height={48} /><Skeleton height={48} />
+          </Box>
+        ) : <VotesGroups votes={votes ?? []} />)}
       </AccordionDetails>
     </Accordion>
   );

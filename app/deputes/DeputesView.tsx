@@ -27,6 +27,7 @@ import { DeputeFilterProps } from "./DeputesFilter";
 import { departements } from "./structureCircos";
 import { formatCirco } from "@/utils/formatCirco";
 import { normalizeForSearch } from "@/lib/strings";
+import type { DeputeListItem } from "./deputeListItem";
 
 function GroupPolitiqueHeader({
   itemKey,
@@ -84,7 +85,7 @@ function Deputes({
   groups,
   grouping,
 }: {
-  deputes: (Acteur & { mandatPrincipal?: Mandat })[];
+  deputes: DeputeListItem[];
   groups: Record<string, Organe>;
   grouping: "groupPolitique" | "alphabetique";
 }) {

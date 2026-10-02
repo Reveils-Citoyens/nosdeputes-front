@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+import { useNavigationPathname } from "@/components/navigation/PageNavigation";
+import Link from "@/components/navigation/NavigationLink";
 import Image from "next/image";
 import { Menu as MenuIcon, Close as CloseIcon } from "@mui/icons-material";
 import NavSearchBar from "./NavSearchBar";
@@ -17,7 +17,7 @@ interface NavBarProps {
 }
 
 export function NavBar({ navigation }: NavBarProps) {
-  const pathname = usePathname();
+  const pathname = useNavigationPathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -33,6 +33,7 @@ export function NavBar({ navigation }: NavBarProps) {
             <div className="flex-shrink-0 flex items-center">
               <Link
                 href="/"
+                aria-current={pathname === "/" ? "page" : undefined}
                 className="flex items-center gap-3 group relative z-50"
               >
                 <Image
@@ -57,7 +58,8 @@ export function NavBar({ navigation }: NavBarProps) {
                     <Link
                       key={item.name}
                       href={item.href}
-                      className={`px-5 py-2.5 rounded-full text-[11px] font-bold tracking-widest uppercase transition-all duration-300 ${
+                      aria-current={isActive ? "page" : undefined}
+                      className={`px-5 py-2.5 rounded-full text-[11px] font-bold tracking-widest uppercase transition-transform duration-150 ${
                         isActive
                           ? "bg-[#1A1A1B] text-white shadow-md transform scale-105"
                           : "text-gray-500 hover:text-black hover:bg-white/60"
@@ -91,6 +93,8 @@ export function NavBar({ navigation }: NavBarProps) {
 
       {/* --- Overlay Menu Mobile --- */}
       <div
+        aria-hidden={!isMobileMenuOpen}
+        inert={!isMobileMenuOpen}
         className={`fixed inset-0 z-40 bg-white transform transition-transform duration-300 ease-in-out md:hidden ${
           isMobileMenuOpen
             ? "translate-y-0 opacity-100"
@@ -108,7 +112,9 @@ export function NavBar({ navigation }: NavBarProps) {
             <Link
               key={item.name}
               href={item.href}
-              className="w-full text-center py-4 text-lg font-bold text-gray-800 border-b border-gray-100 uppercase tracking-widest hover:bg-gray-50 transition-colors"
+              aria-current={pathname === item.href ? "page" : undefined}
+              onNavigate={() => setIsMobileMenuOpen(false)}
+              className={`w-full text-center py-4 text-lg font-bold border-b border-gray-100 uppercase tracking-widest transition-colors ${pathname === item.href ? "bg-gray-100 text-black" : "text-gray-800 hover:bg-gray-50"}`}
             >
               {item.name}
             </Link>

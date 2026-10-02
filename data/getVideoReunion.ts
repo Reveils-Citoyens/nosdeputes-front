@@ -1,52 +1,24 @@
 import * as React from "react";
 
+import {
+  CHAMPS_VIDEO as CHAMPS,
+  versVideo,
+  type ReunionApi,
+  type Video,
+} from "./prisesDeParoleVideo";
+
 /**
- * Liens vidéo d'une réunion : le flux HLS et la page du portail de l'Assemblée.
+ * Liens vidéo d'une réunion (type `Video`, défini avec les règles de sélection
+ * des prises de parole pour être partagé avec le précalcul nocturne).
  *
  * Ces liens ne sont pas dans les jeux de données que nous ingérons — la
  * collection `reunions` de MongoDB ne porte aucun champ vidéo. Ils sont résolus
  * par Tricoteuses, qui apparie chaque réunion à son média. On les lit donc à la
  * demande plutôt que de porter un moissonneur de plus.
- *
- * ⚠️ L'archive du diffuseur ne conserve qu'environ l'année en cours : passé ce
- * délai le flux répond 404 alors que `page` reste accessible. Le lecteur bascule
- * seul sur le lien, encore faut-il le lui fournir.
  */
-export type Video = {
-  /** Flux HLS, lisible dans le navigateur. */
-  flux: string | null;
-  /** Page de la vidéo sur le site de l'Assemblée, qui survit à l'archivage. */
-  page: string | null;
-  /**
-   * Seconde à laquelle les débats commencent réellement.
-   *
-   * La captation démarre avant l'ouverture : sur une réunion de commission,
-   * l'écart va de quelques secondes à plus d'une demi-heure de salle vide.
-   * Ouvrir la vidéo à zéro donne l'impression d'un lecteur cassé.
-   */
-  secondeDebut: number | null;
-};
+export type { Video };
 
 const API = process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL;
-const CHAMPS = "uid,urlVideo,urlPageVideo,timecodeDebutVideo";
-
-/** Réunion telle que l'API la rend, réduite aux champs vidéo. */
-type ReunionApi = {
-  uid?: string;
-  urlVideo?: string | null;
-  urlPageVideo?: string | null;
-  timecodeDebutVideo?: number | null;
-};
-
-/** Une réunion telle que l'API la rend → notre type, ou null si sans vidéo. */
-function versVideo(donnees: ReunionApi | null | undefined): Video | null {
-  if (!donnees?.urlVideo && !donnees?.urlPageVideo) return null;
-  return {
-    flux: donnees.urlVideo ?? null,
-    page: donnees.urlPageVideo ?? null,
-    secondeDebut: donnees.timecodeDebutVideo ?? null,
-  };
-}
 
 async function getVideoReunionUnCached(
   reunionUid: string | null | undefined

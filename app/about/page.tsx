@@ -1,4 +1,5 @@
 import React from "react";
+import AboutHeader from "@/components/about/AboutHeader";
 import {
   Box,
   Container,
@@ -86,20 +87,7 @@ export default function About() {
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
       {/* HEADER SECTION */}
-      <Stack alignItems="center" mb={8} textAlign="center">
-        <Typography variant="h2" component="h1" fontWeight="bold" gutterBottom>
-          À propos de NosDéputés.fr
-        </Typography>
-        <Typography
-          variant="h5"
-          color="text.secondary"
-          sx={{ maxWidth: 800, fontWeight: "light" }}
-        >
-          NosDéputés.fr est un site transpartisan géré par une équipe bénévole
-          de citoyens, avec pour objectif de promouvoir l’accès à l’activité
-          parlementaire française.
-        </Typography>
-      </Stack>
+      <AboutHeader />
 
       {/* HISTOIRE SECTION */}
       <Paper

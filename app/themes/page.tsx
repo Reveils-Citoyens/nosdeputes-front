@@ -1,5 +1,5 @@
 import * as React from "react";
-import Link from "next/link";
+import Link from "@/components/navigation/NavigationLink";
 import { Box, Container, Stack, Typography } from "@mui/material";
 import { THEMES, type ThemeSlug } from "@/data/themes";
 import {

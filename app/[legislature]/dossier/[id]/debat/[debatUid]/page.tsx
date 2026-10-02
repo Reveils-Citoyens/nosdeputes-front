@@ -16,13 +16,15 @@ export default async function Page({
 }) {
   const { id: dossierUid, debatUid } = await params;
 
-  const interventions = await getInterventions(debatUid);
-  const debats = await getDebats(dossierUid);
+  const [interventions, debats, fiabilite] = await Promise.all([
+    getInterventions(debatUid),
+    getDebats(dossierUid),
+    getFiabiliteCompteRendu(debatUid),
+  ]);
 
   const debat = debats?.find((d) => d.uid === debatUid);
   // La vidéo est portée par la réunion, pas par le compte rendu.
   const video = await getVideoReunion(debat?.reunionRefUid);
-  const fiabilite = await getFiabiliteCompteRendu(debatUid);
 
   if (!interventions || interventions.length === 0) {
     return <p>Aucun débat trouvé pour cette séance.</p>;
@@ -44,8 +46,6 @@ export default async function Page({
           ...acc,
           [lastId]: acc[lastId] + texteLength,
         };
-      } else {
-        console.log("codeGrammaire: ", codeGrammaire, paragraphe);
       }
       return acc;
     },

@@ -1,7 +1,8 @@
 import { Acteur, Mandat, Organe } from "@prisma/client";
+import type { DeputeListItem } from "./deputeListItem";
 
 export function groupDeputes(
-  deputes: Record<string, Acteur & { mandatPrincipal?: Mandat }>
+  deputes: Record<string, DeputeListItem>
 ) {
   const uidPerNom: Record<string, string[]> = {};
   const uidPerGroup: Record<string, string[]> = {};

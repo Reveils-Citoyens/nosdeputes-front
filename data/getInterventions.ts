@@ -4,7 +4,8 @@ import { Paragraphe } from "@prisma/client";
 async function getInterventionsUnCached(debatUid: string): Promise<Paragraphe[]> {
     try {
         const rep = await fetch(
-            `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/interventions/?debatRefUid=${debatUid}&perPage=1000`
+            `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/interventions/?debatRefUid=${debatUid}&perPage=1000`,
+            { next: { revalidate: 60 } }
         );
 
         const { data } = await rep.json();

@@ -2,6 +2,7 @@ import * as React from "react";
 import { ActeLegislatif, Dossier, Scrutin, Vote, Acteur, GroupeVotant, Organe } from "@prisma/client";
 import { parseDossier } from "./parsers/parseDossier";
 import { parseActeLefislatif } from "./parsers/parseActeLegislatif";
+import { cacheTricoteuses } from "./cacheTricoteuses";
 
 export type ScrutinComplet = Scrutin & {
   votes: (Vote & {
@@ -28,7 +29,8 @@ async function getDossierVotesUnCached(uid: string): Promise<DossierVotes | null
     ].join(",");
 
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/${uid}?include=${includeParams}`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/${uid}?include=${includeParams}`,
+      cacheTricoteuses("activite")
     );
 
     const { data } = await rep.json();

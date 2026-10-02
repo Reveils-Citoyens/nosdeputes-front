@@ -14,6 +14,7 @@ import BoutonVideoReunion from "@/components/BoutonVideoReunion";
 import type {
   DetailJournee,
   Intervention,
+  InterventionsCommission,
   MotifExclusion,
   Seance,
   Video,
@@ -71,6 +72,17 @@ export default function JourneeClient({
   // vidéo elle-même plutôt que l'identifiant d'une séance — les réunions de
   // commission n'en ont pas, et la séance n'a pas à être le cas particulier.
   const [lecture, setLecture] = React.useState<Lecture | null>(null);
+
+  // Interventions comptées en commission, rangées sous la réunion dont elles
+  // viennent ; un compte rendu sans réunion listée ce jour-là reste affiché à
+  // part, pour qu'aucune intervention comptée ne soit invisible.
+  const interventionsParCompteRendu = new Map(
+    detail.interventionsCommission.map((bloc) => [bloc.compteRenduUid, bloc])
+  );
+  const comptesRendusDesReunions = new Set(detail.reunions.map((r) => r.compteRenduRef));
+  const interventionsSansReunion = detail.interventionsCommission.filter(
+    (bloc) => !comptesRendusDesReunions.has(bloc.compteRenduUid)
+  );
 
   return (
     <Stack spacing={4}>
@@ -139,8 +151,26 @@ export default function JourneeClient({
                       />
                     </Box>
                   ) : null}
+                  {reunion.compteRenduRef && interventionsParCompteRendu.has(reunion.compteRenduRef) ? (
+                    <BlocInterventionsCommission
+                      bloc={interventionsParCompteRendu.get(reunion.compteRenduRef)!}
+                    />
+                  ) : null}
                 </Box>
               </Stack>
+            ))}
+          </Stack>
+        </Box>
+      ) : null}
+
+      {interventionsSansReunion.length > 0 ? (
+        <Box>
+          <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+            Interventions en commission
+          </Typography>
+          <Stack spacing={2}>
+            {interventionsSansReunion.map((bloc) => (
+              <BlocInterventionsCommission key={bloc.compteRenduUid} bloc={bloc} />
             ))}
           </Stack>
         </Box>
@@ -196,6 +226,39 @@ function BlocSeance(props: {
           />
         ))}
       </Stack>
+    </Box>
+  );
+}
+
+function BlocInterventionsCommission({ bloc }: { bloc: InterventionsCommission }) {
+  return (
+    <Box sx={{ mt: 1.25 }}>
+      <Typography variant="caption" color="text.secondary" component="div">
+        {bloc.nombre} intervention{bloc.nombre > 1 ? "s" : ""} comptée
+        {bloc.nombre > 1 ? "s" : ""}, attribuée{bloc.nombre > 1 ? "s" : ""}{" "}
+        <Tooltip title="Les comptes rendus de commission ne portent pas d’identifiant d’orateur, contrairement à ceux de la séance publique : chaque prise de parole est rattachée au député par son nom tel qu’il figure dans le compte rendu.">
+          <Box
+            component="span"
+            tabIndex={0}
+            sx={{ borderBottom: "1px dotted", borderColor: "text.disabled", cursor: "help" }}
+          >
+            par le nom de l’orateur
+          </Box>
+        </Tooltip>
+        {bloc.detailDisponible ? null : " — le détail sera affiché après le prochain calcul des statistiques"}
+      </Typography>
+      {bloc.interventions.length > 0 ? (
+        <Stack spacing={1.5} sx={{ mt: 1 }}>
+          {bloc.interventions.map((intervention) => (
+            <LigneIntervention
+              key={intervention.ordre}
+              intervention={intervention}
+              video={false}
+              onLire={() => {}}
+            />
+          ))}
+        </Stack>
+      ) : null}
     </Box>
   );
 }

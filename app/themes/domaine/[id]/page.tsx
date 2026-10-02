@@ -1,5 +1,5 @@
 import * as React from "react";
-import Link from "next/link";
+import Link from "@/components/navigation/NavigationLink";
 import { notFound } from "next/navigation";
 import {
   Box,

@@ -1,6 +1,7 @@
 import { Acteur, Mandat, Organe } from "@prisma/client";
 import { getOrgane } from "./getOrgane";
 import { resolveAuGouvernement } from "./helpers/resolveAuGouvernement";
+import { cacheTricoteuses } from "./cacheTricoteuses";
 
 export type ReturnedActeur = Acteur & {
   groupeParlementaire: Organe | null;
@@ -12,6 +13,7 @@ async function fetchActeur(uid: string): Promise<ReturnedActeur | null> {
   try {
     const rep = await fetch(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/acteurs/${uid}?include=mandatPrincipal`,
+      cacheTricoteuses("contenu")
     );
     if (!rep.ok) return null;
 

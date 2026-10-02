@@ -3,6 +3,7 @@ import { searchDocument } from "@/data/searchDocument";
 import { buildSommaireUrl, getDocumentSommaire } from "@/data/getDocumentSommaire";
 import LiseuseClient from "./LiseuseClient";
 import type { ArticleEntry } from "@/data/getDocumentSommaire";
+import { liseusePageSx } from "@/components/navigation/LiseuseLayout";
 
 export type DocOption = {
   uid: string;
@@ -195,7 +196,7 @@ export default async function Page({
     : null;
 
   return (
-    <Box sx={{ pt: 3, pb: 8, px: { xs: 2, md: 4 }, maxWidth: 1400, mx: "auto" }}>
+    <Box sx={liseusePageSx} data-liseuse-page>
       <LiseuseClient
         dossierUid={dossierUid}
         documents={documents}

@@ -10,7 +10,7 @@ import MuiLink from "@mui/material/Link";
 
 import CompareArrowsSharpIcon from "@mui/icons-material/CompareArrowsSharp";
 import CircleDiv from "@/icons/CircleDiv";
-import Link from "next/link";
+import Link from "@/components/navigation/NavigationLink";
 import { Acteur } from "@prisma/client";
 
 type DeputeCardProps<RootComponent extends React.ElementType = "div"> = Pick<

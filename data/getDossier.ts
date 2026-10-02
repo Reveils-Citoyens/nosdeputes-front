@@ -3,6 +3,7 @@ import { ActeLegislatif, Dossier, Rapporteur } from "@prisma/client";
 import { parseActeLefislatif } from "./parsers/parseActeLegislatif";
 import { parseDossier } from "./parsers/parseDossier";
 import { getParlementDb } from "@/lib/mongodb";
+import { cacheTricoteuses } from "./cacheTricoteuses";
 
 export type ReturnedDossier = Dossier & {
   actesLegislatifs: ActeLegislatif[];
@@ -62,7 +63,8 @@ async function getDossierUnCached(uid: string): Promise<
 > {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/${uid}?include=actesLegislatifs,rapporteurs`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/${uid}?include=actesLegislatifs,rapporteurs`,
+      cacheTricoteuses("contenu")
     );
 
     const { data } = await rep.json();

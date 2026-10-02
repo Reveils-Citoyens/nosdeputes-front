@@ -10,7 +10,7 @@ import Tooltip from "@mui/material/Tooltip";
 import MuiLink from "@mui/material/Link";
 
 import CircleDiv from "@/icons/CircleDiv";
-import Link from "next/link";
+import Link from "@/components/navigation/NavigationLink";
 import { getActeur, ReturnedActeur } from "@/data/getActeur";
 
 export type ActeurCardWithDataProps<

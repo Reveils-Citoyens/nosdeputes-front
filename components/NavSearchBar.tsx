@@ -13,8 +13,9 @@ import {
 import { Search as SearchIcon } from "@mui/icons-material";
 import DossierBadge from "@/components/folders/DossierBadge";
 import debounce from "@/utils/debounce";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import Link from "@/components/navigation/NavigationLink";
+import { usePathname } from "next/navigation";
+import { useFeedbackRouter as useRouter } from "@/components/navigation/PageNavigation";
 import type { ActeurSearchResult } from "@/data/mongo/searchActeurParNom";
 import type { DossierSearchResult } from "@/data/mongo/searchDossierParTitre";
 
@@ -248,7 +249,9 @@ export default function NavSearchBar({ mobile = false }: { mobile?: boolean }) {
           openOnFocus={false}
           open={inputValue.length >= MIN_CHARS}
           onChange={(_e, newValue) => {
-            if (newValue) {
+            // A clicked Link has already started navigation. Keyboard option
+            // selection still needs the programmatic route below.
+            if (newValue && !(_e.type === "click" && _e.defaultPrevented)) {
               if (isActeur(newValue)) {
                 router.push(`/depute/${toSlug(newValue.prenom, newValue.nom)}`);
               } else {

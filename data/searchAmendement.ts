@@ -1,5 +1,6 @@
 import { Amendement, Dossier } from "@prisma/client";
 import { PaginatedResponse, extractPaginationMetadata } from "./pagination";
+import { cacheTricoteuses } from "./cacheTricoteuses";
 
 export type AmendementWithDossierRef = Amendement & {
   dossierRef?: Dossier | null;
@@ -122,7 +123,8 @@ export async function searchAmendement(
   }
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/amendements?${searchParams}`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/amendements?${searchParams}`,
+      cacheTricoteuses("activite")
     );
 
     const { data } = await rep.json();

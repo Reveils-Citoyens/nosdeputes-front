@@ -15,7 +15,8 @@ type DebateTimelineProps = {
   /** Absent quand la séance n'a pas de vidéo : aucun bouton ne s'affiche alors. */
   onLire?: (seconde: number) => void;
 };
-export const DebateTimeline = ({ paragraphes, onLire }: DebateTimelineProps) => (
+export const DebateTimeline = React.memo(function DebateTimeline({ paragraphes, onLire }: DebateTimelineProps) {
+  return (
   <Timeline
     sx={{
       [`& .${timelineItemClasses.root}:before`]: {
@@ -101,4 +102,5 @@ export const DebateTimeline = ({ paragraphes, onLire }: DebateTimelineProps) => 
       }
     )}
   </Timeline>
-);
+  );
+});

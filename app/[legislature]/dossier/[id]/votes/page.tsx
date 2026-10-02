@@ -1,6 +1,6 @@
 // app/[legislature]/dossier/[id]/votes/page.tsx
 import React from "react";
-import { getDossierVotes } from "@/data/getDossierVotes";
+import { getDossierVotesSummary } from "@/data/getDossierVotesSummary";
 import { VotesView } from "./VotesView";
 import Container from "@mui/material/Container";
 
@@ -11,7 +11,7 @@ export default async function VotesPage({
 }) {
   const { id } = await params;
   
-  const dossierWithVotes = await getDossierVotes(id);
+  const dossierWithVotes = await getDossierVotesSummary(id);
 
   if (!dossierWithVotes) {
     return (

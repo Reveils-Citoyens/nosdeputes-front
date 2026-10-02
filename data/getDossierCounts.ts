@@ -7,7 +7,8 @@ import * as React from "react";
 async function getAmendementCountUnCached(dossierUid: string): Promise<number> {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/amendements?dossierRefUid=${dossierUid}&chambre=AN&perPage=1`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/amendements?dossierRefUid=${dossierUid}&chambre=AN&perPage=1`,
+      { next: { revalidate: 60 } }
     );
     if (!rep.ok) return 0;
     return parseInt(rep.headers.get("total") ?? "0", 10);
@@ -23,7 +24,8 @@ async function getAmendementCountUnCached(dossierUid: string): Promise<number> {
 async function getScrutinCountUnCached(dossierUid: string): Promise<number> {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/${dossierUid}?include=actesLegislatifs.voteRefs`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/${dossierUid}?include=actesLegislatifs.voteRefs`,
+      { next: { revalidate: 60 } }
     );
     if (!rep.ok) return 0;
     const { data } = await rep.json();

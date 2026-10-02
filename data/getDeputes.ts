@@ -2,7 +2,7 @@ import * as React from "react";
 import { unstable_cache } from "next/cache";
 import { Acteur, Mandat, Organe } from "@prisma/client";
 import { unique } from "@/utils/unique";
-import { getOrgane } from "./getOrgane";
+import { getOrganes } from "./getOrgane";
 import { resolveAuGouvernementBatch } from "./helpers/resolveAuGouvernement";
 
 export type ActeurDepute = Acteur & {
@@ -34,9 +34,7 @@ async function getDeputesUnCached(legislature: number): Promise<{
 
     const groupsUid = unique(enriched.map((item) => item.groupeParlementaireUid));
 
-    const groupsArray = await Promise.all(
-      groupsUid.map(async (uid) => (uid === null ? null : await getOrgane(uid)))
-    );
+    const groupsArray = [...(await getOrganes(groupsUid)).values()];
 
     const acteurs = Object.fromEntries(enriched.map((item) => [item.uid, item]));
     const groups = Object.fromEntries(

@@ -13,9 +13,8 @@ import Tooltip from "@mui/material/Tooltip";
 import MicIcon from "@mui/icons-material/Mic";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import IconButton from "@mui/material/IconButton";
-import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { getActeur } from "@/data/getActeur";
+import Link from "@/components/navigation/NavigationLink";
+import { useDebateActeur } from "./DebateActeursProvider";
 
 interface ParoleItemProps {
   acteurUid: string | null;
@@ -27,15 +26,10 @@ interface ParoleItemProps {
   /** Fourni seulement si la séance a une vidéo consultable. */
   onLire?: (seconde: number) => void;
 }
-export default function ParoleItem(props: ParoleItemProps) {
+function ParoleItem(props: ParoleItemProps) {
   const { acteurUid, roleDebat, texte, isFirst = false, seconde, onLire } = props;
 
-  const { data: acteur, isPending } = useQuery({
-    queryKey: ["acteur", acteurUid],
-    queryFn: async () =>
-      acteurUid == null ? null : await getActeur(acteurUid),
-    enabled: !!acteurUid,
-  });
+  const { data: acteur, isPending } = useDebateActeur(acteurUid);
 
   return (
     <TimelineItem>
@@ -72,6 +66,7 @@ export default function ParoleItem(props: ParoleItemProps) {
           }}
         >
           <Avatar
+            slotProps={{ img: { loading: "lazy", decoding: "async" } }}
             sx={{ height: 40, width: 40, bgcolor: "white", color: "grey.600" }}
             alt={`${acteur?.prenom ?? ""} ${acteur?.nom ?? ""}`}
             src={
@@ -193,3 +188,5 @@ export default function ParoleItem(props: ParoleItemProps) {
     </TimelineItem>
   );
 }
+
+export default React.memo(ParoleItem);

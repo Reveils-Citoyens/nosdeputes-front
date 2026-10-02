@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+import Link from "@/components/navigation/NavigationLink";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, Box, Chip, Stack, Tooltip, Typography } from "@mui/material";
 import {

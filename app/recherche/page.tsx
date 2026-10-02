@@ -1,11 +1,12 @@
 import * as React from "react";
-import Link from "next/link";
+import Link from "@/components/navigation/NavigationLink";
 import {
   Avatar,
   Box,
   Chip,
   Container,
   Stack,
+  Skeleton,
   Typography,
 } from "@mui/material";
 import {
@@ -15,7 +16,7 @@ import {
   QuestionAnswer as QuestionIcon,
   RecordVoiceOver as VoiceIcon,
 } from "@mui/icons-material";
-import { searchAll } from "@/data/searchAll";
+import { searchAllSections, type SearchSections } from "@/data/searchAll";
 import type { AmendementSearchResult } from "@/data/mongo/searchAmendementMongo";
 import SearchAmendementCard from "./SearchAmendementCard";
 import SearchQuestionCard from "./SearchQuestionCard";
@@ -451,7 +452,7 @@ export default async function RecherchePage({
   );
 }
 
-async function RechercheResults({
+function RechercheResults({
   query,
   legislature,
   sort,
@@ -460,45 +461,63 @@ async function RechercheResults({
   legislature: string | null;
   sort: "relevance" | "date";
 }) {
-  const results = await searchAll(query, { legislature, sort });
-  const totalFound =
-    results.deputes.length +
-    results.dossiersTotal +
-    results.amendementsTotal +
-    results.questionsTotal;
+  const sections = searchAllSections(query, { legislature, sort });
 
   return (
     <Stack spacing={3}>
-      <Typography variant="body2" color="text.secondary">
-        {totalFound > 0
-          ? `${totalFound} résultat${totalFound > 1 ? "s" : ""} dans les sections ci-dessous.`
-          : "Aucun résultat dans les catégories actuellement indexées."}
-      </Typography>
-
-      <DossiersSection
-        items={results.dossiers}
-        total={results.dossiersTotal}
-        query={query}
-        legislature={legislature}
-      />
-      <DeputesSection items={results.deputes} />
-      <AmendementsSection
-        items={results.amendements}
-        total={results.amendementsTotal}
-        query={query}
-        legislature={legislature}
-      />
-      <QuestionsSection
-        items={results.questions}
-        total={results.questionsTotal}
-        query={query}
-        legislature={legislature}
-      />
-      <DebatsSection
-        items={results.debats}
-        total={results.debatsTotal}
-        query={query}
-      />
+      <React.Suspense key={`total-${query}-${legislature}-${sort}`} fallback={
+        <Typography role="status" variant="body2" color="text.secondary">
+          Recherche en cours…
+        </Typography>
+      }>
+        <SearchTotal sections={sections} />
+      </React.Suspense>
+      {([
+        ["dossiers", DescriptionIcon, "Dossiers"],
+        ["deputes", PersonIcon, "Députés"],
+        ["amendements", EditIcon, "Amendements"],
+        ["questions", QuestionIcon, "Questions"],
+        ["debats", VoiceIcon, "Débats"],
+      ] as const).map(([category, icon, title]) => (
+        <React.Suspense
+          key={`${category}-${query}-${legislature}-${sort}`}
+          fallback={<SectionShell icon={icon} title={title}>
+            <Box role="status" aria-label={`Recherche : ${title}`}>
+              <Skeleton height={48} /><Skeleton height={48} /><Skeleton height={48} />
+            </Box>
+          </SectionShell>}
+        >
+          <SearchCategory category={category} sections={sections} query={query} legislature={legislature} />
+        </React.Suspense>
+      ))}
     </Stack>
   );
+}
+
+async function SearchTotal({ sections }: { sections: SearchSections }) {
+  // Même définition du compteur qu'avant ; les débats n'y étaient pas inclus.
+  const [deputes, dossiers, amendements, questions] = await Promise.all([
+    sections.deputes, sections.dossiers, sections.amendements, sections.questions,
+  ]);
+  const totalFound = deputes.length + dossiers.total + amendements.total + questions.total;
+  return <Typography variant="body2" color="text.secondary">
+    {totalFound > 0
+      ? `${totalFound} résultat${totalFound > 1 ? "s" : ""} dans les sections ci-dessous.`
+      : "Aucun résultat dans les catégories actuellement indexées."}
+  </Typography>;
+}
+
+async function SearchCategory({ category, sections, query, legislature }: {
+  category: keyof SearchSections;
+  sections: SearchSections;
+  query: string;
+  legislature: string | null;
+}) {
+  switch (category) {
+    case "deputes": return <DeputesSection items={await sections.deputes} />;
+    case "dossiers": return <DossiersSection {...await sections.dossiers} query={query} legislature={legislature} />;
+    case "amendements": return <AmendementsSection {...await sections.amendements} query={query} legislature={legislature} />;
+    case "questions": return <QuestionsSection {...await sections.questions} query={query} legislature={legislature} />;
+    case "debats": return <DebatsSection {...await sections.debats} query={query} />;
+  }
 }

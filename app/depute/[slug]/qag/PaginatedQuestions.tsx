@@ -8,6 +8,7 @@ import Pagination from "@/components/Pagination";
 import QuestionCard from "./QuestionCard";
 import SearchInput from "@/components/SearchInput";
 import debounce from "@/utils/debounce";
+import { DeputeListSkeleton } from "@/components/navigation/DeputeTabSkeleton";
 
 export default function PaginatedQuestions({
   acteurUid,
@@ -82,7 +83,7 @@ export default function PaginatedQuestions({
         </Alert>
       )}
 
-      {!isPending && data.length === 0 ? (
+      {isPending ? <DeputeListSkeleton variant="qag" showFilters={false} /> : data.length === 0 ? (
         <Box sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>
           <Typography>
             {search

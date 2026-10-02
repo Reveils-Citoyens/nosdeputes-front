@@ -19,6 +19,51 @@ describe("getDebatsUnCached", () => {
     vi.restoreAllMocks();
   });
 
+  it("démarre les actes sans attendre les points ODJ et borne la fraîcheur du cache", async () => {
+    let release!: (value: Response) => void;
+    const points = new Promise<Response>((resolve) => { release = resolve; });
+    const mock = vi.fn((input: string | URL | Request, _options?: RequestInit) => String(input).includes("/points_odj/")
+      ? points : Promise.resolve(response({ actesLegislatifs: [] })));
+    vi.stubGlobal("fetch", mock);
+    const pending = getDebatsUnCached("DOSSIER");
+    expect(mock).toHaveBeenCalledTimes(2);
+    release(response([]));
+    expect(await pending).toEqual([]);
+    expect(mock.mock.calls[0][1]).toEqual({ next: { revalidate: 60 } });
+  });
+
+  it("conserve une transcription en commission et en séance quand le CR est absent", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes("/points_odj/")) return response([
+        { agendaRef: { xsiType: "seance_type", transcriptionRefUid: "TR-SEANCE", compteRenduRef: [{ uid: "TR-SEANCE", chambre: "AN" }] } },
+        { agendaRef: { xsiType: "reunionCommission_type", transcriptionRefUid: "TR-COMMISSION", compteRenduRef: [{ uid: "TR-COMMISSION", chambre: "AN" }] } },
+      ]);
+      if (url.includes("/dossiers/")) return response({ actesLegislatifs: [] });
+      return response({ uid: url.includes("TR-SEANCE") ? "TR-SEANCE" : "TR-COMMISSION", _count: { paragraphes: 1 } });
+    }));
+    expect((await getDebatsUnCached("DOSSIER"))?.map((d) => [d.uid, d.debateType])).toEqual([
+      ["TR-SEANCE", "seance"], ["TR-COMMISSION", "commission"],
+    ]);
+  });
+
+  it("une panne des actes ou d'un CR ne masque pas le CR encore disponible", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes("/points_odj/")) return response([
+        { agendaRef: { xsiType: "seance_type", compteRenduRef: [{ uid: "CR-OK", chambre: "AN" }] } },
+        { agendaRef: { xsiType: "seance_type", compteRenduRef: [{ uid: "CR-FAIL", chambre: "AN" }] } },
+      ]);
+      if (url.includes("/dossiers/")) throw new Error("Network");
+      if (url.includes("CR-FAIL")) return response(null, false);
+      return response({ uid: "CR-OK", dateSeance: "2026-07-15", _count: { paragraphes: 1 } });
+    }));
+    const result = await getDebatsUnCached("DOSSIER");
+    expect(result?.map((d) => d.uid)).toEqual(["CR-OK"]);
+    expect(result?.[0].dateSeance).toBeInstanceOf(Date);
+  });
+
   it("retrouve les CR d'une commission spéciale même sans points ODJ", async () => {
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
       const url = String(input);

@@ -527,6 +527,7 @@ def calculer_interventions_seance_publique(db: Any, legislature: int) -> list[di
                 jour=jour,
                 compte_rendu_uid=compte_rendu["uid"],
                 presidence=_est_presidence(paragraphe),
+                ordre=_entier(paragraphe.get("ordre_absolu_seance")),
             )
 
     return _documents_interventions(accumulateur, legislature, TYPE_INTERVENTION_SEANCE)
@@ -589,6 +590,7 @@ def calculer_interventions_commission(
                 jour=jour,
                 compte_rendu_uid=compte_rendu["uid"],
                 presidence=_est_presidence(paragraphe),
+                ordre=_entier(paragraphe.get("ordre_absolu_seance")),
             )
 
     if sans_date:
@@ -659,9 +661,11 @@ def _ajouter_intervention(
     jour: date,
     compte_rendu_uid: str,
     presidence: bool,
+    ordre: int | None = None,
 ) -> None:
     entree = accumulateur.setdefault(
-        (acteur_uid, jour), {"comptesRendus": {}, "presidence": 0, "total": 0}
+        (acteur_uid, jour),
+        {"comptesRendus": {}, "paragraphes": defaultdict(list), "presidence": 0, "total": 0},
     )
     entree["total"] += 1
     if presidence:
@@ -669,6 +673,14 @@ def _ajouter_intervention(
     entree["comptesRendus"][compte_rendu_uid] = (
         entree["comptesRendus"].get(compte_rendu_uid, 0) + 1
     )
+    # Les paragraphes comptés, pour que la page de détail montre exactement ce
+    # qui a été retenu. Indispensable en commission : l'attribution par le nom
+    # dépend de l'ordre du compte rendu (« M. le rapporteur »), elle ne peut pas
+    # être refaite à l'affichage sans risquer d'en différer.
+    if ordre is not None:
+        entree["paragraphes"][compte_rendu_uid].append(
+            {"ordre": ordre, "presidence": presidence}
+        )
 
 
 def _documents_interventions(
@@ -687,7 +699,11 @@ def _documents_interventions(
             # dessous : rien n'est perdu, tout est explicite.
             valeur=entree["total"] - entree["presidence"],
             details=[
-                {"compteRenduUid": uid, "interventions": n}
+                {
+                    "compteRenduUid": uid,
+                    "interventions": n,
+                    "paragraphes": entree["paragraphes"].get(uid, []),
+                }
                 for uid, n in sorted(entree["comptesRendus"].items())
             ],
         )

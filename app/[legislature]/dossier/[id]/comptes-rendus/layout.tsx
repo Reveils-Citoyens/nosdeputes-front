@@ -6,13 +6,6 @@ import { getMissionReunions } from "@/data/mongo/getMissionReunions";
 import { DebateFilterBar } from "../debat/DebateFilterBar";
 import { EmptyState } from "@/components/folders/EmptyState";
 
-function formatJour(iso: string | null): string {
-  if (!iso) return "Réunion";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "Réunion";
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-}
-
 export default async function Layout({
   params,
   children,
@@ -39,10 +32,12 @@ export default async function Layout({
     );
   }
 
-  // Réutilise le sélecteur (dropdown) des pages de débats.
+  // Réutilise le sélecteur (dropdown) des pages de débats. L'horodatage complet
+  // lui permet d'afficher l'heure : une commission d'enquête tient souvent
+  // plusieurs auditions le même jour, indiscernables avec la seule date.
   const items = reunions.map((r) => ({
     uid: r.compteRenduRefUid as string,
-    dateSeanceJour: formatJour(r.date),
+    reunionDate: r.date,
   }));
 
   return (

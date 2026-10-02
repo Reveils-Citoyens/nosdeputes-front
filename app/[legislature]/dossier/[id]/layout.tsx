@@ -8,12 +8,13 @@ import Tabs from "./Tabs";
 
 import { getCurrentStatus } from "./dataFunctions";
 import { getDossier } from "@/data/getDossier";
-import { getDebats } from "@/data/getDebats";
 import { dossierSettings } from "./dossierSettings";
 import { getAmendementCount, getScrutinCount } from "@/data/getDossierCounts";
 import { getDossierEnrichment } from "@/data/mongo/getDossierEnrichment";
 import { isThemeSlug } from "@/data/themes";
 import { SITE_URL } from "@/lib/site";
+import { TabNavigationProvider, TabNavigationContent } from "@/components/navigation/TabNavigation";
+import TabRouteSkeleton from "@/components/navigation/TabRouteSkeleton";
 
 export async function generateMetadata({
   params,
@@ -65,29 +66,19 @@ export default async function Dossier({
     tableDebats = true,
     tableAmendements = true,
     tableVotes = true,
-    apercuVariant = "chronologie",
   } = (codeProcedure ? dossierSettings[codeProcedure] : {}) ?? {};
   const status = getCurrentStatus(actesLegislatifs);
 
   // Comptes légers pour activer/désactiver les tabs sans données
-  const [amendementCount, scrutinCount, debats, enrichment] = await Promise.all([
+  const [amendementCount, scrutinCount, enrichment] = await Promise.all([
     tableAmendements ? getAmendementCount(id) : Promise.resolve(0),
     tableVotes ? getScrutinCount(id) : Promise.resolve(0),
-    // getDebats est cached via React.cache, donc partagé avec page.tsx
-    apercuVariant === "redirect-commission" ? getDebats(id) : Promise.resolve(null),
     getDossierEnrichment(id),
   ]);
 
   const themesSenat = (enrichment?.themes_senat ?? [])
     .filter(isThemeSlug)
     .slice(0, 3);
-
-  // Le redirect vers /commission ne s'applique que si des travaux en commission existent.
-  // Sans ça, on garde la tab Aperçu visible et on rend l'aperçu standard.
-  const hasCommissionDebats = (debats ?? []).some(
-    (d) => d.debateType === "commission" && d._count.paragraphes > 0,
-  );
-  const showApercu = !(apercuVariant === "redirect-commission" && hasCommissionDebats);
 
   // Missions d'information (10) et commissions d'enquête (9) : layout dédié —
   // uniquement Aperçu + Comptes-rendus, sans les autres onglets ni panneau latéral.
@@ -105,18 +96,23 @@ export default async function Dossier({
       />
       {!isMissionOuCE && tableVotes && <MonDeputeSurDossier dossierUid={id} />}
       <ComprendreBanner />
-      <Tabs
-        legislature={legislature}
-        dossierUid={id}
-        showApercu
-        showDebats={!isMissionOuCE && tableDebats}
-        showAmendements={!isMissionOuCE && tableAmendements}
-        showVotes={!isMissionOuCE && tableVotes}
-        showComptesRendus={isMissionOuCE}
-        hasAmendements={amendementCount > 0}
-        hasVotes={scrutinCount > 0}
-      />
-      {children}
+      <TabNavigationProvider fallback={<TabRouteSkeleton kind="dossier" previewFullWidth={isMissionOuCE} />}>
+        {/* Render the links without waiting for every CR. Tabs already resolves
+            debate availability in its shared client query; the destination
+            layout still validates availability when a link is followed. */}
+        <Tabs
+          legislature={legislature}
+          dossierUid={id}
+          showApercu
+          showDebats={!isMissionOuCE && tableDebats}
+          showAmendements={!isMissionOuCE && tableAmendements}
+          showVotes={!isMissionOuCE && tableVotes}
+          showComptesRendus={isMissionOuCE}
+          hasAmendements={amendementCount > 0}
+          hasVotes={scrutinCount > 0}
+        />
+        <TabNavigationContent>{children}</TabNavigationContent>
+      </TabNavigationProvider>
     </React.Fragment>
   );
 }

@@ -53,10 +53,30 @@ export type Reunion = {
   compteRenduRef: string | null;
 };
 
+/**
+ * Interventions comptées dans le compte rendu d'une réunion de commission.
+ *
+ * Ces comptes rendus ne portent pas d'identifiant d'orateur : l'attribution se
+ * fait par le nom, au calcul (statistiques_activite.py). On n'affiche donc que
+ * les paragraphes que ce calcul a retenus, sans refaire le rapprochement.
+ */
+export type InterventionsCommission = {
+  compteRenduUid: string;
+  /** Interventions comptées, hors présidence. */
+  nombre: number;
+  interventions: Intervention[];
+  /**
+   * Faux pour les chiffres calculés avant l'enregistrement des paragraphes :
+   * le nombre est connu, pas encore le détail.
+   */
+  detailDisponible: boolean;
+};
+
 export type DetailJournee = {
   date: string;
   seances: Seance[];
   reunions: Reunion[];
+  interventionsCommission: InterventionsCommission[];
   amendements: string[];
   documents: string[];
   questions: string[];
@@ -125,6 +145,7 @@ export const getDetailJournee = cache(
         date,
         seances: await chargerSeances(db, acteurUid, parType("presenceSeancePublique")),
         reunions: await chargerReunions(db, parType("presenceCommission")),
+        interventionsCommission: await chargerInterventionsCommission(db, parType("interventionCommission")),
         amendements: uids("amendementDepose"),
         documents: uids("documentPublie"),
         questions: [...uids("questionEcrite"), ...uids("questionOrale")],
@@ -213,4 +234,65 @@ async function chargerReunions(db: any, ligne: any): Promise<Reunion[]> {
       compteRenduRef: detail.compteRenduRef ?? null,
     }))
     .sort((a: Reunion, b: Reunion) => a.debut.localeCompare(b.debut));
+}
+
+/** Paragraphes d'un compte rendu de commission (qui n'ont pas d'`id_acteur`). */
+function* iterParagraphesOrateurs(noeud: any): Generator<any> {
+  if (Array.isArray(noeud)) {
+    for (const valeur of noeud) yield* iterParagraphesOrateurs(valeur);
+  } else if (noeud && typeof noeud === "object") {
+    if ("orateurs" in noeud) yield noeud;
+    for (const valeur of Object.values(noeud)) yield* iterParagraphesOrateurs(valeur);
+  }
+}
+
+async function chargerInterventionsCommission(
+  db: any,
+  ligne: any
+): Promise<InterventionsCommission[]> {
+  const details: any[] = ligne?.details ?? [];
+  if (details.length === 0) return [];
+
+  const avecParagraphes = details.filter((d) => Array.isArray(d.paragraphes));
+  const comptesRendus = avecParagraphes.length
+    ? await db
+        .collection("comptes_rendus")
+        .find(
+          { uid: { $in: avecParagraphes.map((d) => d.compteRenduUid) } },
+          { projection: { _id: 0, uid: 1, contenu: 1 } }
+        )
+        .toArray()
+    : [];
+
+  return details.map((detail) => {
+    const paragraphesComptes: { ordre: number; presidence: boolean }[] | undefined = detail.paragraphes;
+    const presidence = (paragraphesComptes ?? []).filter((p) => p.presidence).length;
+    const nombre = Number(detail.interventions ?? 0) - presidence;
+    if (!paragraphesComptes) {
+      return { compteRenduUid: detail.compteRenduUid, nombre, interventions: [], detailDisponible: false };
+    }
+
+    const compteRendu = comptesRendus.find((cr: any) => cr.uid === detail.compteRenduUid);
+    const parOrdre = new Map<number, any>();
+    for (const paragraphe of iterParagraphesOrateurs(compteRendu?.contenu)) {
+      parOrdre.set(Number(paragraphe.ordre_absolu_seance) || 0, paragraphe);
+    }
+
+    const interventions: Intervention[] = paragraphesComptes
+      .map(({ ordre, presidence: enPresidant }) => {
+        const texte = texteDuParagraphe(parOrdre.get(ordre));
+        return {
+          ordre,
+          texte,
+          longueur: texte.length,
+          retenue: !enPresidant,
+          motif: enPresidant ? ("presidence" as const) : null,
+          // Pas d'horodatage par intervention dans ces comptes rendus.
+          seconde: null,
+        };
+      })
+      .sort((a, b) => a.ordre - b.ordre);
+
+    return { compteRenduUid: detail.compteRenduUid, nombre, interventions, detailDisponible: true };
+  });
 }

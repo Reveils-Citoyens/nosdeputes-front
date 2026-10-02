@@ -8,26 +8,28 @@ import {
   ListSubheader,
   TextField,
   Chip,
-  CircularProgress,
   Alert,
   Stack,
   Divider,
   Tooltip,
   IconButton,
+  Button,
 } from "@mui/material";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import AmendementCard from "@/components/folders/AmendementCard";
+import AmendementCard, { type AmendementCardData } from "@/components/folders/AmendementCard";
 import { normalizeDivisionKey, type ArticleEntry } from "@/data/getDocumentSommaire";
 import type { AlineaData } from "@/data/getArticleContent";
 import type { DocOption } from "./page";
-import type { Amendement } from "@prisma/client";
+import { loadRemainingAmendments, type AmendmentsPage } from "@/data/liseuse/loadRemainingAmendments";
+import { ArticleTextSkeleton, LiseuseContentSkeleton, LiseuseFiltersSkeleton } from "@/components/navigation/LiseuseSkeleton";
+import { liseuseToolbarSx, liseuseFiltersSx, liseusePanelSx, liseuseContentSx } from "@/components/navigation/LiseuseLayout";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type RawAmendement = Amendement & {
+type RawAmendement = AmendementCardData & {
   identifiantDivision?: string | null;
   divisionArticleAdditionnel?: string | null;
   acteurRefUid?: string | null;
@@ -172,14 +174,7 @@ function AlineaPanel({
   hasDoc: boolean;
 }) {
   if (loading) {
-    return (
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 3 }}>
-        <CircularProgress size={14} />
-        <Typography variant="caption" color="text.secondary">
-          Chargement du texte…
-        </Typography>
-      </Box>
-    );
+    return <ArticleTextSkeleton />;
   }
 
   if (!hasDoc || alineas === null) {
@@ -282,7 +277,7 @@ function AmendList({ amendments }: { amendments: RawAmendement[] }) {
   return (
     <Box>
       {regular.map((a) => (
-        <AmendementCard key={a.uid} amendement={a} acteurUid={a.acteurRefUid ?? null} />
+        <AmendementCard key={a.uid} amendement={a} acteurUid={a.acteurRefUid ?? null} loadContent />
       ))}
       {additional.length > 0 && (
         <>
@@ -295,7 +290,7 @@ function AmendList({ amendments }: { amendments: RawAmendement[] }) {
             Articles additionnels après cet article
           </Typography>
           {additional.map((a) => (
-            <AmendementCard key={a.uid} amendement={a} acteurUid={a.acteurRefUid ?? null} />
+            <AmendementCard key={a.uid} amendement={a} acteurUid={a.acteurRefUid ?? null} loadContent />
           ))}
         </>
       )}
@@ -487,8 +482,6 @@ function SidebarNav({
 
 // ── Vue d'un article : texte (gauche) + amendements (droite) ─────────────────
 
-const PANEL_MAX_H = { md: "calc(100vh - 230px)" };
-
 function ArticleView({
   item,
   docUid,
@@ -513,7 +506,7 @@ function ArticleView({
   examinateurLabel?: string | null;
 }) {
   const [alineas, setAlineas] = React.useState<AlineaData[] | null | undefined>(undefined);
-  const [contentLoading, setContentLoading] = React.useState(false);
+  const [contentLoading, setContentLoading] = React.useState(!item.isUncat && !!docUid);
 
   React.useEffect(() => {
     if (item.isUncat || !docUid) {
@@ -559,7 +552,7 @@ function ArticleView({
   return (
     <Box>
       {/* En-tête : navigation précédent / suivant */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, height: 52, mb: 2 }}>
         <IconButton onClick={onPrev} disabled={index <= 0} size="small" aria-label="Article précédent">
           <ChevronLeftIcon />
         </IconButton>
@@ -613,12 +606,12 @@ function ArticleView({
         {/* Texte */}
         <Box
           sx={{
+            ...liseusePanelSx,
             flex: { md: "0 0 44%" },
             bgcolor: "grey.50",
             borderBottom: { xs: "1px solid #CCC", md: "none" },
             borderRight: { md: "1px solid #CCC" },
-            overflowY: { md: "auto" },
-            maxHeight: PANEL_MAX_H,
+            minWidth: 0,
           }}
         >
           <ColumnHeader
@@ -640,7 +633,7 @@ function ArticleView({
         </Box>
 
         {/* Amendements */}
-        <Box sx={{ flex: 1, overflowY: { md: "auto" }, maxHeight: PANEL_MAX_H }}>
+        <Box sx={{ ...liseusePanelSx, flex: 1, minWidth: 0 }}>
           <ColumnHeader
             label={`${amendments.length} amendement${amendments.length > 1 ? "s" : ""}`}
             subtitle={examinateurLabel}
@@ -680,17 +673,25 @@ export default function LiseuseClient({
   const [sommaire, setSommaire] = React.useState<ArticleEntry[] | null>(initialSommaire);
   const [amendments, setAmendments] = React.useState<RawAmendement[] | null>(null);
   const [amendTotal, setAmendTotal] = React.useState(0);
-  const [loading, setLoading] = React.useState(false);
+  // The first render must not collapse to an empty toolbar before useEffect.
+  const [loading, setLoading] = React.useState(!!defaultDocUid);
+  const [sommaireLoading, setSommaireLoading] = React.useState(false);
+  const isLoading = loading || sommaireLoading;
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [activeStatuses, setActiveStatuses] = React.useState<Set<string>>(new Set());
   const [govOnly, setGovOnly] = React.useState(false);
   const [selectedKey, setSelectedKey] = React.useState<string | null>(null);
   const loadIdRef = React.useRef(0);
+  const loadControllerRef = React.useRef<AbortController | null>(null);
+  const sommaireLoadIdRef = React.useRef(0);
 
   const loadAmendments = React.useCallback(async (docUid: string) => {
     if (!docUid) return;
     const myId = ++loadIdRef.current;
+    loadControllerRef.current?.abort();
+    const controller = new AbortController();
+    loadControllerRef.current = controller;
 
     setLoading(true);
     setLoadingMore(false);
@@ -703,10 +704,11 @@ export default function LiseuseClient({
     try {
       // Page 1 — 500 items
       const res = await fetch(
-        `/api/liseuse/amendements?documentRefUid=${encodeURIComponent(docUid)}&perPage=500&page=1`,
+        `/api/liseuse/amendements?documentRefUid=${encodeURIComponent(docUid)}&perPage=500&page=1&compact=1`,
+        { signal: controller.signal },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as { items: RawAmendement[]; total: number };
+      const data = (await res.json()) as AmendmentsPage<RawAmendement>;
 
       if (myId !== loadIdRef.current) return;
       setAmendments(data.items);
@@ -716,46 +718,56 @@ export default function LiseuseClient({
       // Pages suivantes en parallèle si nécessaire
       if (data.total > data.items.length && data.items.length >= 500) {
         setLoadingMore(true);
-        const nbExtra = Math.ceil((data.total - 500) / 500);
-        const extraPages = await Promise.all(
-          Array.from({ length: nbExtra }, (_, i) =>
-            fetch(
-              `/api/liseuse/amendements?documentRefUid=${encodeURIComponent(docUid)}&perPage=500&page=${i + 2}`,
-            )
-              .then((r) => (r.ok ? (r.json() as Promise<{ items: RawAmendement[] }>) : { items: [] as RawAmendement[] }))
-              .then((d) => d.items ?? [])
-              .catch(() => [] as RawAmendement[]),
-          ),
-        );
+        const extraPages = await loadRemainingAmendments(data, 500, async (page) => {
+          const response = await fetch(
+            `/api/liseuse/amendements?documentRefUid=${encodeURIComponent(docUid)}&perPage=500&page=${page}&compact=1`,
+            { signal: controller.signal },
+          );
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.json();
+        });
         if (myId !== loadIdRef.current) return;
-        setAmendments((prev) => [...(prev ?? []), ...extraPages.flat()]);
+        setAmendments((prev) => [...(prev ?? []), ...extraPages]);
         setLoadingMore(false);
       }
     } catch {
       if (myId !== loadIdRef.current) return;
       setError("Impossible de charger les amendements.");
       setLoading(false);
+      setLoadingMore(false);
     }
   }, []);
 
   const handleDocChange = async (uid: string) => {
+    const myId = ++sommaireLoadIdRef.current;
     setSelectedDocUid(uid);
     setSommaire(null);
+    setSommaireLoading(true);
     setSelectedKey(null);
     void loadAmendments(uid);
     try {
       const res = await fetch(`/api/liseuse/sommaire?uid=${encodeURIComponent(uid)}`);
       if (res.ok) {
         const data = (await res.json()) as { articles: ArticleEntry[] | null };
-        setSommaire(data.articles);
+        if (myId === sommaireLoadIdRef.current) setSommaire(data.articles);
       }
     } catch {
-      setSommaire(null);
+      if (myId === sommaireLoadIdRef.current) setSommaire(null);
+    } finally {
+      if (myId === sommaireLoadIdRef.current) setSommaireLoading(false);
     }
   };
 
   React.useEffect(() => {
+    const generation = loadIdRef;
+    const activeController = loadControllerRef;
+    const sommaireGeneration = sommaireLoadIdRef;
     if (defaultDocUid) void loadAmendments(defaultDocUid);
+    return () => {
+      ++generation.current;
+      ++sommaireGeneration.current;
+      activeController.current?.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -883,6 +895,12 @@ export default function LiseuseClient({
   const selIndex = effectiveKey ? navKeys.indexOf(effectiveKey) : -1;
   const selectedItem = selIndex >= 0 ? navItems[selIndex] : null;
 
+  // Pin the initial article once it is available: a later amendment batch must
+  // not unexpectedly switch the user's article. Filters retain their fallback.
+  React.useEffect(() => {
+    if (selectedKey === null && effectiveKey !== null) setSelectedKey(effectiveKey);
+  }, [selectedKey, effectiveKey]);
+
   // Regroupe les versions par étape de navette pour le sélecteur.
   const docGroups: { label: string; items: DocOption[] }[] = [];
   for (const d of documents) {
@@ -915,17 +933,8 @@ export default function LiseuseClient({
     <Box>
       {/* Barre d'outils : statistiques + sélecteur de version */}
       <Box
-        sx={{
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          alignItems: { xs: "stretch", sm: "flex-start" },
-          justifyContent: "space-between",
-          gap: 2,
-          mb: 3,
-          pb: 2,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-        }}
+        sx={liseuseToolbarSx}
+        data-liseuse-toolbar
       >
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography variant="h6" fontWeight={700} sx={{ fontSize: "1.05rem", lineHeight: 1.2 }}>
@@ -934,7 +943,7 @@ export default function LiseuseClient({
           {sommaire && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
               {articleEntries.length} article{articleEntries.length > 1 ? "s" : ""}
-              {loading ? (
+              {isLoading ? (
                 " · chargement des amendements…"
               ) : displayedTotal > 0 && !filterActive ? (
                 <>
@@ -1068,8 +1077,9 @@ export default function LiseuseClient({
       </Box>
 
       {/* Barre de filtres par statut */}
-      {!loading && sommaire && (statusOptions.length > 1 || govCount > 0) && (
-        <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 3 }}>
+      {isLoading ? <LiseuseFiltersSkeleton /> : (
+        <Box sx={liseuseFiltersSx} data-liseuse-filters>
+        {sommaire && (statusOptions.length > 1 || govCount > 0) && <>
           <Typography
             variant="caption"
             sx={{
@@ -1170,42 +1180,36 @@ export default function LiseuseClient({
               Réinitialiser
             </Box>
           )}
+        </>}
         </Box>
       )}
 
       {/* Chargement initial */}
-      {loading && (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 4 }}>
-          <CircularProgress size={20} />
-          <Typography variant="body2" color="text.secondary">
-            Chargement des amendements…
-          </Typography>
-        </Box>
+      {isLoading && (
+        <LiseuseContentSkeleton />
       )}
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 2 }} action={
+          <Button onClick={() => void loadAmendments(selectedDocUid)}>Réessayer</Button>
+        }>
           {error}
         </Alert>
       )}
 
       {/* Pas de sommaire */}
-      {!loading && amendments && !sommaire && (
+      {!isLoading && amendments && !sommaire && (
         <Alert severity="info" sx={{ mb: 2 }}>
           La structure article par article n&apos;est pas disponible pour cette version.
         </Alert>
       )}
 
       {/* Vue liseuse : sommaire (gauche) + article (droite) */}
-      {!loading && sommaire && amendsByKey && (
+      {!isLoading && sommaire && amendsByKey && (
         navItems.length > 0 && selectedItem ? (
           <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              gap: { md: 3 },
-              alignItems: "flex-start",
-            }}
+            data-liseuse-content
+            sx={liseuseContentSx}
           >
             <Box
               sx={{
@@ -1219,6 +1223,7 @@ export default function LiseuseClient({
 
             <Box sx={{ flex: 1, minWidth: 0, width: "100%" }}>
               <ArticleView
+                key={`${selectedDocUid}:${selectedItem.selKey}`}
                 item={selectedItem}
                 docUid={selectedDocUid || null}
                 navItems={navItems}
@@ -1265,7 +1270,7 @@ export default function LiseuseClient({
       )}
 
       {/* Fallback plat (pas de sommaire) */}
-      {!loading && amendments && !sommaire && (
+      {!isLoading && amendments && !sommaire && (
         <Box
           sx={{
             border: "1px solid",
@@ -1275,13 +1280,13 @@ export default function LiseuseClient({
           }}
         >
           {amendments.map((a) => (
-            <AmendementCard key={a.uid} amendement={a} acteurUid={a.acteurRefUid ?? null} />
+            <AmendementCard key={a.uid} amendement={a} acteurUid={a.acteurRefUid ?? null} loadContent />
           ))}
         </Box>
       )}
 
       {/* État vide (pas de sommaire et pas d'amendements) */}
-      {!loading && amendments && !sommaire && amendments.length === 0 && (
+      {!isLoading && amendments && !sommaire && amendments.length === 0 && (
         <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: "center" }}>
           Aucun amendement disponible pour cette version du texte.
         </Typography>

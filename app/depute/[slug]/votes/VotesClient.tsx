@@ -15,6 +15,7 @@ import debounce from "@/utils/debounce";
 import Pagination from "@/components/Pagination";
 import { DeputeVoteCard } from "./DeputeVoteCard";
 import SearchInput from "@/components/SearchInput";
+import { DeputeListSkeleton } from "@/components/navigation/DeputeTabSkeleton";
 
 const positionsVotePossible = ["pour", "contre", "nonVotant", "abstention"];
 
@@ -66,23 +67,10 @@ export default function VotesClient({ acteur }: VotesClientProps) {
 
   const pagination = result?.pagination;
 
-  const filteredData = React.useMemo(() => {
-    if (!search) return (result?.data as VoteWithDetails[]) || [];
-    const lowerSearch = search.toLowerCase();
-
-    return ((result?.data ?? []) as VoteWithDetails[]).filter((vote) => {
-      const titre = vote.scrutinRef?.titre?.toLowerCase() ?? "";
-      const numero = vote.scrutinRef?.numero?.toString() ?? "";
-      const dossierTitre =
-        vote.scrutinRef?.dossierRef?.titre?.toLowerCase() ?? "";
-
-      return (
-        titre.includes(lowerSearch) ||
-        numero.includes(lowerSearch) ||
-        dossierTitre.includes(lowerSearch)
-      );
-    });
-  }, [result?.data, search]);
+  // La recherche est faite par l'API (scrutins correspondants, puis votes du
+  // député) : aucun filtrage supplémentaire ici, il ne verrait que la page
+  // affichée et écarterait les correspondances sans accent ou au pluriel.
+  const filteredData = (result?.data as VoteWithDetails[] | undefined) ?? [];
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -162,6 +150,7 @@ export default function VotesClient({ acteur }: VotesClientProps) {
       </Stack>
 
       <Stack spacing={2} sx={{ mt: 3 }}>
+        {isPending && <DeputeListSkeleton variant="votes" showFilters={false} />}
         {/* Message si vide */}
         {filteredData.length === 0 && !isPending && (
           <Box sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>
@@ -186,12 +175,12 @@ export default function VotesClient({ acteur }: VotesClientProps) {
         })}
       </Stack>
 
-      <Pagination
+      {!isPending && <Pagination
         {...pagination}
         page={page}
         setPage={setPage}
         isPending={isPending}
-      />
+      />}
     </Box>
   );
 }

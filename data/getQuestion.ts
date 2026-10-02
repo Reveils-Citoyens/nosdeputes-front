@@ -2,6 +2,7 @@ import * as React from "react";
 import { Question, Organe } from "@prisma/client";
 import { getOrgane } from "./getOrgane";
 import { extractPaginationMetadata, PaginatedResponse } from "./pagination";
+import { cacheTricoteuses } from "./cacheTricoteuses";
 
 type GetQuestionsParams = {
   perPage?: number;
@@ -38,7 +39,8 @@ async function getQuestionsUnCached(
     }
 
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/questions/?${searchParams.toString()}`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/questions/?${searchParams.toString()}`,
+      cacheTricoteuses("contenu")
     );
 
     const pagination = extractPaginationMetadata(rep, page);

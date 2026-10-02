@@ -21,6 +21,8 @@ import { getActeurCollaborateurs } from "@/data/getActeurCollaborateurs";
 import CollaborateursSection from "./CollaborateursSection";
 import { formatCirco } from "@/utils/formatCirco";
 import { SITE_URL } from "@/lib/site";
+import { TabNavigationProvider, TabNavigationContent } from "@/components/navigation/TabNavigation";
+import TabRouteSkeleton from "@/components/navigation/TabRouteSkeleton";
 
 export async function generateMetadata({
   params,
@@ -362,8 +364,10 @@ export default async function Page({
 
         {/* Tabs + contenu — 2e sur mobile */}
         <Stack spacing={3} flex={5} sx={{ minWidth: 0, order: { xs: 1, md: 0 } }}>
-          <Tabs slug={slug} />
-          {children}
+          <TabNavigationProvider fallback={<TabRouteSkeleton kind="depute" />}>
+            <Tabs slug={slug} />
+            <TabNavigationContent>{children}</TabNavigationContent>
+          </TabNavigationProvider>
         </Stack>
 
         {/* Colonne latérale complète (desktop) / reste des infos en bas (mobile) */}

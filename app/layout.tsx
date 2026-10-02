@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Raleway } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import { NavBar, NavigationItem } from "@/components/NavBar";
@@ -13,10 +13,15 @@ import Providers from "./providers";
 import InfoDialogProvider from "@/components/InfoDialog/InfoDialogProvider";
 import InfoDialog from "@/components/InfoDialog/InfoDialog";
 import { IS_INDEXABLE } from "@/lib/site";
+import { PageNavigationProvider, PageNavigationContent } from "@/components/navigation/PageNavigation";
 
-const raleway = Raleway({
-  weight: ["400", "600", "700"],
-  subsets: ["latin"],
+// Fichier embarqué : la compilation ne dépend pas de l'API Google Fonts.
+const raleway = localFont({
+  src: [
+    { path: "./fonts/Raleway-Variable.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/Raleway-Variable.ttf", weight: "600", style: "normal" },
+    { path: "./fonts/Raleway-Variable.ttf", weight: "700", style: "normal" },
+  ],
   display: "swap",
   variable: "--font-raleway",
 });
@@ -74,10 +79,14 @@ export default function RootLayout({
               <ThemeProvider theme={theme}>
                 <CssBaseline />
                 <main className="flex min-h-screen flex-col">
-                  <NavBar navigation={navigation} />
-                  <Providers>{children}</Providers>
-                  <Footer />
-                  <InfoDialog />
+                  <PageNavigationProvider>
+                    <NavBar navigation={navigation} />
+                    <Providers>
+                      <PageNavigationContent>{children}</PageNavigationContent>
+                    </Providers>
+                    <Footer />
+                    <InfoDialog />
+                  </PageNavigationProvider>
                 </main>
               </ThemeProvider>
             </AppRouterCacheProvider>

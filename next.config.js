@@ -46,6 +46,11 @@ const contentSecurityPolicy = [
   // Media Source Extensions, l'hôte pour la lecture native de Safari. Sans
   // media-src explicite, la règle retombe sur default-src 'self' et rien ne joue.
   `media-src 'self' blob: ${VIDEO_HOST}`,
+  // PDF des textes affichés dans la page (résolutions, pétitions : cf.
+  // DocumentInlineCard), servis par l'hôte des assets. Sans frame-src explicite,
+  // la règle retombe sur default-src 'self' : l'iframe reste vide alors que le
+  // PDF s'ouvre normalement dans un nouvel onglet.
+  `frame-src ${ASSETS_HOST}`,
 ].join("; ");
 
 const securityHeaders = [

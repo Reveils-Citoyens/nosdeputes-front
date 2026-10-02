@@ -1,5 +1,6 @@
 import * as React from "react";
 import { AuteurDocument, CoSignataireDocument, Document } from "@prisma/client";
+import { cacheTricoteuses } from "./cacheTricoteuses";
 
 export type ReturnedDocument = Document & {
   coSignataires?: CoSignataireDocument[];
@@ -13,7 +14,8 @@ async function getDocumentUnCached(
 ): Promise<ReturnedDocument | null> {
   try {
     const rep = await fetch(
-      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/documents/${uid}?include=${(include ?? ["auteurs", "coSignataires", "_count.amendements"]).join(",")}`
+      `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/documents/${uid}?include=${(include ?? ["auteurs", "coSignataires", "_count.amendements"]).join(",")}`,
+      cacheTricoteuses("activite")
     );
 
 

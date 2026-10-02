@@ -314,6 +314,8 @@ def ensure_indexes(db: Any) -> None:
         "scrutins":          [("uid", 1), ("dateScrutin", -1)],
         "amendements":       [("uid", 1), ("texteLegislatifRef", 1)],
         "dossiers":          [("uid", 1), ("legislature", 1)],
+        # Lien texte → dossier : recherche d'amendements et alertes.
+        "documents":         [("uid", 1), ("dossierRef", 1)],
         "comptes_rendus":    [("uid", 1), ("sessionRef", 1), ("typeCompteRendu", 1)],
         "reunions":          [("uid", 1), ("timeStampDebut", -1)],
         "questions":         [("uid", 1), ("type", 1)],

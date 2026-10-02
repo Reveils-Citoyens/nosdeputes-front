@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchAmendementMongo } from "@/data/mongo/searchAmendementMongo";
+import { startServerTiming } from "@/lib/serverTiming";
 
 export async function GET(request: NextRequest) {
+  const finishTiming = startServerTiming("mongo-amendements");
   const q = request.nextUrl.searchParams.get("q")?.trim() ?? "";
   const legislature = request.nextUrl.searchParams.get("legislature")?.trim() || "17";
   const skip = parseInt(request.nextUrl.searchParams.get("skip") ?? "0", 10);
@@ -19,5 +21,5 @@ export async function GET(request: NextRequest) {
     legislature,
     sort,
   });
-  return NextResponse.json(result);
+  return NextResponse.json(result, { headers: { "Server-Timing": finishTiming() } });
 }

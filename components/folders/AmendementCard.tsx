@@ -11,12 +11,16 @@ import {
   Paper,
   useMediaQuery,
   useTheme,
+  Alert,
+  Button,
+  Skeleton,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import StatusChip from "@/components/StatusChip";
 import { Amendement, Dossier } from "@prisma/client";
 import ActeurCard from "./ActeurCard";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 
 function getStatus(label: string | null) {
   switch (label) {
@@ -56,10 +60,16 @@ function getAmendementTooltip(label: string | null): string {
   }
 }
 
+export type AmendementCardData = Pick<Amendement,
+  "uid" | "nombreCoSignataires" | "typeAuteur" | "sortAmendement" | "numeroLong" | "dateDepot" | "dateSort"
+> & Partial<Pick<Amendement, "dispositif" | "exposeSommaire">> & { dossierRef?: Dossier | null };
+
 type AmendementCardProps = {
-  amendement: Amendement & { dossierRef?: Dossier | null };
+  amendement: AmendementCardData;
   acteurUid: null | string;
   titre?: string;
+  /** La liseuse transmet les métadonnées ; le texte est lu à l'ouverture. */
+  loadContent?: boolean;
 };
 
 function GouvernementAvatar(props: { sx?: React.CSSProperties }) {
@@ -89,7 +99,20 @@ function GouvernementAvatar(props: { sx?: React.CSSProperties }) {
   );
 }
 export default function AmendementCard(props: AmendementCardProps) {
-  const { amendement, acteurUid, titre } = props;
+  const { amendement, acteurUid, titre, loadContent = false } = props;
+  const [expanded, setExpanded] = React.useState(false);
+  const content = useQuery({
+    queryKey: ["amendement-content", amendement.uid],
+    enabled: loadContent && expanded,
+    staleTime: 60_000,
+    queryFn: async ({ signal }): Promise<Pick<Amendement, "dispositif" | "exposeSommaire">> => {
+      const response = await fetch(`/api/liseuse/amendements/${encodeURIComponent(amendement.uid)}`, { signal });
+      if (!response.ok) throw new Error("Amendement unavailable");
+      return await response.json();
+    },
+  });
+  const dispositif = loadContent ? content.data?.dispositif : amendement.dispositif;
+  const exposeSommaire = loadContent ? content.data?.exposeSommaire : amendement.exposeSommaire;
   const nbSignataires = 1 + amendement.nombreCoSignataires;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -98,6 +121,8 @@ export default function AmendementCard(props: AmendementCardProps) {
   const headerId = `${amendement.uid}-header`;
   return (
     <Accordion
+      expanded={expanded}
+      onChange={(_event, value) => setExpanded(value)}
       elevation={0}
       disableGutters
       sx={{
@@ -189,6 +214,15 @@ export default function AmendementCard(props: AmendementCardProps) {
 
       <AccordionDetails sx={{ px: 3, pt: 0, pb: 3 }}>
         <Stack spacing={3}>
+          {loadContent && expanded && (content.isError ? (
+            <Alert severity="warning" action={<Button onClick={() => void content.refetch()}>Réessayer</Button>}>
+              Impossible de charger le texte de l’amendement.
+            </Alert>
+          ) : content.isPending ? (
+            <Box role="status" aria-label="Chargement du texte de l’amendement">
+              <Skeleton height={80} /><Skeleton height={80} />
+            </Box>
+          ) : null)}
           {amendement.dossierRef && (
             <Box>
               <Typography
@@ -220,7 +254,7 @@ export default function AmendementCard(props: AmendementCardProps) {
             </Box>
           )}
 
-          {amendement.dispositif && (
+          {dispositif && (
             <Box>
               <Typography
                 variant="overline"
@@ -247,13 +281,13 @@ export default function AmendementCard(props: AmendementCardProps) {
                   component="div"
                   variant="body2"
                   sx={{ lineHeight: 1.7 }}
-                  dangerouslySetInnerHTML={{ __html: amendement.dispositif }}
+                  dangerouslySetInnerHTML={{ __html: dispositif }}
                 />
               </Paper>
             </Box>
           )}
 
-          {amendement.exposeSommaire && (
+          {exposeSommaire && (
             <Box>
               <Typography
                 variant="overline"
@@ -270,7 +304,7 @@ export default function AmendementCard(props: AmendementCardProps) {
                 component="div"
                 variant="body2"
                 sx={{ lineHeight: 1.8, color: "text.primary" }}
-                dangerouslySetInnerHTML={{ __html: amendement.exposeSommaire }}
+                dangerouslySetInnerHTML={{ __html: exposeSommaire }}
               />
             </Box>
           )}

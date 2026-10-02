@@ -1,13 +1,13 @@
 "use client";
 
-import { useSelectedLayoutSegment } from "next/navigation";
-
+import React from "react";
 import Box from "@mui/material/Box";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getDebats, ReturnedDebat } from "@/data/getDebats";
+import { useTabNavigation, type TabNavigateEvent } from "@/components/navigation/TabNavigation";
 
 export default function DossiersTabs(props: {
   legislature: string;
@@ -19,14 +19,18 @@ export default function DossiersTabs(props: {
   showComptesRendus?: boolean;
   hasAmendements: boolean;
   hasVotes: boolean;
+  initialDebats?: ReturnedDebat[] | null;
 }) {
   const { legislature, dossierUid, showApercu, showDebats, showAmendements, showVotes, showComptesRendus, hasAmendements, hasVotes } =
     props;
-  const segment = useSelectedLayoutSegment();
+  const { segment, navigate } = useTabNavigation();
 
   const { data: debats } = useQuery({
     queryKey: ["debats", dossierUid],
     queryFn: async () => await getDebats(dossierUid),
+    initialData: props.initialDebats ?? undefined,
+    enabled: showDebats,
+    staleTime: 60_000,
   });
 
   const seanceDebats = debats?.filter(
@@ -50,14 +54,18 @@ export default function DossiersTabs(props: {
     {
       value: "commission",
       label: "Commission",
-      href: `${rootPathName}commission`,
+      href: commissionDebats?.[0]
+        ? `${rootPathName}commission/${commissionDebats[0].uid}`
+        : `${rootPathName}commission`,
       visible: showDebats,
       disabled: commissionDebats != null && commissionDebats.length === 0,
     },
     {
       value: "debat",
       label: "Séance",
-      href: `${rootPathName}debat`,
+      href: seanceDebats?.[0]
+        ? `${rootPathName}debat/${seanceDebats[0].uid}`
+        : `${rootPathName}debat`,
       visible: showDebats,
       disabled: seanceDebats != null && seanceDebats.length === 0,
     },
@@ -96,6 +104,11 @@ export default function DossiersTabs(props: {
             : ""
         }
         variant="scrollable"
+        sx={{
+          // A border follows the optimistic selection in the same render.
+          // MUI's measured indicator otherwise updates in a later effect.
+          "& .MuiTabs-indicator": { display: "none" },
+        }}
       >
         {tabs.map((tab) =>
           tab.visible ? (
@@ -105,8 +118,10 @@ export default function DossiersTabs(props: {
               label={tab.label}
               component={Link}
               href={tab.href}
+              onNavigate={(event: TabNavigateEvent) => navigate(event, tab.href, tab.value)}
               disabled={tab.disabled}
               sx={{
+                borderBottom: "2px solid transparent",
                 // Trois niveaux nettement distincts : sélectionné (noir +
                 // indicateur), disponible (gris soutenu) et indisponible
                 // (gris très clair). Le thème global donnait auparavant une
@@ -117,6 +132,7 @@ export default function DossiersTabs(props: {
                 "&.Mui-selected": {
                   color: "common.black",
                   fontWeight: 700,
+                  borderBottomColor: "common.black",
                 },
                 "&.Mui-disabled": {
                   color: "grey.300",

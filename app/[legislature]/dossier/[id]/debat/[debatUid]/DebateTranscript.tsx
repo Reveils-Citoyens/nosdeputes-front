@@ -18,6 +18,7 @@ import { WORDS_PER_MINUTES } from "@/components/const";
 import { Paragraphe } from "@prisma/client";
 import LecteurSeance from "@/components/LecteurSeance";
 import type { Video } from "@/data/getVideoReunion";
+import { DebateActeursProvider } from "@/components/folders/DebatTab/DebateActeursProvider";
 
 function getWordsPerActeur(paragraphes: Paragraphe[]) {
   const wordsPerActeur: Record<string, number> = {};
@@ -71,7 +72,7 @@ export const DebateTranscript = (props: DebateTranscriptProps) => {
   const theme = useTheme();
 
   return (
-    <>
+    <DebateActeursProvider uids={Object.keys(wordsPerActeur)}>
       <Stack spacing={1} mb={2}>
         <Typography variant="h4">{title}</Typography>
         <Stack direction="row" alignItems="center" spacing={1}>
@@ -117,6 +118,6 @@ export const DebateTranscript = (props: DebateTranscriptProps) => {
           onFermer={() => setSeconde(null)}
         />
       ) : null}
-    </>
+    </DebateActeursProvider>
   );
 };

@@ -9,9 +9,10 @@ import { FilterContainer } from "@/components/FilterContainer";
 import { Filter } from "./Filter";
 import { groupDeputes } from "./groupDeputes";
 import { Acteur, Mandat, Organe } from "@prisma/client";
+import type { DeputeListItem } from "./deputeListItem";
 
 export interface DeputeFilterProps {
-  deputes: Record<string, Acteur & { mandatPrincipal?: Mandat }>;
+  deputes: Record<string, DeputeListItem>;
   uidPerNom: Record<string, string[]>;
   uidPerGroup: Record<string, string[]>;
   uidPerCirco: Record<string, string[]>;

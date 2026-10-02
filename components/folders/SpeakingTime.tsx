@@ -5,6 +5,8 @@ import { useQueries } from "@tanstack/react-query";
 import { getActeur } from "@/data/getActeur";
 import { Organe } from "@prisma/client";
 import { Tooltip } from "@mui/material";
+import { useDebateActeurs } from "./DebatTab/DebateActeursProvider";
+import type { DebateActeur } from "@/data/getDebateActeurs";
 
 type SpeakingTimeCardProps = {
   /**
@@ -34,28 +36,32 @@ function sortParty(a: string, b: string) {
 
 export const SpeakingTime = (props: SpeakingTimeCardProps) => {
   const { wordsPerActeur } = props;
+  const batch = useDebateActeurs();
 
   const acteurQueries = useQueries({
     queries: Object.keys(wordsPerActeur).map((acteurUid) => ({
       queryKey: ["acteur", acteurUid],
       queryFn: () => getActeur(acteurUid),
+      enabled: !batch?.pending && !batch?.items[acteurUid],
     })),
   });
 
   const wordsPerGroup: Record<
     string,
-    { count: number; groupeParlementaire: Organe }
+    { count: number; groupeParlementaire: NonNullable<DebateActeur["groupeParlementaire"]> }
   > = {};
 
-  const loaded = acteurQueries.every((acteurQuery) => !acteurQuery.isPending);
+  const loaded = !batch?.pending && acteurQueries.every((query, index) =>
+    batch?.items[Object.keys(wordsPerActeur)[index]] || !query.isPending
+  );
 
   if (!loaded) {
     return <p>Chargement ...</p>;
   }
 
-  acteurQueries.forEach((acteurQuery) => {
-    if (acteurQuery.isSuccess && acteurQuery.data) {
-      const acteur = acteurQuery.data;
+  acteurQueries.forEach((acteurQuery, index) => {
+    const acteur = batch?.items[Object.keys(wordsPerActeur)[index]] ?? acteurQuery.data;
+    if (acteur) {
       const groupeParlementaire = acteur.groupeParlementaire;
       if (groupeParlementaire) {
         if (!wordsPerGroup[groupeParlementaire.uid]) {

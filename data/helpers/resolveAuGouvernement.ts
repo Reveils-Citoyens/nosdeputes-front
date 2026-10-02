@@ -1,5 +1,6 @@
 import * as React from "react";
 import type { Mandat } from "@prisma/client";
+import { cacheTricoteuses } from "../cacheTricoteuses";
 
 /**
  * Quand un député est nommé au gouvernement, son `mandatPrincipal` côté API
@@ -35,6 +36,7 @@ async function fetchActiveAssembleeMandat(acteurUid: string): Promise<Mandat | n
   try {
     const rep = await fetch(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/mandats?acteurRefUid=${acteurUid}&perPage=100`,
+      cacheTricoteuses("stable")
     );
     if (!rep.ok) return null;
     const { data } = (await rep.json()) as { data: Mandat[] };
