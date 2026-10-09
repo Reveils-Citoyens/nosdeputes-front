@@ -75,6 +75,10 @@ export const PreviewTab = async ({ dossier }: PreviewTabProps) => {
     }
   }
 
+  // Une personne n'apparaît qu'une fois par commission. La source peut la
+  // nommer plusieurs fois par le même acte (PLF : rapporteur pour avis sur
+  // plusieurs missions budgétaires), et une commission peut avoir plusieurs
+  // actes de nomination (lectures successives), qu'on cumule.
   const rapporteursPerCommission: Record<string, typeof rapporteurs> = {};
 
   actesLegislatifs.forEach((act) => {
@@ -84,8 +88,12 @@ export const PreviewTab = async ({ dossier }: PreviewTabProps) => {
         (commissionAvisIds.includes(act.organeRefUid) ||
           commissionFondIds.includes(act.organeRefUid))
       ) {
-        rapporteursPerCommission[act.organeRefUid] =
-          rapporteursPerActe[act.uid];
+        const liste = (rapporteursPerCommission[act.organeRefUid] ??= []);
+        for (const rapporteur of rapporteursPerActe[act.uid]) {
+          if (!liste.some((r) => r.acteurRefUid === rapporteur.acteurRefUid)) {
+            liste.push(rapporteur);
+          }
+        }
       }
     }
   });

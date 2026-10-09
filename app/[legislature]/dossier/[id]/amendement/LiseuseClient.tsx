@@ -244,6 +244,28 @@ function AlineaPanel({
           );
         }
 
+        // Texte courant non numéroté des PLF : exposé des motifs, ou suite
+        // d'un alinéa (« » ; » après un tableau cité). Pas un en-tête.
+        if (al.cssClass === "assnatFPFexpogentexte" || al.cssClass === "assnatFPFprojetloiartexte") {
+          const expose = al.cssClass === "assnatFPFexpogentexte";
+          return (
+            <Typography
+              key={i}
+              variant="body2"
+              component="div"
+              sx={{
+                mb: 1.25,
+                pl: expose ? 0 : "36px",
+                lineHeight: 1.75,
+                fontSize: expose ? "0.85rem" : "0.9rem",
+                color: expose ? "text.secondary" : "text.primary",
+                "& a": { color: "primary.main", textDecorationColor: "rgba(0,0,0,0.2)" },
+              }}
+              dangerouslySetInnerHTML={{ __html: al.html }}
+            />
+          );
+        }
+
         // En-tête (sous-section, titre…)
         const text = al.html.replace(/<[^>]+>/g, "").trim();
         return (

@@ -20,8 +20,22 @@ function buildBaseUrl(uid: string): string | null {
   );
 }
 
-function flattenSeg(data: Record<string, unknown>): SegItem[] {
+export function flattenSeg(data: Record<string, unknown>): SegItem[] {
   const items: SegItem[] = [];
+
+  // Format arborescent `items` (Documents_enrichis depuis fin septembre
+  // 2026) : divisions et articles mêlés, distingués par `type`.
+  function walkItems(nodes: Record<string, unknown>[]) {
+    for (const node of nodes) {
+      const orig = (node.originalTransformation as Record<string, unknown> | undefined)
+        ?.position as Record<string, number> | undefined;
+      if (orig?.start != null) {
+        items.push({ line: node.line as string, type: node.type as string, start: orig.start });
+      }
+      walkItems((node.items as Record<string, unknown>[]) ?? []);
+    }
+  }
+  walkItems((data.items as Record<string, unknown>[]) ?? []);
 
   function walk(node: Record<string, unknown>) {
     const orig = (node.originalTransformation as Record<string, unknown> | undefined)
@@ -75,9 +89,43 @@ function sanitize(raw: string): string {
     .trim();
 }
 
-function parseAlineas(html: string): AlineaData[] {
+// Mise en page des projets de loi de finances (classes assnatFPF… / FAR…) :
+//  - le numéro d'alinéa est un paragraphe séparé « (1) » (assnatPastille),
+//    suivi du texte (assnatFPFprojetloiartexte) ;
+//  - chaque article est suivi de son exposé des motifs, puis d'un saut de
+//    page avec un en-tête courant « Projet de loi de finances » et un numéro.
+const CLASSE_PASTILLE = "assnatPastille";
+const CLASSE_TEXTE_PLF = "assnatFPFprojetloiartexte";
+const CLASSE_TITRE_EXPOSE = "assnatFPFexpogentitre1";
+
+function estEnTeteDePage(cssClass: string, texte: string): boolean {
+  return (
+    cssClass === "assnatFARSautApres" ||
+    (cssClass === "assnatFARTT08Bleu" && /^projet de loi de finances/i.test(texte)) ||
+    (cssClass === "assnatFAR09Noir" && /^\d+$/.test(texte))
+  );
+}
+
+/**
+ * Dans un PLF, garde l'article et son propre exposé des motifs, et s'arrête
+ * là. La segmentation de Documents_enrichis ne reconnaît pas tous les
+ * articles d'un PLF (66 sur 89 pour le PLF 2027) : sans cette coupure, le
+ * texte d'un article non reconnu s'afficherait sous l'article précédent.
+ * Sans exposé (autres textes), rien ne change.
+ */
+export function couperApresExposeDesMotifs(alineas: AlineaData[]): AlineaData[] {
+  const debut = alineas.findIndex((a) => a.cssClass === CLASSE_TITRE_EXPOSE);
+  if (debut === -1) return alineas;
+  let fin = debut + 1;
+  while (fin < alineas.length && alineas[fin].cssClass.startsWith("assnatFPFexpogen")) fin++;
+  return alineas.slice(0, fin);
+}
+
+export function parseAlineas(html: string): AlineaData[] {
   const results: AlineaData[] = [];
   let counter = 0;
+  // Numéro lu dans une pastille « (n) » (PLF), appliqué au paragraphe suivant.
+  let pastille: number | null = null;
 
   // Capture tous les <p> quel que soit leur format (class= ou style= ou rien)
   const re = /<p([^>]*)>([\s\S]*?)<\/p>/g;
@@ -100,13 +148,32 @@ function parseAlineas(html: string): AlineaData[] {
     if (!content || content.trim() === "") continue;
 
     if (cssClass) {
+      const texte = content.replace(/<[^>]+>/g, "").trim();
+      if (cssClass === CLASSE_PASTILLE) {
+        const n = texte.match(/^\((\d+)\)$/);
+        if (n) {
+          pastille = Number(n[1]);
+          continue;
+        }
+      }
+      if (estEnTeteDePage(cssClass, texte)) continue;
+
       // Format avec classes CSS (assnatLoiTexte, assnat6SectionIntit…)
       if (cssClass === "assnatLoiTexte") {
         counter++;
         results.push({ html: content, alineaNumber: counter, cssClass });
+      } else if (cssClass === CLASSE_TEXTE_PLF) {
+        // Numéro officiel de la pastille (un tableau peut en consommer un :
+        // « (1) texte, (2) tableau, (3) texte »). Sans pastille, c'est la
+        // suite de l'alinéa précédent (« » ; » après un tableau cité).
+        results.push({ html: content, alineaNumber: pastille, cssClass });
+        pastille = null;
       } else if (cssClass.startsWith("assnat")) {
         // Sous-sections, titres de section → en-tête non numéroté
         results.push({ html: content, alineaNumber: null, cssClass });
+        // Dans un PLF, un tableau est un alinéa : il consomme sa pastille, que
+        // le texte qui le suit (« » ; ») ne doit pas reprendre.
+        pastille = null;
       }
     } else {
       // Format avec styles inline (margin-bottom + text-indent)
@@ -175,7 +242,7 @@ async function loadParsedDoc(uid: string): Promise<ParsedDoc | null> {
     const start = items[i].start;
     const end = items[i + 1]?.start;
     const chunk = end != null ? htmlText.slice(start, end) : htmlText.slice(start);
-    map.set(normalizeDivisionKey(items[i].line), parseAlineas(chunk));
+    map.set(normalizeDivisionKey(items[i].line), couperApresExposeDesMotifs(parseAlineas(chunk)));
   }
   return { articlesByKey: map };
 }

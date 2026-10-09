@@ -13,9 +13,16 @@ type RawDivision = {
   articles?: RawArticle[];
   divisions?: RawDivision[];
 };
+/**
+ * Format arborescent unique, utilisé par Documents_enrichis depuis fin
+ * septembre 2026 : divisions et articles mêlés dans `items`, distingués par
+ * `type`. Les documents enrichis avant gardent `articles` / `divisions`.
+ */
+type RawItem = { line: string; type: string; items?: RawItem[] };
 type RawSommaire = {
   articles?: RawArticle[];
   divisions?: RawDivision[];
+  items?: RawItem[];
 };
 
 export function buildSommaireUrl(uid: string): string | null {
@@ -63,7 +70,20 @@ function formatLabel(line: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
-function flattenRaw(raw: RawSommaire): ArticleEntry[] {
+function flattenItems(items: RawItem[]): ArticleEntry[] {
+  return items.flatMap((item) =>
+    item.type === "article"
+      ? [{ label: formatLabel(item.line), key: normalizeKey(item.line), isDivisionHeader: false }]
+      : [
+          { label: decodeHtmlEntities(item.line).trim(), key: normalizeKey(item.line), isDivisionHeader: true },
+          ...flattenItems(item.items ?? []),
+        ],
+  );
+}
+
+export function flattenRaw(raw: RawSommaire): ArticleEntry[] {
+  if (raw.items) return flattenItems(raw.items);
+
   const result: ArticleEntry[] = [];
 
   for (const a of raw.articles ?? []) {
