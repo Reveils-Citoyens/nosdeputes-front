@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   if (sp.get("compact") === "1") {
     // Tous les champs utilisés par les filtres, compteurs, navigation et
     // cartes. Le dispositif/exposé n'est nécessaire qu'à l'ouverture.
-    apiUrl.searchParams.set("select", "uid,numeroLong,sortAmendement,typeAuteur,identifiantDivision,divisionArticleAdditionnel,acteurRefUid,nombreCoSignataires,dateDepot,dateSort");
+    apiUrl.searchParams.set("select", "uid,numeroLong,sortAmendement,typeAuteur,identifiantDivision,divisionArticleAdditionnel,acteurRefUid,nombreCoSignataires,dateDepot,dateSort,scrutinRefUid,idDiscussionIdentique");
   }
 
   try {

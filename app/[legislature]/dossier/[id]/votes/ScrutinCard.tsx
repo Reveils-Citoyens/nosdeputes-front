@@ -32,7 +32,19 @@ function getScrutinStatus(code: string | null) {
   return { status: "review" as const, label: "Résultat non communiqué" };
 }
 
-export function ScrutinCard({ scrutin }: { scrutin: ScrutinSummary }) {
+export function ScrutinCard({
+  scrutin,
+  compact = false,
+  typeVote,
+}: {
+  scrutin: ScrutinSummary;
+  /**
+   * Variante étroite (liseuse) : sans l'intitulé du scrutin ni le résultat,
+   * déjà donnés par la carte de l'amendement qui l'englobe.
+   */
+  compact?: boolean;
+  typeVote?: string | null;
+}) {
   const [expanded, setExpanded] = React.useState(false);
   const { data: votes, isPending, isError, refetch } = useQuery({
     queryKey: ["scrutin-votes", scrutin.uid],
@@ -71,12 +83,12 @@ export function ScrutinCard({ scrutin }: { scrutin: ScrutinSummary }) {
         expandIcon={<ExpandMoreIcon />}
         sx={{
           backgroundColor: "white",
-          px: 3,
-          py: 1.5,
+          px: compact ? 1.5 : 3,
+          py: compact ? 0.5 : 1.5,
           "& .MuiAccordionSummary-content": {
             display: "flex",
             flexDirection: "column",
-            gap: 1.5,
+            gap: compact ? 0.5 : 1.5,
             width: "100%",
             my: 1,
           },
@@ -99,30 +111,37 @@ export function ScrutinCard({ scrutin }: { scrutin: ScrutinSummary }) {
             >
               Scrutin n°{scrutin.numero} •{" "}
               {scrutin.dateScrutin?.toLocaleDateString("fr-FR")}
+              {compact && typeVote ? ` • ${typeVote}` : null}
             </Typography>
-            <Typography
-              variant="subtitle1"
-              fontWeight="bold"
-              sx={{ lineHeight: 1.3 }}
-            >
-              {scrutin.titre}
-            </Typography>
+            {!compact && (
+              <Typography
+                variant="subtitle1"
+                fontWeight="bold"
+                sx={{ lineHeight: 1.3 }}
+              >
+                {scrutin.titre}
+              </Typography>
+            )}
           </Box>
-          <StatusChip
-            label={label}
-            status={status}
-            sx={{ flexShrink: 0, fontWeight: "bold", mr: 1 }}
-          />
+          {!compact && (
+            <StatusChip
+              label={label}
+              status={status}
+              sx={{ flexShrink: 0, fontWeight: "bold", mr: 1 }}
+            />
+          )}
         </Box>
 
-        <Box sx={{ width: "100%", mt: 1 }}>
-          <Box
-            sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}
-          >
-            <Typography variant="caption" color="text.secondary">
-              Résultat de l&apos;assemblée :
-            </Typography>
-          </Box>
+        <Box sx={{ width: "100%", mt: compact ? 0 : 1 }}>
+          {!compact && (
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                Résultat de l&apos;assemblée :
+              </Typography>
+            </Box>
+          )}
           <Box
             sx={{
               display: "flex",
@@ -137,7 +156,7 @@ export function ScrutinCard({ scrutin }: { scrutin: ScrutinSummary }) {
             <Box sx={{ width: `${pctContre}%`, bgcolor: "error.main" }} />
           </Box>
 
-          <Stack direction="row" spacing={3} sx={{ mt: 1 }}>
+          <Stack direction="row" spacing={compact ? 1.5 : 3} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
             <Typography
               variant="caption"
               fontWeight="bold"

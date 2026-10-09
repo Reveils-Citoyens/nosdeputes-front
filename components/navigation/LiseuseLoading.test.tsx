@@ -1,15 +1,21 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LiseuseClient from "@/app/[legislature]/dossier/[id]/amendement/LiseuseClient";
 import LiseuseSkeleton from "./LiseuseSkeleton";
 import { liseusePageSx, liseusePanelSx } from "./LiseuseLayout";
+
+// Comme dans l'application (app/providers.tsx) : la liseuse lit les scrutins
+// des amendements via React Query.
+const avecRequetes = (element: React.ReactElement) =>
+  renderToStaticMarkup(<QueryClientProvider client={new QueryClient()}>{element}</QueryClientProvider>);
 
 describe("Géométrie de chargement de la liseuse", () => {
   it.each([null, [{ key: "art1", label: "Article 1er", isDivisionHeader: false }]])(
     "montre le skeleton dès le premier rendu, avec ou sans sommaire",
     initialSommaire => {
-      const html = renderToStaticMarkup(<LiseuseClient dossierUid="DLR5L17N54372"
+      const html = avecRequetes(<LiseuseClient dossierUid="DLR5L17N54372"
         documents={[]} defaultDocUid="PRJLANR5L17B2841" initialSommaire={initialSommaire} />);
       expect(html).toContain('aria-label="Chargement du texte et des amendements"');
       expect(html).toContain("data-liseuse-toolbar");
@@ -20,7 +26,7 @@ describe("Géométrie de chargement de la liseuse", () => {
   );
 
   it("ne reste pas en chargement en l'absence de version disponible", () => {
-    const html = renderToStaticMarkup(<LiseuseClient dossierUid="DLR5L17N54372"
+    const html = avecRequetes(<LiseuseClient dossierUid="DLR5L17N54372"
       documents={[]} defaultDocUid={null} initialSommaire={null} />);
     expect(html).not.toContain('aria-busy="true"');
   });

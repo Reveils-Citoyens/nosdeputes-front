@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
+import HowToVoteOutlinedIcon from "@mui/icons-material/HowToVoteOutlined";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AmendementCard, { type AmendementCardData } from "@/components/folders/AmendementCard";
@@ -26,6 +27,7 @@ import type { DocOption } from "./page";
 import { loadRemainingAmendments, type AmendmentsPage } from "@/data/liseuse/loadRemainingAmendments";
 import { ArticleTextSkeleton, LiseuseContentSkeleton, LiseuseFiltersSkeleton } from "@/components/navigation/LiseuseSkeleton";
 import { liseuseToolbarSx, liseuseFiltersSx, liseusePanelSx, liseuseContentSx } from "@/components/navigation/LiseuseLayout";
+import { ScrutinsAmendementsContext, useScrutinsAmendements } from "./useScrutinsAmendements";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,6 +35,9 @@ type RawAmendement = AmendementCardData & {
   identifiantDivision?: string | null;
   divisionArticleAdditionnel?: string | null;
   acteurRefUid?: string | null;
+  /** Scrutin public de séance, et groupe d'amendements identiques. */
+  scrutinRefUid?: string | null;
+  idDiscussionIdentique?: number | null;
 };
 
 // Élément navigable de la liseuse : un article du sommaire, ou la rubrique
@@ -293,13 +298,14 @@ function AlineaPanel({
 // ── Liste d'amendements d'un article ─────────────────────────────────────────
 
 function AmendList({ amendments }: { amendments: RawAmendement[] }) {
+  const scrutins = React.useContext(ScrutinsAmendementsContext);
   const regular = amendments.filter((a) => a.divisionArticleAdditionnel !== "true");
   const additional = amendments.filter((a) => a.divisionArticleAdditionnel === "true");
 
   return (
     <Box>
       {regular.map((a) => (
-        <AmendementCard key={a.uid} amendement={a} acteurUid={a.acteurRefUid ?? null} loadContent />
+        <AmendementCard key={a.uid} amendement={a} acteurUid={a.acteurRefUid ?? null} loadContent scrutin={scrutins.get(a.uid)} />
       ))}
       {additional.length > 0 && (
         <>
@@ -312,7 +318,7 @@ function AmendList({ amendments }: { amendments: RawAmendement[] }) {
             Articles additionnels après cet article
           </Typography>
           {additional.map((a) => (
-            <AmendementCard key={a.uid} amendement={a} acteurUid={a.acteurRefUid ?? null} loadContent />
+            <AmendementCard key={a.uid} amendement={a} acteurUid={a.acteurRefUid ?? null} loadContent scrutin={scrutins.get(a.uid)} />
           ))}
         </>
       )}
@@ -703,6 +709,7 @@ export default function LiseuseClient({
   const [error, setError] = React.useState<string | null>(null);
   const [activeStatuses, setActiveStatuses] = React.useState<Set<string>>(new Set());
   const [govOnly, setGovOnly] = React.useState(false);
+  const [scrutinOnly, setScrutinOnly] = React.useState(false);
   const [selectedKey, setSelectedKey] = React.useState<string | null>(null);
   const loadIdRef = React.useRef(0);
   const loadControllerRef = React.useRef<AbortController | null>(null);
@@ -722,6 +729,7 @@ export default function LiseuseClient({
     setAmendTotal(0);
     setActiveStatuses(new Set());
     setGovOnly(false);
+    setScrutinOnly(false);
 
     try {
       // Page 1 — 500 items
@@ -813,7 +821,9 @@ export default function LiseuseClient({
       .map(([status, count]) => ({ status, count, color: statusColor(status) }));
   }, [amendments]);
 
-  const filterActive = activeStatuses.size > 0 || govOnly;
+  // Scrutins publics de séance des amendements, une fois tous chargés.
+  const scrutins = useScrutinsAmendements(selectedDocUid, amendments, !loading && !loadingMore);
+  const filterActive = activeStatuses.size > 0 || govOnly || scrutinOnly;
 
   // Nombre d'amendements gouvernementaux (pour la pastille de filtre)
   const govCount = React.useMemo(
@@ -833,6 +843,7 @@ export default function LiseuseClient({
   const resetFilters = React.useCallback(() => {
     setActiveStatuses(new Set());
     setGovOnly(false);
+    setScrutinOnly(false);
   }, []);
 
   // Amendements après application des filtres (statut + gouvernement)
@@ -841,8 +852,9 @@ export default function LiseuseClient({
     let res = amendments;
     if (activeStatuses.size > 0) res = res.filter((a) => activeStatuses.has(statusKey(a)));
     if (govOnly) res = res.filter(isGouvernement);
+    if (scrutinOnly) res = res.filter((a) => scrutins.has(a.uid));
     return res;
-  }, [amendments, activeStatuses, govOnly]);
+  }, [amendments, activeStatuses, govOnly, scrutinOnly, scrutins]);
 
   // Groupe les amendements (filtrés) par identifiantDivision
   const amendsByKey = React.useMemo(() => {
@@ -952,6 +964,7 @@ export default function LiseuseClient({
   // ── Rendu ─────────────────────────────────────────────────────────────────
 
   return (
+    <ScrutinsAmendementsContext.Provider value={scrutins}>
     <Box>
       {/* Barre d'outils : statistiques + sélecteur de version */}
       <Box
@@ -1184,6 +1197,42 @@ export default function LiseuseClient({
             );
           })}
 
+          {scrutins.size > 0 && (() => {
+            const VOTE_COLOR = "#00695c";
+            return (
+              <>
+                <Divider orientation="vertical" flexItem sx={{ mx: 0.5, my: 0.25 }} />
+                <Tooltip title="Amendements mis aux voix en séance par scrutin public : le vote de chaque député est connu.">
+                  <Chip
+                    size="small"
+                    onClick={() => setScrutinOnly((v) => !v)}
+                    icon={<HowToVoteOutlinedIcon sx={{ fontSize: "15px !important", color: `${VOTE_COLOR} !important` }} />}
+                    label={
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+                        <span>Scrutin public</span>
+                        <Box component="span" sx={{ fontWeight: 700, opacity: 0.7 }}>
+                          {scrutins.size}
+                        </Box>
+                      </Box>
+                    }
+                    sx={{
+                      cursor: "pointer",
+                      fontSize: "0.72rem",
+                      fontWeight: 600,
+                      height: 26,
+                      border: "1px solid",
+                      borderColor: scrutinOnly ? VOTE_COLOR : "grey.300",
+                      bgcolor: scrutinOnly ? `${VOTE_COLOR}14` : "transparent",
+                      color: scrutinOnly ? VOTE_COLOR : "text.secondary",
+                      "& .MuiChip-label": { px: 1 },
+                      "&:hover": { bgcolor: scrutinOnly ? `${VOTE_COLOR}22` : "grey.100" },
+                    }}
+                  />
+                </Tooltip>
+              </>
+            );
+          })()}
+
           {filterActive && (
             <Box
               component="button"
@@ -1302,7 +1351,7 @@ export default function LiseuseClient({
           }}
         >
           {amendments.map((a) => (
-            <AmendementCard key={a.uid} amendement={a} acteurUid={a.acteurRefUid ?? null} loadContent />
+            <AmendementCard key={a.uid} amendement={a} acteurUid={a.acteurRefUid ?? null} loadContent scrutin={scrutins.get(a.uid)} />
           ))}
         </Box>
       )}
@@ -1314,5 +1363,6 @@ export default function LiseuseClient({
         </Typography>
       )}
     </Box>
+    </ScrutinsAmendementsContext.Provider>
   );
 }

@@ -14,13 +14,17 @@ import {
   Alert,
   Button,
   Skeleton,
+  Tooltip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import HowToVoteOutlinedIcon from "@mui/icons-material/HowToVoteOutlined";
 import StatusChip from "@/components/StatusChip";
 import { Amendement, Dossier } from "@prisma/client";
 import ActeurCard from "./ActeurCard";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { ScrutinCard } from "@/app/[legislature]/dossier/[id]/votes/ScrutinCard";
+import { libelleScrutin, type ScrutinResume } from "@/data/liseuse/scrutinsAmendements";
 
 function getStatus(label: string | null) {
   switch (label) {
@@ -70,6 +74,8 @@ type AmendementCardProps = {
   titre?: string;
   /** La liseuse transmet les métadonnées ; le texte est lu à l'ouverture. */
   loadContent?: boolean;
+  /** Scrutin public de séance qui a tranché l'amendement, s'il y en a eu un. */
+  scrutin?: ScrutinResume | null;
 };
 
 function GouvernementAvatar(props: { sx?: React.CSSProperties }) {
@@ -99,7 +105,7 @@ function GouvernementAvatar(props: { sx?: React.CSSProperties }) {
   );
 }
 export default function AmendementCard(props: AmendementCardProps) {
-  const { amendement, acteurUid, titre, loadContent = false } = props;
+  const { amendement, acteurUid, titre, loadContent = false, scrutin } = props;
   const [expanded, setExpanded] = React.useState(false);
   const content = useQuery({
     queryKey: ["amendement-content", amendement.uid],
@@ -201,7 +207,15 @@ export default function AmendementCard(props: AmendementCardProps) {
             </Box>
           </Box>
 
-          <Box sx={{ flexShrink: 0, mr: 1 }}>
+          <Box sx={{ flexShrink: 0, mr: 1, display: "flex", alignItems: "center", gap: 0.75 }}>
+            {scrutin && (
+              <Tooltip title={`${libelleScrutin(scrutin)}. Détail par groupe en ouvrant l'amendement.`}>
+                <HowToVoteOutlinedIcon
+                  aria-label={libelleScrutin(scrutin)}
+                  sx={{ fontSize: 18, color: "#00695c" }}
+                />
+              </Tooltip>
+            )}
             <StatusChip
               size="small"
               label={amendement.sortAmendement}
@@ -305,6 +319,31 @@ export default function AmendementCard(props: AmendementCardProps) {
                 variant="body2"
                 sx={{ lineHeight: 1.8, color: "text.primary" }}
                 dangerouslySetInnerHTML={{ __html: exposeSommaire }}
+              />
+            </Box>
+          )}
+
+          {scrutin && (
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{ color: "text.secondary", fontWeight: "bold", mb: 0.5, display: "block" }}
+              >
+                Scrutin public
+              </Typography>
+              <ScrutinCard
+                compact
+                typeVote={scrutin.libelleTypeVote}
+                scrutin={{
+                  uid: scrutin.uid,
+                  numero: scrutin.numero,
+                  titre: scrutin.titre,
+                  dateScrutin: scrutin.dateScrutin ? new Date(scrutin.dateScrutin) : null,
+                  code: scrutin.code,
+                  pour: scrutin.pour,
+                  contre: scrutin.contre,
+                  abstentions: scrutin.abstentions,
+                }}
               />
             </Box>
           )}
