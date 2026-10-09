@@ -245,6 +245,13 @@ Ces interventions sont attribuées par le nom de l'orateur (les comptes rendus d
 
 Tant que les statistiques n'ont pas été recalculées avec ce code, la page indique le nombre d'interventions comptées et précise que le détail suivra.
 
+### Section de lecture en double dans le sélecteur des réunions de commission
+
+Sur `/17/dossier/DLR5L17N54776/commission/…`, le sélecteur affichait deux sections « 1re lecture ». Une réunion de la délégation aux droits des femmes (`PO201269`), rattachée au dossier par un point de l'ordre du jour (« Examen du texte »), n'avait pas de lecture : `getLectureLabel` ne cherche la lecture que dans les actes du même organe, et aucun acte du dossier ne mentionne la délégation. Placée chronologiquement entre deux réunions de 1re lecture, elle coupait la section en deux.
+
+- Données : sans acte de son organe, une réunion de commission prend la lecture en cours à l'Assemblée à sa date, d'après l'ensemble des actes AN du dossier.
+- Affichage : une section n'est ouverte que lorsque la lecture change par rapport à la dernière lecture connue ; une réunion sans lecture ne rouvre plus une section identique.
+
 ### Optimisations restantes
 
 La première page serveur de `/dossiers`, les caches de l'accueil/thèmes et une préparation à l'ingestion des résumés d'articles restent des optimisations secondaires non réalisées ici. La liseuse transmet désormais des métadonnées légères pour tous les articles et ne transmet leur texte détaillé qu'à l'ouverture ; ce n'est pas encore une pagination serveur des métadonnées par article. Le rendu virtuel des CR est volontairement exclu pour conserver les ancres, la recherche native dans le texte et le copier-coller intégral.

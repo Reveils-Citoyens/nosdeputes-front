@@ -21,6 +21,8 @@ import { getActeurCollaborateurs } from "@/data/getActeurCollaborateurs";
 import CollaborateursSection from "./CollaborateursSection";
 import { formatCirco } from "@/utils/formatCirco";
 import { SITE_URL } from "@/lib/site";
+import { openGraphPage } from "@/lib/metadata";
+import { alternateRss } from "@/lib/rss";
 import { TabNavigationProvider, TabNavigationContent } from "@/components/navigation/TabNavigation";
 import TabRouteSkeleton from "@/components/navigation/TabRouteSkeleton";
 
@@ -59,14 +61,20 @@ export async function generateMetadata({
   return {
     title,
     description,
-    alternates: { canonical: `${SITE_URL}/depute/${slug}` },
-    openGraph: {
-      type: "profile",
-      title: nomComplet,
-      description,
-      url: `${SITE_URL}/depute/${slug}`,
-      ...(depute.urlImage ? { images: depute.urlImage } : {}),
+    alternates: {
+      canonical: `${SITE_URL}/depute/${slug}`,
+      types: alternateRss(`/depute/${slug}/rss.xml`, `${nomComplet} — flux RSS`),
     },
+    // Image : ./opengraph-image.tsx (photo, groupe, circonscription).
+    openGraph: openGraphPage(
+      {
+        type: "profile",
+        title: nomComplet,
+        description,
+        url: `${SITE_URL}/depute/${slug}`,
+      },
+      { imageDediee: true },
+    ),
   };
 }
 
@@ -333,6 +341,7 @@ export default async function Page({
             subjectUid={depute.uid}
             subjectLabel={`${depute.prenom} ${depute.nom}`}
             variant="icon"
+            fluxRss={`/depute/${slug}/rss.xml`}
           />
         </Stack>
       </Stack>

@@ -9,18 +9,20 @@ import { Filter } from "@/components/folderHomePage/Filter";
 
 import DossierList from "@/components/folderHomePage/DossierList";
 import { SITE_URL } from "@/lib/site";
+import { ALTERNATE_FLUX_GENERAL } from "@/lib/rss";
+import { openGraphPage } from "@/lib/metadata";
 
 export const metadata: Metadata = {
   title: "Dossiers législatifs de l'Assemblée nationale — NosDéputés.fr",
   description:
     "Suivez les dossiers législatifs de l'Assemblée nationale : projets et propositions de loi, résolutions, commissions d'enquête. Filtrez par thème et suivez l'avancée de chaque texte.",
-  alternates: { canonical: `${SITE_URL}/dossiers` },
-  openGraph: {
+  alternates: { canonical: `${SITE_URL}/dossiers`, types: ALTERNATE_FLUX_GENERAL },
+  openGraph: openGraphPage({
     title: "Dossiers législatifs de l'Assemblée nationale",
     description:
       "Projets et propositions de loi, résolutions et commissions d'enquête : suivez l'avancée de chaque texte.",
     url: `${SITE_URL}/dossiers`,
-  },
+  }),
 };
 
 export default async function Dossiers() {

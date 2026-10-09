@@ -211,6 +211,48 @@ describe("getDebatsUnCached", () => {
     ]);
   });
 
+  it("donne la lecture en cours à la réunion d'un organe sans acte dans le dossier", async () => {
+    // Cas réel (DLR5L17N54776) : la délégation aux droits des femmes examine
+    // le texte, sans qu'aucun acte du dossier ne la mentionne.
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes("/points_odj/")) {
+        return response([
+          {
+            agendaRef: {
+              uid: "REUNION-DELEGATION",
+              xsiType: "reunionCommission_type",
+              organeReunionRefUid: "PO-DELEGATION",
+              timestampDebut: "2026-09-16T14:45:00.000Z",
+              compteRenduRefUid: "CRC-DELEGATION",
+              compteRenduRef: [{ uid: "CRC-DELEGATION", chambre: "AN" }],
+            },
+          },
+        ]);
+      }
+      if (url.includes("/dossiers/")) {
+        return response({
+          actesLegislatifs: [
+            { chambre: "AN", codeActe: "AN1-DEPOT", dateActe: "2026-08-11T00:00:00.000Z", organeRefUid: "PO-AN" },
+            { chambre: "AN", codeActe: "AN1-COM-FOND", dateActe: "2026-08-11T00:00:00.000Z", organeRefUid: "PO-SPECIALE" },
+            { chambre: "AN", codeActe: "AN2-DEBATS-SEANCE", dateActe: "2026-12-01T00:00:00.000Z", organeRefUid: "PO-AN" },
+          ],
+        });
+      }
+      if (url.includes("/debats/CRC-DELEGATION")) {
+        return response({ uid: "CRC-DELEGATION", chambre: "AN", _count: { paragraphes: 5 } });
+      }
+      return response([]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getDebatsUnCached("DOSSIER");
+
+    expect(result?.map(({ uid, lectureLabel }) => ({ uid, lectureLabel }))).toEqual([
+      { uid: "CRC-DELEGATION", lectureLabel: "1re lecture" },
+    ]);
+  });
+
   it("ne rattache pas toutes les réunions d'une commission permanente", async () => {
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
       const url = String(input);

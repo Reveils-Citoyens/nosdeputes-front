@@ -13,6 +13,7 @@ import {
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import RssFeedIcon from "@mui/icons-material/RssFeed";
 import type { AlertSubjectType } from "@/lib/alerts";
 import { trackEvent } from "@/lib/umami";
 
@@ -22,6 +23,8 @@ type Props = {
   subjectLabel: string;
   /** Affichage compact (icône seule) ou avec texte */
   variant?: "icon" | "button";
+  /** Chemin du flux RSS du sujet, proposé en alternative à l'email. */
+  fluxRss?: string;
 };
 
 type SubmitStatus =
@@ -47,6 +50,60 @@ const MESSAGES: Record<string, string> = {
 
 const FOLLOWED_KEY = "alerte_followed";
 
+/** Alternative à l'email : lien vers le flux et copie de son adresse. */
+function LienRss({ chemin, subjectType }: { chemin: string; subjectType: AlertSubjectType }) {
+  const [copie, setCopie] = React.useState<"non" | "oui" | "echec">("non");
+  const url = () => new URL(chemin, window.location.origin).toString();
+  const copier = async () => {
+    try {
+      await navigator.clipboard.writeText(url());
+      setCopie("oui");
+      trackEvent("flux-rss-copie", { type: subjectType });
+    } catch {
+      // Presse-papiers refusé (permission, contexte non sécurisé) : on affiche
+      // l'adresse pour une copie manuelle.
+      setCopie("echec");
+    }
+  };
+  return (
+    <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid", borderColor: "grey.200", width: "100%", textAlign: "left" }}>
+      <Stack direction="row" alignItems="center" spacing={1}>
+        <RssFeedIcon sx={{ fontSize: 18, color: "#F26522" }} />
+        <Typography variant="body2" sx={{ flex: 1 }}>
+          Ou avec un{" "}
+          <Box
+            component="a"
+            href={chemin}
+            target="_blank"
+            rel="noopener"
+            data-umami-event="flux-rss-ouvert"
+            data-umami-event-type={subjectType}
+            sx={{ color: "inherit", fontWeight: "bold" }}
+          >
+            flux RSS
+          </Box>
+        </Typography>
+        {copie !== "echec" && (
+          <Button size="small" onClick={copier} sx={{ textTransform: "none", borderRadius: 30, minWidth: 0 }}>
+            {copie === "oui" ? "Lien copié" : "Copier le lien"}
+          </Button>
+        )}
+      </Stack>
+      {copie === "echec" && (
+        <TextField
+          value={url()}
+          size="small"
+          fullWidth
+          autoFocus
+          onFocus={(e) => e.target.select()}
+          slotProps={{ htmlInput: { readOnly: true, "aria-label": "Adresse du flux RSS" } }}
+          sx={{ mt: 1, "& input": { fontSize: 12 } }}
+        />
+      )}
+    </Box>
+  );
+}
+
 function getFollowed(): string[] {
   try {
     return JSON.parse(localStorage.getItem(FOLLOWED_KEY) ?? "[]");
@@ -67,6 +124,7 @@ export default function AlerteButton({
   subjectUid,
   subjectLabel,
   variant = "button",
+  fluxRss,
 }: Props) {
   const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
   const [email, setEmail] = React.useState("");
@@ -204,6 +262,7 @@ export default function AlerteButton({
             >
               Fermer
             </Button>
+            {fluxRss && <LienRss chemin={fluxRss} subjectType={subjectType} />}
           </Stack>
         ) : (
           <Box component="form" onSubmit={handleSubmit}>
@@ -256,6 +315,7 @@ export default function AlerteButton({
             >
               Désabonnement en un clic depuis chaque email.
             </Typography>
+            {fluxRss && <LienRss chemin={fluxRss} subjectType={subjectType} />}
           </Box>
         )}
       </Popover>

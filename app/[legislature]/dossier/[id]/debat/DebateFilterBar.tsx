@@ -60,9 +60,25 @@ export function formatDebateOptionLabel(debat: DebatLike): string {
   return formatReunionDate(debat);
 }
 
+/**
+ * Pour chaque réunion, vrai si elle ouvre une section de lecture. On compare à
+ * la dernière lecture connue, pour qu'une réunion sans lecture ne rouvre pas
+ * une section identique juste après elle.
+ */
+export function debutsDeSectionLecture(debats: Pick<DebatLike, "lectureLabel">[]): boolean[] {
+  let lectureCourante: string | null = null;
+  return debats.map((debat) => {
+    const debut = !!debat.lectureLabel && debat.lectureLabel !== lectureCourante;
+    if (debat.lectureLabel) lectureCourante = debat.lectureLabel;
+    return debut;
+  });
+}
+
 export const DebateFilterBar = (props: DebateFilterBarProps) => {
   const { debats, basePath = "debat", baseHref, onNavigate } = props;
   const sceanceUid = useSelectedLayoutSegment();
+
+  const debutsDeLecture = debutsDeSectionLecture(debats);
 
   const getHref = (uid: string) =>
     baseHref ? `${baseHref}/${uid}` : uid;
@@ -128,9 +144,7 @@ export const DebateFilterBar = (props: DebateFilterBarProps) => {
             sx={{ flex: 1 }}
           >
             {debats.flatMap((debat, index) => {
-              const previousLecture = debats[index - 1]?.lectureLabel;
-              const startsLectureGroup =
-                debat.lectureLabel && debat.lectureLabel !== previousLecture;
+              const startsLectureGroup = debutsDeLecture[index];
 
               return [
                 startsLectureGroup ? (

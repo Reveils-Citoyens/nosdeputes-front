@@ -102,6 +102,21 @@ function lectureFromCodeActe(codeActe: string | null | undefined): string | null
     : `${lectureNumber}e lecture`;
 }
 
+/** Première date de chaque lecture, dans l'ordre chronologique. */
+function lectureStages(acts: DossierAct[]): { label: string; timestamp: number }[] {
+  const stages = new Map<string, { label: string; timestamp: number }>();
+  for (const act of acts) {
+    const label = lectureFromCodeActe(act.codeActe);
+    if (!label || !act.dateActe) continue;
+    const timestamp = new Date(act.dateActe).getTime();
+    const previous = stages.get(label);
+    if (!previous || timestamp < previous.timestamp) {
+      stages.set(label, { label, timestamp });
+    }
+  }
+  return [...stages.values()].sort((a, b) => a.timestamp - b.timestamp);
+}
+
 function getLectureLabel(
   agenda: AgendaWithDebates,
   debateType: DebateType,
@@ -125,20 +140,16 @@ function getLectureLabel(
     return /^AN(?:LUNI|\d+)-DEBATS(?:-|$)/.test(act.codeActe ?? "");
   });
 
-  const stages = new Map<string, { label: string; timestamp: number }>();
-  for (const act of relevantActs) {
-    const label = lectureFromCodeActe(act.codeActe);
-    if (!label || !act.dateActe) continue;
-    const timestamp = new Date(act.dateActe).getTime();
-    const previous = stages.get(label);
-    if (!previous || timestamp < previous.timestamp) {
-      stages.set(label, { label, timestamp });
-    }
+  let orderedStages = lectureStages(relevantActs);
+  // Organe sans acte dans le dossier (délégation, commission saisie sans acte
+  // d'avis…) : sa réunion porte quand même sur une lecture, celle en cours à
+  // l'Assemblée à cette date. Sans ce repli, la réunion restait sans lecture
+  // et coupait en deux la section correspondante du sélecteur.
+  if (orderedStages.length === 0 && debateType === "commission") {
+    orderedStages = lectureStages(
+      acts.filter((act) => act.chambre == null || act.chambre === "AN")
+    );
   }
-
-  const orderedStages = [...stages.values()].sort(
-    (a, b) => a.timestamp - b.timestamp
-  );
   if (orderedStages.length === 0) return null;
   if (!agenda.timestampDebut) return orderedStages[0].label;
 

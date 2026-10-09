@@ -13,6 +13,8 @@ import { getAmendementCount, getScrutinCount } from "@/data/getDossierCounts";
 import { getDossierEnrichment } from "@/data/mongo/getDossierEnrichment";
 import { isThemeSlug } from "@/data/themes";
 import { SITE_URL } from "@/lib/site";
+import { openGraphPage } from "@/lib/metadata";
+import { alternateRss } from "@/lib/rss";
 import { TabNavigationProvider, TabNavigationContent } from "@/components/navigation/TabNavigation";
 import TabRouteSkeleton from "@/components/navigation/TabRouteSkeleton";
 
@@ -37,13 +39,20 @@ export async function generateMetadata({
   return {
     title: `${titre} — Dossier législatif — NosDéputés.fr`,
     description,
-    alternates: { canonical: url },
-    openGraph: {
-      type: "article",
-      title: titre,
-      description,
-      url,
+    alternates: {
+      canonical: url,
+      types: alternateRss(`/${legislature}/dossier/${id}/rss.xml`, `${titre} — flux RSS`),
     },
+    // Image : ./opengraph-image.tsx (titre, étape, procédure).
+    openGraph: openGraphPage(
+      {
+        type: "article",
+        title: titre,
+        description,
+        url,
+      },
+      { imageDediee: true },
+    ),
   };
 }
 
@@ -93,6 +102,7 @@ export default async function Dossier({
         status={status}
         dossierUid={id}
         themesSenat={themesSenat}
+        fluxRss={`/${legislature}/dossier/${id}/rss.xml`}
       />
       {!isMissionOuCE && tableVotes && <MonDeputeSurDossier dossierUid={id} />}
       <ComprendreBanner />

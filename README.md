@@ -33,6 +33,34 @@ Après correction d'une panne, une exécution manuelle du workflow complet perme
 de reprendre l'import. Une erreur dans `ND.py` lui-même peut laisser une mise
 à jour partielle ; consulter les logs avant de relancer.
 
+## Flux RSS
+
+| Flux | Contenu | Source |
+|---|---|---|
+| `/rss.xml` | Derniers scrutins sur les dossiers (objet exact du vote, résultat, décompte) | `dossiers.derniereDecision` + `scrutins` |
+| `/[legislature]/dossier/[id]/rss.xml` | Étapes de la navette, décisions avec scrutin, amendements groupés par jour | API Tricoteuses (actes et scrutins) + `amendements` |
+| `/depute/[slug]/rss.xml` | Amendements groupés par texte et par jour, questions et réponses, interventions filmées | `amendements`, `questions`, `prises_de_parole_video` |
+| `/themes/[slug]/rss.xml` | Nouveaux textes du thème et derniers votes | `dossiers_enrichis` + `dossiers` |
+
+Le rendu est dans `lib/rss.ts`, la transformation des données dans
+`data/flux/` (fonctions pures testées). Les flux sont annoncés par
+`<link rel="alternate">` et proposés dans le menu « Suivre ».
+
+- Dates : les sources ne donnent que le jour ; les éléments sont datés à 10 h
+  UTC, avec un décalage de quelques minutes pour qu'une décision suive le
+  débat du même jour. Les dates d'import (`datePremierAjout`) ne servent pas :
+  l'API est réimportée chaque nuit.
+- `guid` : uid de l'Assemblée (acte, scrutin, question). Un lecteur RSS ne
+  réaffiche pas un élément déjà vu, même si son titre change.
+- Cache : une heure (ISR pour les flux à paramètres, `unstable_cache` pour
+  `/rss.xml`). Une panne de l'API ou de la base répond 500 sans être mise en
+  cache, jamais par un flux vide.
+- Index : `node --env-file=.env scripts/creer_index_flux_rss.mjs [--dry-run]`
+  crée les index des flux député (amendements par auteur, questions par
+  auteur). Sans eux, la requête d'amendements parcourt toute la collection.
+- Missions d'information et commissions d'enquête : absentes de l'API, leur
+  flux est valide mais vide.
+
 ## Run the project locally
 
 ### Get the code

@@ -42,6 +42,8 @@ type HeroSectionProps = {
   status?: string;
   dossierUid?: string;
   themesSenat?: ThemeSlug[];
+  /** Chemin du flux RSS du dossier, proposé dans le menu « Suivre ». */
+  fluxRss?: string;
 };
 
 export const HeroSection = ({
@@ -51,6 +53,7 @@ export const HeroSection = ({
   status,
   dossierUid,
   themesSenat = [],
+  fluxRss,
 }: HeroSectionProps) => {
   const theme = useTheme();
   const procedureTermSlug = getTermForProcedure(libelleProcedure);
@@ -181,6 +184,7 @@ export const HeroSection = ({
                     subjectUid={dossierUid}
                     subjectLabel={titre}
                     variant="button"
+                    fluxRss={fluxRss}
                   />
                 )}
               </Stack>

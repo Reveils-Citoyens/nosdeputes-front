@@ -18,6 +18,7 @@ import DossierThemeList from "@/components/themes/DossierThemeList";
 import { ThemeBanner } from "../themeIcons";
 import AlerteButton from "@/components/AlerteButton";
 import type { Metadata } from "next";
+import { alternateRss } from "@/lib/rss";
 
 export const revalidate = 3600;
 
@@ -39,6 +40,7 @@ export async function generateMetadata({
   return {
     title: `${theme.label} — Thèmes — Nos Députés`,
     description: theme.description,
+    alternates: { types: alternateRss(`/themes/${slug}/rss.xml`, `${theme.label} — flux RSS`) },
   };
 }
 
@@ -97,6 +99,7 @@ export default async function ThemeSlugPage({
             subjectUid={slug}
             subjectLabel={theme.label}
             variant="button"
+            fluxRss={`/themes/${slug}/rss.xml`}
           />
         </Stack>
       </Stack>

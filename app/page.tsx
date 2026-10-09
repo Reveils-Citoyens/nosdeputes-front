@@ -6,11 +6,12 @@ import ThemesSection from "@/components/home/Themes";
 import AgendaSection from "@/components/home/Agenda";
 import ComprendreSection from "@/components/home/ComprendreSection";
 import { SITE_URL } from "@/lib/site";
+import { ALTERNATE_FLUX_GENERAL } from "@/lib/rss";
 
 // Titre/description hérités du layout racine (déjà adaptés à l'accueil) ; on
 // fixe ici la canonical pour consolider l'indexation sur le domaine de prod.
 export const metadata: Metadata = {
-  alternates: { canonical: SITE_URL },
+  alternates: { canonical: SITE_URL, types: ALTERNATE_FLUX_GENERAL },
 };
 
 // Rendu au runtime, pas au build : la home lit l'agenda de la semaine courante
