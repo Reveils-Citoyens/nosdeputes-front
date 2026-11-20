@@ -24,9 +24,10 @@ Quatre indicateurs, trois unités — et c'est volontairement explicite (champ
 `unite`), parce que les confondre est précisément le défaut qu'on corrige :
 
   - `presenceSeancePublique` — unité : **le jour**. Un député est compté présent
-    un jour donné s'il a prononcé au moins une intervention d'au moins
+    un jour donné s'il a prononcé au moins une intervention de plus de
     SEUIL_CARACTERES caractères dans un compte rendu de séance publique de ce
-    jour.
+    jour, ou s'il a voté en personne (pas par délégation) lors d'un scrutin
+    public ce jour-là.
   - `presenceCommission` — unité : **la réunion**. Un député est compté présent à
     une réunion si le relevé nominatif publié par l'Assemblée le déclare
     « présent ». Ce n'est pas une déduction : c'est un émargement.
@@ -134,7 +135,12 @@ ETATS_PRESENCE = {"présent", "excusé", "absent"}
 # serait trompeur : le dénominateur des convocations, et les interventions
 # faites en présidant, écartées du compteur principal mais jamais perdues —
 # c'est ce qui évite qu'un président de séance apparaisse à zéro.
-CHAMPS_ANNEXES = ("convocations", "excusees", "absences", "interventionsPresidence")
+CHAMPS_ANNEXES = (
+    "convocations", "excusees", "absences", "interventionsPresidence",
+    # Jours de séance où la présence n'est établie que par un vote : le graphe
+    # les distingue des jours où le député a pris la parole.
+    "joursVoteSeul",
+)
 
 # `roledebat` vaut "president" (open data, sans accent) dans les comptes rendus
 # de séance et "président" (moissonnage Tricoteuses) dans ceux de commission.
@@ -320,15 +326,21 @@ def _parse_jour(valeur: Any) -> date | None:
 # Indicateur : présence en séance publique
 # ---------------------------------------------------------------------------
 
-def calculer_presences_seance_publique(db: Any, legislature: int) -> list[dict]:
+def calculer_presences_seance_publique(
+    db: Any,
+    legislature: int,
+    votes: dict[tuple[str, date], list[dict]] | None = None,
+) -> list[dict]:
     """
-    Une ligne par (député, jour) où le député a pris la parole en séance
-    publique de façon substantielle.
+    Une ligne par (député, jour) où la présence du député en séance publique
+    est établie : il y a pris la parole de façon substantielle, ou il a voté en
+    personne lors d'un scrutin public (`votes`, cf. calculer_votes_en_personne).
 
-    `valeur` = nombre d'interventions retenues ce jour-là ; le graphe
-    hebdomadaire, lui, compte les *jours*. Les deux sont conservés parce qu'ils
-    répondent à deux questions différentes, et qu'afficher l'un en croyant lire
-    l'autre est exactement le défaut qu'on corrige.
+    `valeur` vaut 1 : l'unité est le jour. Le volume est conservé à part
+    (`interventionsRetenues`, `scrutins`), parce que présence et activité
+    répondent à deux questions différentes, et qu'afficher l'une en croyant
+    lire l'autre est exactement le défaut qu'on corrige. `joursVoteSeul` vaut 1
+    quand seul un vote établit la présence : le graphe le distingue.
     """
     # (acteurUid, jour) -> {seance ISO -> {compteRenduUid, interventions}}
     accumulateur: dict[tuple[str, date], dict[str, dict]] = defaultdict(dict)
@@ -370,24 +382,82 @@ def calculer_presences_seance_publique(db: Any, legislature: int) -> list[dict]:
         )
     log.info("Séance publique : %d comptes rendus analysés", lus)
 
+    votes = votes or {}
     documents = []
-    for (acteur_uid, jour), details in accumulateur.items():
+    for acteur_uid, jour in set(accumulateur) | set(votes):
+        details = accumulateur.get((acteur_uid, jour), {})
+        scrutins = votes.get((acteur_uid, jour), [])
         document = _document_quotidien(
             legislature=legislature,
             type_statistique=TYPE_SEANCE_PUBLIQUE,
             acteur_uid=acteur_uid,
             jour=jour,
             # L'unité est le jour : une journée compte pour une, que le député
-            # y ait pris la parole une fois ou quarante. Le détail du volume est
-            # conservé juste en dessous, il ne se confond pas avec la présence.
+            # y ait pris la parole ou voté une fois ou quarante. Le détail du
+            # volume est conservé juste en dessous, il ne se confond pas avec
+            # la présence.
             valeur=1,
             details=sorted(details.values(), key=lambda d: d["seance"]),
         )
         document["interventionsRetenues"] = sum(
             d["interventions"] for d in details.values()
         )
+        # Les scrutins où il a voté en personne : la pièce justificative des
+        # jours sans prise de parole, affichée dans l'onglet « Détail ».
+        document["scrutins"] = sorted(scrutins, key=lambda v: _entier(v.get("numero")))
+        document["joursVoteSeul"] = 0 if details else 1
         documents.append(document)
     return documents
+
+
+# Positions d'un vote nominatif qui attestent la présence. Les non-votants
+# (présidente de l'Assemblée, président de séance, membres du Gouvernement) ne
+# votent pas : leur présence éventuelle relève des prises de parole.
+POSITIONS_VOTE = {"pours": "pour", "contres": "contre", "abstentions": "abstention"}
+
+
+def calculer_votes_en_personne(
+    db: Any, legislature: int
+) -> dict[tuple[str, date], list[dict]]:
+    """
+    Votes exprimés en personne lors des scrutins publics, par (député, jour).
+
+    Pour chaque scrutin public, l'Assemblée publie la position de chaque député
+    et précise s'il a voté par délégation (`parDelegation`). Un vote par
+    délégation est enregistré au nom d'un député absent, qui a confié son vote
+    à un collègue : il atteste son absence, pas sa présence, et n'est donc pas
+    retenu. Seule la valeur explicite « false » est retenue comme vote en
+    personne : une donnée manquante ne prouve rien.
+    """
+    debut = LEGISLATURE_DATE_DEBUT[legislature]
+    votes: dict[tuple[str, date], list[dict]] = defaultdict(list)
+    for scrutin in db.scrutins.find(
+        {"legislature": str(legislature)},
+        {"uid": 1, "numero": 1, "dateScrutin": 1,
+         "ventilationVotes.organe.groupes.groupe.vote.decompteNominatif": 1},
+    ):
+        jour = _parse_jour(scrutin.get("dateScrutin"))
+        if jour is None or jour < debut:
+            continue
+        organe = (scrutin.get("ventilationVotes") or {}).get("organe") or {}
+        for groupe in liste((organe.get("groupes") or {}).get("groupe")):
+            if not isinstance(groupe, dict):
+                continue
+            decompte = (groupe.get("vote") or {}).get("decompteNominatif") or {}
+            for cle, position in POSITIONS_VOTE.items():
+                for votant in liste((decompte.get(cle) or {}).get("votant")):
+                    if not isinstance(votant, dict):
+                        continue
+                    acteur_uid = uid_acteur(votant.get("acteurRef"))
+                    if acteur_uid is None or str(votant.get("parDelegation")).lower() != "false":
+                        continue
+                    votes[(acteur_uid, jour)].append({
+                        "scrutinUid": scrutin["uid"],
+                        "numero": scrutin.get("numero"),
+                        "position": position,
+                    })
+    log.info("Votes en personne : %d (député, jour) établis par un scrutin public", len(votes))
+    return votes
 
 
 # ---------------------------------------------------------------------------
@@ -1279,7 +1349,9 @@ def calculer_tout(db: Any, legislature: int) -> Resultat:
         db, legislature
     )
     quotidiennes = (
-        calculer_presences_seance_publique(db, legislature)
+        calculer_presences_seance_publique(
+            db, legislature, calculer_votes_en_personne(db, legislature)
+        )
         + calculer_presences_commission(db, legislature)
         + calculer_interventions_seance_publique(db, legislature)
         + interventions_commission

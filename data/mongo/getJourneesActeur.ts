@@ -12,7 +12,7 @@ import { getParlementDb } from "@/lib/mongodb";
 
 export type JourneeActeur = {
   date: string;
-  /** Jours de séance publique avec prise de parole retenue : 0 ou 1. */
+  /** Présence établie en séance publique (prise de parole ou vote en personne) : 0 ou 1. */
   seance: number;
   /** Interventions retenues en séance publique et en commission. */
   interventions: number;

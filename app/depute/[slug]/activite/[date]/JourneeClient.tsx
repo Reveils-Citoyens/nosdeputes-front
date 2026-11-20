@@ -13,7 +13,7 @@ import LecteurSeance from "@/components/LecteurSeance";
 import BoutonVideoReunion from "@/components/BoutonVideoReunion";
 import LienSource from "@/components/LienSource";
 import parametres from "@/config/statistiques.json";
-import { urlCompteRendu, urlSource } from "@/lib/sourcesAN";
+import { urlCompteRendu, urlScrutin, urlSource } from "@/lib/sourcesAN";
 import type {
   DetailJournee,
   Intervention,
@@ -21,6 +21,7 @@ import type {
   MotifExclusion,
   Seance,
   Video,
+  VoteSeance,
 } from "@/data/mongo/getDetailJournee";
 
 /** Ce que le lecteur ancré en bas de fenêtre est en train de jouer. */
@@ -95,6 +96,10 @@ export default function JourneeClient({
           onLire={setLecture}
         />
       ))}
+
+      {detail.votes.length > 0 ? (
+        <BlocVotes votes={detail.votes} parole={detail.seances.length > 0} />
+      ) : null}
 
       {detail.reunions.length > 0 ? (
         <Box>
@@ -241,6 +246,86 @@ function BlocSeance(props: {
           />
         ))}
       </Stack>
+    </Box>
+  );
+}
+
+const POSITIONS: Record<VoteSeance["position"], string> = {
+  pour: "Pour",
+  contre: "Contre",
+  abstention: "Abstention",
+};
+
+// Au-delà, la liste se replie : un jour de budget compte des dizaines de
+// scrutins, et un seul suffit à établir la présence.
+const VOTES_VISIBLES = 8;
+
+const majuscule = (texte: string) => texte.charAt(0).toUpperCase() + texte.slice(1);
+
+/**
+ * Scrutins publics où le député a voté lui-même. Ils établissent sa présence
+ * en séance, y compris les jours où il n'a pas pris la parole ; les votes par
+ * délégation, eux, n'apparaissent pas : ils attestent l'absence.
+ */
+function BlocVotes({ votes, parole }: { votes: VoteSeance[]; parole: boolean }) {
+  const [tout, setTout] = React.useState(false);
+  const affiches = tout ? votes : votes.slice(0, VOTES_VISIBLES);
+
+  return (
+    <Box>
+      <Stack direction="row" spacing={1} alignItems="baseline" flexWrap="wrap">
+        <Typography variant="subtitle2" fontWeight={700}>
+          Votes en personne
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {parole ? null : "Présence établie · "}
+          {votes.length} scrutin{votes.length > 1 ? "s" : ""} public
+          {votes.length > 1 ? "s" : ""}
+        </Typography>
+      </Stack>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+        Votes exprimés par le député lui-même. Les votes par délégation, confiés
+        à un collègue en son absence, ne sont pas comptés.
+      </Typography>
+
+      <Stack divider={<Divider flexItem />} spacing={1} sx={{ mt: 1.5 }}>
+        {affiches.map((vote) => (
+          <Stack key={vote.scrutinUid} direction="row" spacing={1.5} alignItems="flex-start">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ minWidth: 64, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}
+            >
+              n° {vote.numero}
+            </Typography>
+            <Chip
+              size="small"
+              label={POSITIONS[vote.position]}
+              variant={vote.position === "abstention" ? "outlined" : "filled"}
+              sx={{ height: 20, fontSize: "0.7rem", minWidth: 72, flexShrink: 0 }}
+            />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2">
+                {vote.titre ? majuscule(vote.titre) : `Scrutin n° ${vote.numero}`}
+              </Typography>
+              {vote.sort ? (
+                <Typography variant="caption" color="text.secondary">
+                  {majuscule(vote.sort)}
+                </Typography>
+              ) : null}
+            </Box>
+            <LienSource href={urlScrutin(vote.scrutinUid)} type="scrutin" icone />
+          </Stack>
+        ))}
+      </Stack>
+
+      {votes.length > VOTES_VISIBLES ? (
+        <Button size="small" onClick={() => setTout((v) => !v)} sx={{ mt: 1 }}>
+          {tout
+            ? "Réduire la liste"
+            : `Afficher les ${votes.length - VOTES_VISIBLES} autres scrutins`}
+        </Button>
+      ) : null}
     </Box>
   );
 }

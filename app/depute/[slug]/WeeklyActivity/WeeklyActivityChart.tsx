@@ -37,18 +37,46 @@ export type VarianteActivite = "hemicycle" | "commission";
 const PRESENT = "black";
 const EXCUSE = "#A4A4A7";
 const INCONNU = "#E4E4E7";
+// Gris foncé : une présence établie, mais par le vote seul. Assez proche du
+// noir pour se lire comme une présence, assez distinct pour ne pas se confondre
+// avec une prise de parole.
+const VOTE = "#52525B";
 
-type Segment = { clef: keyof SemaineActivite; label: string; couleur: string };
+type Segment = {
+  clef: keyof SemaineActivite;
+  label: string;
+  couleur: string;
+  /** Ligne de l'infobulle pour `n` éléments de ce segment. */
+  infobulle: (n: number) => string;
+};
+
+const jours = (n: number) => `${n} jour${n > 1 ? "s" : ""}`;
 
 const SEGMENTS: Record<VarianteActivite, Segment[]> = {
   hemicycle: [
-    { clef: "seancePriseParole", label: "A pris la parole", couleur: PRESENT },
-    { clef: "seanceSansParole", label: "Séance sans prise de parole", couleur: INCONNU },
+    {
+      clef: "seancePriseParole",
+      label: "A pris la parole",
+      couleur: PRESENT,
+      infobulle: (n) => `${jours(n)} de prise de parole`,
+    },
+    {
+      clef: "seanceVoteSeul",
+      label: "A voté sans prendre la parole",
+      couleur: VOTE,
+      infobulle: (n) => `${jours(n)} de vote sans prise de parole`,
+    },
+    {
+      clef: "seanceSansParoleNiVote",
+      label: "Séance sans prise de parole ni vote",
+      couleur: INCONNU,
+      infobulle: (n) => `${jours(n)} sans prise de parole ni vote`,
+    },
   ],
   commission: [
-    { clef: "commissionPresent", label: "Présent", couleur: PRESENT },
-    { clef: "commissionExcuse", label: "Excusé", couleur: EXCUSE },
-    { clef: "commissionAbsent", label: "Absent", couleur: INCONNU },
+    { clef: "commissionPresent", label: "Présent", couleur: PRESENT, infobulle: (n) => `${n} présent` },
+    { clef: "commissionExcuse", label: "Excusé", couleur: EXCUSE, infobulle: (n) => `${n} excusé` },
+    { clef: "commissionAbsent", label: "Absent", couleur: INCONNU, infobulle: (n) => `${n} absent` },
   ],
 };
 
@@ -120,7 +148,9 @@ function TooltipContent(props: {
 
   const hemicycle = props.variante === "hemicycle";
   const total = hemicycle ? semaine.seances : semaine.convocations;
-  const fait = hemicycle ? semaine.seancePriseParole : semaine.commissionPresent;
+  const fait = hemicycle
+    ? semaine.seancePriseParole + semaine.seanceVoteSeul
+    : semaine.commissionPresent;
 
   return (
     <Paper sx={{ py: 1, px: 2 }}>
@@ -136,12 +166,14 @@ function TooltipContent(props: {
           <Typography>
             <strong>{fait}</strong>
             {hemicycle
-              ? ` jour${fait > 1 ? "s" : ""} de prise de parole sur ${total} de séance`
+              ? ` jour${fait > 1 ? "s" : ""} de présence établie sur ${total} de séance`
               : ` présence${fait > 1 ? "s" : ""} sur ${total} convocation${
                   total > 1 ? "s" : ""
                 }`}
           </Typography>
-          {SEGMENTS[props.variante].slice(1).map((segment) => {
+          {/* En séance, la présence se décompose (parole, vote) : on détaille
+              tous les segments. En commission, le premier est déjà l'en-tête. */}
+          {SEGMENTS[props.variante].slice(hemicycle ? 0 : 1).map((segment) => {
             const valeur = semaine[segment.clef] as number;
             if (!valeur) return null;
             return (
@@ -162,7 +194,7 @@ function TooltipContent(props: {
                   }}
                 />
                 <Typography variant="body2" color="text.secondary">
-                  {valeur} {segment.label.toLowerCase()}
+                  {segment.infobulle(valeur)}
                 </Typography>
               </Stack>
             );

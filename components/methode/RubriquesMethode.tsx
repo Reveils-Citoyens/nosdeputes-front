@@ -25,6 +25,9 @@ export default function RubriquesMethode({
         const liste = (rubrique.liste ?? [])
           .map((p) => remplir(p, valeurs))
           .filter((p): p is string => p !== null);
+        const suite = (rubrique.suite ?? [])
+          .map((p) => remplir(p, valeurs))
+          .filter((p): p is string => p !== null);
         if (paragraphes.length === 0 && liste.length === 0) return null;
         return (
           <Box key={rubrique.titre} sx={{ mb: 2.5 }}>
@@ -57,6 +60,11 @@ export default function RubriquesMethode({
                 ))}
               </Box>
             )}
+            {suite.map((p, i) => (
+              <Typography key={i} variant="body2" color="text.secondary" sx={{ lineHeight: 1.65, mt: 1 }}>
+                {p}
+              </Typography>
+            ))}
           </Box>
         );
       })}

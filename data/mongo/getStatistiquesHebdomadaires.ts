@@ -44,6 +44,11 @@ export type StatistiqueHebdomadaire = {
   convocations?: number;
   excusees?: number;
   absences?: number;
+  /**
+   * Séance publique : jours où la présence n'est établie que par un vote en
+   * personne, sans prise de parole. Inclus dans `valeur`.
+   */
+  joursVoteSeul?: number;
   /** Nombre de députés servant de base à la médiane et au maximum. */
   effectifReference?: number;
 };
@@ -89,6 +94,7 @@ export const getStatistiquesHebdomadaires = cache(
               convocations: 1,
               excusees: 1,
               absences: 1,
+              joursVoteSeul: 1,
               effectifReference: 1,
             },
             sort: { semaineIndex: 1 },

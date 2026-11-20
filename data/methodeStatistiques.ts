@@ -30,6 +30,8 @@ export type Rubrique = {
   titre: string;
   paragraphes?: string[];
   liste?: string[];
+  /** Paragraphes affichés après la liste. */
+  suite?: string[];
 };
 
 export type Section = {
@@ -81,26 +83,35 @@ export const INDICATEURS: Section[] = [
       {
         titre: "Ce qui est compté",
         paragraphes: [
-          "Les jours de séance publique où le député a pris la parole. Un jour compte si le compte rendu officiel de la séance contient au moins un paragraphe du député de plus de {seuil} caractères, qu’il s’agisse d’une prise de parole de fond, d’une intervention de procédure ou de la présidence de la séance. Un jour compte pour un, que le député y ait pris la parole une fois ou quarante.",
-          "Dans le graphe hebdomadaire, la barre entière représente les jours où l’Assemblée a tenu séance publique dans la semaine ; la partie colorée, les jours où le député y a pris la parole selon cette règle.",
+          "Les jours de séance publique où la présence du député dans l’hémicycle est établie par l’un de ces deux éléments :",
+        ],
+        liste: [
+          "une prise de parole : au moins un paragraphe du député de plus de {seuil} caractères dans le compte rendu officiel, qu’il s’agisse d’une prise de parole de fond, d’une intervention de procédure ou de la présidence de la séance ;",
+          "un vote en personne : au moins un vote pour, contre ou abstention lors d’un scrutin public, exprimé par le député lui-même et non par délégation.",
+        ],
+        suite: [
+          "Un jour compte pour un, quel que soit le nombre de prises de parole ou de votes.",
+          "Dans le graphe hebdomadaire, la barre entière représente les jours où l’Assemblée a tenu séance publique dans la semaine. Elle se divise en jours où le député a pris la parole, jours où il a voté sans prendre la parole, et jours sans prise de parole ni vote.",
         ],
       },
       {
         titre: "Ce qui ne l’est pas",
-        paragraphes: [
-          "Les paragraphes de {seuil} caractères ou moins (« Très bien ! », « Merci. ») : une interjection n’établit pas une participation au débat.",
+        liste: [
+          "Les paragraphes de {seuil} caractères ou moins (« Très bien ! », « Merci. »).",
+          "Les votes par délégation : un député absent peut confier son vote à un collègue. Ce vote est enregistré à son nom, mais il atteste son absence, pas sa présence.",
+          "Les votes à main levée ou par assis et levé, dont l’Assemblée ne publie pas le détail nominatif.",
         ],
       },
       {
         titre: "Source",
         paragraphes: [
-          "Comptes rendus de séance publique publiés en open data par l’Assemblée, où chaque intervention porte l’identifiant du député.",
+          "Comptes rendus de séance publique et analyses des scrutins publics, publiés en open data par l’Assemblée. Pour chaque scrutin, la position de chaque député y est publiée, en précisant s’il a voté par délégation.",
         ],
       },
       {
         titre: "Limites",
         paragraphes: [
-          "Ce n’est pas une mesure de présence. L’Assemblée ne publie aucun registre de présence en séance publique : nous ne pouvons établir qu’une prise de parole. Un député présent toute la journée sans intervenir apparaît dans la partie grise du graphe, intitulée « séance sans prise de parole » et non « absent ».",
+          "Ce n’est pas un registre de présence : l’Assemblée n’en publie pas pour la séance publique. Une prise de parole ou un vote atteste la présence à un moment de la journée, pas pendant toute la séance. Un député présent qui ne prend pas la parole et ne vote pas par scrutin public apparaît dans la partie claire du graphe, intitulée « séance sans prise de parole ni vote » et non « absent ».",
         ],
       },
     ],
@@ -299,7 +310,7 @@ export const PRINCIPES: Rubrique[] = [
       "Les chiffres affichés sur la fiche de chaque député sont calculés par NosDéputés.fr, chaque nuit, à partir des données publiées par l’Assemblée nationale. Dernier calcul : {dateCalcul}.",
     ],
     liste: [
-      "Chaque chiffre est vérifiable. L’onglet « Détail » de la fiche liste, jour par jour, chaque élément compté — prise de parole, réunion, amendement, question — avec un lien vers le document officiel sur le site de l’Assemblée. Les éléments écartés y figurent aussi, avec la règle qui les a écartés.",
+      "Chaque chiffre est vérifiable. L’onglet « Détail » de la fiche liste, jour par jour, chaque élément compté — prise de parole, vote, réunion, amendement, question — avec un lien vers le document officiel sur le site de l’Assemblée. Les éléments écartés y figurent aussi, avec la règle qui les a écartés.",
       "La règle est la même pour tous. Aucun député ne fait l’objet d’un traitement particulier.",
       "Un chiffre ne dit que ce qu’il mesure. Ces indicateurs comptent une activité publique et enregistrée. Ils ne disent rien de la qualité du travail, du travail en circonscription, ni de ce qui ne laisse pas de trace dans les documents de l’Assemblée (réunions de groupe, rendez-vous, préparation des textes).",
     ],
@@ -334,7 +345,7 @@ export const SIGNALER: Rubrique = {
 export const HISTORIQUE: Rubrique = {
   titre: "Historique de la méthode",
   liste: [
-    "Novembre 2026. Exclusion des motions de censure des documents signés. Le détail jour par jour de la séance publique applique la même règle que le graphe. Explications des indicateurs réécrites.",
+    "Novembre 2026. Exclusion des motions de censure des documents signés. Le détail jour par jour de la séance publique applique la même règle que le graphe. Explications des indicateurs réécrites. La présence en séance publique tient compte des votes en personne lors des scrutins publics, hors votes par délégation.",
     "Septembre 2026. Calcul repris par NosDéputés.fr à partir des données brutes de l’Assemblée (auparavant fourni par l’API Tricoteuses) : comparaison limitée aux députés en exercice, députés sans activité comptés pour zéro, interventions en présidant comptées à part, ajout de l’onglet « Détail ».",
   ],
 };

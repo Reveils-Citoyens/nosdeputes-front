@@ -82,9 +82,26 @@ export type InterventionsCommission = {
   detailDisponible: boolean;
 };
 
+/** Vote exprimé en personne lors d'un scrutin public (pas par délégation). */
+export type VoteSeance = {
+  scrutinUid: string;
+  numero: string;
+  position: "pour" | "contre" | "abstention";
+  /** Objet du scrutin, tel que l'Assemblée le libelle (« l'article 7 du… »). */
+  titre: string | null;
+  /** « adopté » / « rejeté ». */
+  sort: string | null;
+};
+
 export type DetailJournee = {
   date: string;
   seances: Seance[];
+  /**
+   * Scrutins où le député a voté en personne ce jour-là : ils établissent sa
+   * présence en séance même sans prise de parole. Vide pour les chiffres
+   * calculés avant la prise en compte des votes.
+   */
+  votes: VoteSeance[];
   reunions: Reunion[];
   interventionsCommission: InterventionsCommission[];
   amendements: string[];
@@ -168,6 +185,7 @@ export const getDetailJournee = cache(
       return {
         date,
         seances: await chargerSeances(db, acteurUid, parType("presenceSeancePublique")),
+        votes: await chargerVotes(db, parType("presenceSeancePublique")),
         reunions: await chargerReunions(db, parType("presenceCommission")),
         interventionsCommission: await chargerInterventionsCommission(db, parType("interventionCommission")),
         amendements: uids("amendementDepose"),
@@ -227,6 +245,31 @@ async function chargerSeances(
   );
 
   return seances.sort((a, b) => a.debut.localeCompare(b.debut));
+}
+
+async function chargerVotes(db: any, ligne: any): Promise<VoteSeance[]> {
+  const votes: any[] = ligne?.scrutins ?? [];
+  if (votes.length === 0) return [];
+
+  const scrutins = await db
+    .collection("scrutins")
+    .find(
+      { uid: { $in: votes.map((v) => v.scrutinUid) } },
+      { projection: { _id: 0, uid: 1, titre: 1, "sort.code": 1 } }
+    )
+    .toArray();
+  const parUid = new Map<string, any>(scrutins.map((s: any) => [s.uid, s]));
+
+  return votes.map((vote) => {
+    const scrutin = parUid.get(vote.scrutinUid);
+    return {
+      scrutinUid: vote.scrutinUid,
+      numero: String(vote.numero ?? ""),
+      position: vote.position,
+      titre: typeof scrutin?.titre === "string" ? scrutin.titre : null,
+      sort: typeof scrutin?.sort?.code === "string" ? scrutin.sort.code : null,
+    };
+  });
 }
 
 async function chargerReunions(db: any, ligne: any): Promise<Reunion[]> {

@@ -157,6 +157,10 @@ def main() -> int:
             f"{racine}/Questions_{famille}_{roman}.json/**/*.json",
             champs=("uid", "type", "auteur", "textesQuestion"),
         )
+    scrutins = charger(
+        f"{racine}/Scrutins_{roman}.json/**/*.json",
+        champs=("uid", "numero", "legislature", "dateScrutin", "ventilationVotes"),
+    )
     acteurs = charger(
         f"{racine}/AMO20_dep_sen_min_tous_mandats_et_organes_{roman}.json/acteur/**/*.json"
     )
@@ -168,9 +172,9 @@ def main() -> int:
         return 1
     log.info(
         "%d CR de séance, %d CR de commission, %d réunions, %d acteurs, "
-        "%d amendements, %d documents, %d questions",
+        "%d amendements, %d documents, %d questions, %d scrutins",
         len(seances), len(commissions), len(reunions), len(acteurs),
-        len(amendements), len(documents_legislatifs), len(questions),
+        len(amendements), len(documents_legislatifs), len(questions), len(scrutins),
     )
 
     db = BaseFichiers(
@@ -180,6 +184,7 @@ def main() -> int:
         amendements=CollectionFichiers(amendements),
         documents=CollectionFichiers(documents_legislatifs),
         questions=CollectionFichiers(questions),
+        scrutins=CollectionFichiers(scrutins),
     )
 
     population = sp.population_par_semaine(db, legislature)
@@ -291,6 +296,23 @@ def main() -> int:
             if l["type"] == sp.TYPE_SEANCE_PUBLIQUE and l["acteurUid"] not in ("assemblee", "median", "max")
             and l["valeur"] > seances.get(l["semaineIndex"], 0)]
     assert not trop, f"présent plus de jours que de séances : {trop[:2]}"
+
+    # Votes en personne : un jour établi par le seul vote doit en porter la
+    # preuve (au moins un scrutin), et la part « vote seul » d'une semaine ne
+    # peut pas dépasser ses jours de présence.
+    seance_publique = par_type[sp.TYPE_SEANCE_PUBLIQUE]
+    sans_preuve = [l for l in seance_publique
+                   if l["joursVoteSeul"] and not l["scrutins"]]
+    assert not sans_preuve, f"jours « vote seul » sans scrutin : {sans_preuve[:2]}"
+    assert any(l["joursVoteSeul"] for l in seance_publique), "aucun jour établi par un vote"
+    vote_seul_excessif = [l for l in hebdomadaire
+                          if l["type"] == sp.TYPE_SEANCE_PUBLIQUE
+                          and l.get("joursVoteSeul", 0) > l["valeur"]]
+    assert not vote_seul_excessif, f"plus de jours « vote seul » que de présences : {vote_seul_excessif[:2]}"
+    log.info(
+        "Séance publique : %d jours de présence, dont %d établis par le seul vote",
+        len(seance_publique), sum(l["joursVoteSeul"] for l in seance_publique),
+    )
     log.info(
         "Dénominateurs : %d semaines de séance (%d à %d jours), "
         "convocations en commission sur %d lignes",

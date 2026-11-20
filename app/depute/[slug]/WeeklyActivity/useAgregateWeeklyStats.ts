@@ -27,8 +27,10 @@ export type SemaineActivite = {
   seances: number;
   /** Jours où le député a pris la parole en séance. */
   seancePriseParole: number;
-  /** Jours de séance sans prise de parole : sa présence y est inconnue. */
-  seanceSansParole: number;
+  /** Jours où il a voté en personne sans prendre la parole. */
+  seanceVoteSeul: number;
+  /** Jours de séance sans prise de parole ni vote : sa présence y est inconnue. */
+  seanceSansParoleNiVote: number;
   /** Réunions où le député était attendu — le possible, pour lui seul. */
   convocations: number;
   commissionPresent: number;
@@ -52,7 +54,11 @@ export function useAgregateWeeklyStats(
         if (ligne.acteurUid === "assemblee") {
           semaine.seances = ligne.valeur;
         } else {
-          semaine.seancePriseParole = ligne.valeur;
+          // `valeur` compte les jours de présence établie, par la parole ou
+          // par le vote ; `joursVoteSeul` isole ceux qui ne tiennent qu'au vote.
+          const voteSeul = ligne.joursVoteSeul ?? 0;
+          semaine.seanceVoteSeul = voteSeul;
+          semaine.seancePriseParole = ligne.valeur - voteSeul;
         }
       } else if (ligne.type === "presenceCommission" && ligne.acteurUid !== "assemblee") {
         semaine.commissionPresent = ligne.valeur;
@@ -79,13 +85,15 @@ export function useAgregateWeeklyStats(
           const s = parSemaine[semaineIndex] ?? {};
           const seances = s.seances ?? 0;
           const priseParole = s.seancePriseParole ?? 0;
+          const voteSeul = s.seanceVoteSeul ?? 0;
           return {
             date: getWeekStartDate(LEGISLATURE, semaineIndex),
             seances,
             seancePriseParole: priseParole,
+            seanceVoteSeul: voteSeul,
             // Le complément n'est pas une absence : c'est ce que les comptes
-            // rendus ne permettent pas de trancher.
-            seanceSansParole: Math.max(0, seances - priseParole),
+            // rendus et les scrutins ne permettent pas de trancher.
+            seanceSansParoleNiVote: Math.max(0, seances - priseParole - voteSeul),
             convocations: s.convocations ?? 0,
             commissionPresent: s.commissionPresent ?? 0,
             commissionExcuse: s.commissionExcuse ?? 0,

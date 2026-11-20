@@ -263,11 +263,13 @@ CATEGORY_EXTRA_FIELDS: dict[str, dict] = {
 #
 # La liste tient à ce dont dépend statistiques_activite.py : les comptes rendus
 # pour les interventions, les réunions pour l'émargement en commission, les
+# scrutins pour les votes en personne qui établissent la présence en séance, les
 # acteurs et organes pour la population de référence.
 CATEGORIES_CRITIQUES = frozenset({
     "acteurs",
     "organes",
     "reunions",
+    "scrutins",
     "comptes_rendus",
     "comptes_rendus_commissions",
 })
