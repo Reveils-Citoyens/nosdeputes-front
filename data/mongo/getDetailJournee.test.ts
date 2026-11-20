@@ -64,3 +64,23 @@ describe("getDetailJournee — interventions en commission", () => {
     expect(ancien).toEqual({ compteRenduUid: "CR-ANCIEN", nombre: 2, interventions: [], detailDisponible: false });
   });
 });
+
+describe("getDetailJournee — séance publique, mêmes règles que le calcul", () => {
+  it("distingue ce qui établit la présence de ce qui compte comme intervention", async () => {
+    const { analyserParagrapheSeance } = await import("./getDetailJournee");
+    const long = "x".repeat(51);
+    const fond = { code_grammaire: "PAROLE_GENERIQUE", orateurs: { orateur: { nom: "Mme Exemple" } } };
+    const presidence = { code_grammaire: "PAROLE_GENERIQUE", orateurs: { orateur: { nom: "Mme la présidente" } } };
+    const procedure = { code_grammaire: "RAPPEL_REGLEMENT", orateurs: { orateur: { nom: "Mme Exemple" } } };
+
+    // Prise de parole de fond courte : intervention comptée (pas de seuil de
+    // longueur pour le compteur), mais insuffisante pour la présence.
+    expect(analyserParagrapheSeance(fond, "Très bien !")).toEqual({ retenue: true, motif: null, etablitPresence: false });
+    // Présidence ou procédure de plus de 50 caractères : établit la présence,
+    // sans compter comme intervention.
+    expect(analyserParagrapheSeance(presidence, long)).toEqual({ retenue: false, motif: "presidence", etablitPresence: true });
+    expect(analyserParagrapheSeance(procedure, long)).toEqual({ retenue: false, motif: "procedure", etablitPresence: true });
+    // Le seuil est strict : 50 caractères ne suffisent pas.
+    expect(analyserParagrapheSeance(fond, "x".repeat(50)).etablitPresence).toBe(false);
+  });
+});

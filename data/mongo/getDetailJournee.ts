@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { getParlementDb } from "@/lib/mongodb";
 import { getVideoReunion, type Video } from "@/data/getVideoReunion";
+import parametres from "@/config/statistiques.json";
 
 /**
  * Détail d'une journée d'activité d'un député : chaque ligne qui a produit un
@@ -17,19 +18,28 @@ import { getVideoReunion, type Video } from "@/data/getVideoReunion";
  */
 
 /** Seuil de longueur en deçà duquel une prise de parole n'établit pas une présence. */
-const SEUIL_CARACTERES = 50;
+// Même seuil que le calcul (config/statistiques.json, lu aussi par
+// statistiques_activite.py) : ce que la page montre est ce qui a été compté.
+const SEUIL_CARACTERES = parametres.seuilCaracteres;
 
 const ROLES_PRESIDENCE = ["president", "président", "presidente", "présidente"];
 
-export type MotifExclusion = "trop_courte" | "presidence" | "procedure";
+/** Pourquoi un paragraphe n'est pas compté comme intervention. */
+export type MotifExclusion = "presidence" | "procedure";
 
 export type Intervention = {
   /** Rang dans le débat, pour restituer l'ordre réel des prises de parole. */
   ordre: number;
   texte: string;
   longueur: number;
+  /** Compté comme intervention : prise de parole de fond, hors présidence. */
   retenue: boolean;
   motif: MotifExclusion | null;
+  /**
+   * Séance publique seulement : le paragraphe suffit à établir la présence du
+   * jour (plus de SEUIL_CARACTERES caractères, quelle que soit sa nature).
+   */
+  etablitPresence?: boolean;
   /** Position en secondes dans la vidéo de la séance, si elle existe. */
   seconde: number | null;
 };
@@ -106,7 +116,22 @@ function* iterParagraphes(noeud: any): Generator<any> {
   }
 }
 
-function motifExclusion(paragraphe: any, texte: string): MotifExclusion | null {
+/**
+ * Règles de statistiques_activite.py, appliquées paragraphe par paragraphe :
+ * - intervention : « parole générique » hors présidence, sans seuil de longueur
+ *   (calculer_interventions_seance_publique) ;
+ * - présence : tout paragraphe de plus de SEUIL_CARACTERES caractères,
+ *   présidence et procédure comprises (calculer_presences_seance_publique).
+ */
+export function analyserParagrapheSeance(
+  paragraphe: any,
+  texte: string,
+): { retenue: boolean; motif: MotifExclusion | null; etablitPresence: boolean } {
+  const motif = motifExclusion(paragraphe);
+  return { retenue: motif === null, motif, etablitPresence: texte.length > SEUIL_CARACTERES };
+}
+
+function motifExclusion(paragraphe: any): MotifExclusion | null {
   const role = String(paragraphe?.roledebat ?? "").toLowerCase();
   const orateur = paragraphe?.orateurs?.orateur;
   const nom = String((Array.isArray(orateur) ? orateur[0] : orateur)?.nom ?? "");
@@ -116,7 +141,6 @@ function motifExclusion(paragraphe: any, texte: string): MotifExclusion | null {
     return "presidence";
   }
   if (paragraphe?.code_grammaire !== "PAROLE_GENERIQUE") return "procedure";
-  if (texte.length <= SEUIL_CARACTERES) return "trop_courte";
   return null;
 }
 
@@ -183,13 +207,11 @@ async function chargerSeances(
       for (const paragraphe of iterParagraphes(compteRendu?.contenu)) {
         if (paragraphe.id_acteur !== acteurUid) continue;
         const texte = texteDuParagraphe(paragraphe);
-        const motif = motifExclusion(paragraphe, texte);
         interventions.push({
           ordre: Number(paragraphe.ordre_absolu_seance) || 0,
           texte,
           longueur: texte.length,
-          retenue: motif === null,
-          motif,
+          ...analyserParagrapheSeance(paragraphe, texte),
           seconde: secondeDuParagraphe(paragraphe),
         });
       }

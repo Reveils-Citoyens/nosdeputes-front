@@ -44,11 +44,13 @@ cf. resolution_orateurs.py.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta, timezone
 from math import ceil
+from pathlib import Path
 from typing import Any, Iterator, NamedTuple
 
 from pymongo import UpdateOne
@@ -57,10 +59,22 @@ import resolution_orateurs
 
 log = logging.getLogger("statistiques")
 
+# Paramètres partagés avec le site (config/statistiques.json) : le seuil affiché
+# dans les explications et appliqué par la page « Détail » est le même que
+# celui du calcul, sans copie à tenir à jour.
+PARAMETRES = json.loads(
+    (Path(__file__).resolve().parent / "config" / "statistiques.json").read_text(encoding="utf-8")
+)
+
 # Une intervention plus courte que ce seuil ("Merci.", "Très bien !") ne suffit
 # pas à établir une présence. Seuil repris de Tricoteuses pour que la reprise du
 # calcul ne change pas les valeurs historiques sans raison explicite.
-SEUIL_CARACTERES = 50
+SEUIL_CARACTERES: int = PARAMETRES["seuilCaracteres"]
+
+# Documents exclus du compteur « Documents signés ». Une motion de censure liste
+# comme auteurs tous ses signataires (91 en moyenne, jusqu'à 192) : la compter
+# mettrait sur le même plan une signature et la rédaction d'un rapport.
+PREFIXES_DOCUMENTS_EXCLUS = ("MION",)
 
 # Dates de début de législature (source : Assemblée nationale).
 LEGISLATURE_DATE_DEBUT = {
@@ -889,13 +903,15 @@ def calculer_documents_publies(db: Any, legislature: int) -> list[dict]:
 
     Un document peut être signé par un organe — une commission — plutôt que par
     des personnes : ces auteurs-là ne sont rattachables à personne et sont donc
-    ignorés.
+    ignorés. Les motions de censure sont exclues (PREFIXES_DOCUMENTS_EXCLUS).
     """
     lignes = []
     for document in db.documents.find(
         {}, {"uid": 1, "legislature": 1, "cycleDeVie.chrono.dateCreation": 1, "auteurs": 1}
     ):
         if str(document.get("legislature") or "") not in ("", str(legislature)):
+            continue
+        if str(document.get("uid") or "").startswith(PREFIXES_DOCUMENTS_EXCLUS):
             continue
         jour = _parse_jour(
             ((document.get("cycleDeVie") or {}).get("chrono") or {}).get("dateCreation")

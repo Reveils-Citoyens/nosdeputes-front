@@ -11,6 +11,9 @@ import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import Verbatim from "@/components/Verbatim";
 import LecteurSeance from "@/components/LecteurSeance";
 import BoutonVideoReunion from "@/components/BoutonVideoReunion";
+import LienSource from "@/components/LienSource";
+import parametres from "@/config/statistiques.json";
+import { urlCompteRendu, urlSource } from "@/lib/sourcesAN";
 import type {
   DetailJournee,
   Intervention,
@@ -31,23 +34,22 @@ type Lecture = { video: Video; seconde: number | null; legende: string };
  * d'une vitrine. Un lecteur qui voit pourquoi une prise de parole n'a pas
  * compté n'a plus de soupçon à formuler.
  */
+// Pourquoi un paragraphe n'est pas compté comme intervention. Il peut
+// néanmoins établir la présence en séance (cf. analyserParagrapheSeance).
 const MOTIFS: Record<MotifExclusion, { label: string; explication: string }> = {
-  trop_courte: {
-    label: "moins de 50 caractères",
-    explication:
-      "Une prise de parole très brève — « Très bien ! », « Merci. » — n’établit pas une participation au débat. Le seuil de 50 caractères écarte ces interjections.",
-  },
   presidence: {
     label: "prononcée en présidant",
     explication:
-      "Donner la parole, annoncer un scrutin ou faire respecter le règlement relève de la conduite des débats, pas d’une position sur le texte. Ces interventions sont comptées à part.",
+      "Donner la parole, annoncer un scrutin ou faire respecter le règlement relève de la conduite des débats, pas d’une position sur le texte. Ces interventions sont comptées à part. En séance, elles comptent en revanche pour la présence du jour.",
   },
   procedure: {
     label: "intervention de procédure",
     explication:
-      "Rappel au règlement, demande de suspension, annonce de vote : le compte rendu les classe hors « parole générique ». Elles portent sur le déroulement de la séance, pas sur le fond du texte.",
+      "Rappel au règlement, demande de suspension, annonce de vote : le compte rendu les classe hors « parole générique ». Elles portent sur le déroulement de la séance, pas sur le fond du texte. Elles comptent en revanche pour la présence du jour.",
   },
 };
+
+const SEUIL = parametres.seuilCaracteres;
 
 const heure = (iso: string) =>
   new Date(iso).toLocaleTimeString("fr-FR", {
@@ -125,6 +127,12 @@ export default function JourneeClient({
                       color={reunion.etat === "présent" ? "default" : undefined}
                       variant={reunion.etat === "présent" ? "filled" : "outlined"}
                     />
+                    {/* Le compte rendu officiel porte la liste des présents,
+                        excusés et absents : c'est la pièce qui fonde l'état
+                        affiché. Sans compte rendu, pas de lien. */}
+                    <LienSource href={urlCompteRendu(reunion.compteRenduRef)} type="compte-rendu-commission">
+                      Compte rendu et présences
+                    </LienSource>
                   </Stack>
                   {reunion.objet.map((ligne, index) => (
                     <Typography key={index} variant="caption" color="text.secondary" display="block">
@@ -154,6 +162,7 @@ export default function JourneeClient({
                   {reunion.compteRenduRef && interventionsParCompteRendu.has(reunion.compteRenduRef) ? (
                     <BlocInterventionsCommission
                       bloc={interventionsParCompteRendu.get(reunion.compteRenduRef)!}
+                      lienSource={false}
                     />
                   ) : null}
                 </Box>
@@ -196,6 +205,7 @@ function BlocSeance(props: {
 }) {
   const { seance } = props;
   const retenues = seance.interventions.filter((i) => i.retenue).length;
+  const presence = seance.interventions.some((i) => i.etablitPresence);
 
   return (
     <Box>
@@ -204,9 +214,14 @@ function BlocSeance(props: {
           Séance publique de {heure(seance.debut)}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {retenues} intervention{retenues > 1 ? "s" : ""} retenue
-          {retenues > 1 ? "s" : ""} sur {seance.interventions.length}
+          {presence ? "Présence établie · " : null}
+          {retenues} intervention{retenues > 1 ? "s" : ""} comptée
+          {retenues > 1 ? "s" : ""} sur {seance.interventions.length} paragraphe
+          {seance.interventions.length > 1 ? "s" : ""}
         </Typography>
+        <LienSource href={urlCompteRendu(seance.compteRenduUid)} type="compte-rendu-seance">
+          Compte rendu officiel
+        </LienSource>
       </Stack>
 
       <Stack spacing={1.5} sx={{ mt: 1.5 }}>
@@ -230,9 +245,21 @@ function BlocSeance(props: {
   );
 }
 
-function BlocInterventionsCommission({ bloc }: { bloc: InterventionsCommission }) {
+function BlocInterventionsCommission({
+  bloc,
+  lienSource = true,
+}: {
+  bloc: InterventionsCommission;
+  /** Faux sous une réunion, qui affiche déjà le lien vers ce compte rendu. */
+  lienSource?: boolean;
+}) {
   return (
     <Box sx={{ mt: 1.25 }}>
+      {lienSource ? (
+        <LienSource href={urlCompteRendu(bloc.compteRenduUid)} type="compte-rendu-commission" sx={{ mb: 0.5 }}>
+          Compte rendu officiel
+        </LienSource>
+      ) : null}
       <Typography variant="caption" color="text.secondary" component="div">
         {bloc.nombre} intervention{bloc.nombre > 1 ? "s" : ""} comptée
         {bloc.nombre > 1 ? "s" : ""}, attribuée{bloc.nombre > 1 ? "s" : ""}{" "}
@@ -281,9 +308,23 @@ function LigneIntervention(props: {
         <Typography variant="caption" color="text.secondary">
           {intervention.longueur} caractères
         </Typography>
+        {intervention.etablitPresence === false ? (
+          <Typography variant="caption" color="text.secondary">
+            —{" "}
+            <Tooltip title={`Une interjection (« Très bien ! », « Merci. ») n’établit pas une participation au débat : seuls les paragraphes de plus de ${SEUIL} caractères comptent pour la présence en séance.`}>
+              <Box
+                component="span"
+                tabIndex={0}
+                sx={{ borderBottom: "1px dotted", borderColor: "text.disabled", cursor: "help" }}
+              >
+                trop courte pour établir la présence
+              </Box>
+            </Tooltip>
+          </Typography>
+        ) : null}
         {intervention.motif ? (
           <Typography variant="caption" color="text.secondary">
-            — non comptée :{" "}
+            — non comptée comme intervention :{" "}
             <Tooltip title={MOTIFS[intervention.motif].explication}>
               {/* Pointillés plutôt que soulignement plein : la convention
                   signale une définition, pas un lien. */}
@@ -345,8 +386,31 @@ function Depots({ detail }: { detail: DetailJournee }) {
           <Typography variant="subtitle2" fontWeight={700}>
             {bloc.titre} ({bloc.uids.length})
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {bloc.uids.join(", ")}
+          {/* Chaque identifiant renvoie au document officiel. */}
+          <Typography variant="caption" color="text.secondary" component="div">
+            {bloc.uids.map((uid, index) => {
+              const url = urlSource(uid);
+              return (
+                <React.Fragment key={uid}>
+                  {index > 0 ? ", " : null}
+                  {url ? (
+                    <Box
+                      component="a"
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-umami-event="source-an"
+                      data-umami-event-type="depot"
+                      sx={{ color: "inherit", "&:hover": { color: "primary.main" } }}
+                    >
+                      {uid}
+                    </Box>
+                  ) : (
+                    uid
+                  )}
+                </React.Fragment>
+              );
+            })}
           </Typography>
         </Box>
       ))}

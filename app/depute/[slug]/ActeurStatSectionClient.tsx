@@ -18,6 +18,8 @@ import {
 } from "@mui/material";
 import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
 import { infoDialogContents } from "@/components/contents";
+import Link from "next/link";
+import { LIBELLES_TRANCHES } from "@/data/methodeStatistiques";
 
 const DEPUTE_STATS_METRICS = [
   "interventions",
@@ -33,13 +35,9 @@ const periodes: PeriodeStatistique[] = [
   "LAST_SIX_MONTHS",
 ];
 
-const quantilesSentences = [
-  "Dans les 20% les moins actifs",
-  "Dans les 40% les moins actifs",
-  "Dans les 60% les plus actifs",
-  "Dans les 40% les plus actifs",
-  "Dans les 20% les plus actifs",
-];
+// Cinq tranches de 20 % des députés, de la moins active à la plus active
+// (libellés et explication : data/methodeStatistiques, section « classement »).
+const quantilesSentences = LIBELLES_TRANCHES;
 
 const baselineTypeToInfo: Record<string, string> = {
   "questions-ecrites": "nb_questions_ecrite",
@@ -203,9 +201,12 @@ const MetriqueCard = (props: CarteMetrique) => {
             );
           })}
         </Box>
-        <Typography variant="caption">
-          {quantilesSentences[quantileIndex]}
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={0.25}>
+          <Typography variant="caption">
+            {quantilesSentences[quantileIndex]}
+          </Typography>
+          <InfoDialogIcon category="depute" item="classement" sx={{ p: 0.25, fontSize: "0.85rem" }} />
+        </Stack>
       </CardContent>
     </Card>
   );
@@ -215,10 +216,13 @@ export function ActeurStatSectionClient({
   metriques,
   distributions,
   fonctionPresidence,
+  dateCalcul,
 }: {
   metriques: MetriqueActeur[];
   distributions: DistributionMesure[];
   fonctionPresidence?: string | null;
+  /** Date ISO du dernier calcul des statistiques. */
+  dateCalcul?: string | null;
 }) {
   const [periode, setPeriode] = React.useState<PeriodeStatistique>("LAST_YEAR");
 
@@ -325,6 +329,14 @@ export function ActeurStatSectionClient({
         </Select>
       </Box>
 
+      <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: -2 }}>
+        {dateCalcul
+          ? `Calculé le ${new Date(dateCalcul).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" })} à partir des données de l’Assemblée nationale · `
+          : "Calculé chaque nuit à partir des données de l’Assemblée nationale · "}
+        <Box component={Link} href="/methodologie#statistiques" sx={{ color: "inherit", textDecoration: "underline" }}>
+          Méthodologie
+        </Box>
+      </Typography>
       <Box
         sx={{
           display: "grid",

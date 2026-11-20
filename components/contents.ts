@@ -1,5 +1,5 @@
 
-export const infoDialogContents: Record<string, Record<string, { dialog?: string; translation?: string; tooltip?: string }>> = {
+export const infoDialogContents: Record<string, Record<string, { dialog?: string; translation?: string; tooltip?: string; /** Clé d'une section de data/methodeStatistiques. */ methode?: string }>> = {
     home: {
         tous_les_dossiers: {
             dialog: `Un dossier législatif rassemble tous les documents et étapes relatifs à une même loi, depuis son dépôt jusqu’à sa promulgation (ou son abandon).
@@ -213,6 +213,9 @@ C’est la commission la plus puissante sur le plan budgétaire.`},
             dialog: `La commission des lois examine les textes relatifs à la Constitution, aux libertés publiques, à la justice, à la sécurité et à l’organisation des institutions.
 Elle joue un rôle central dans la définition des règles qui structurent la vie démocratique et les droits fondamentaux.`}
     },
+    // Statistiques d'activité : les explications viennent de
+    // data/methodeStatistiques (`methode`), source unique partagée avec la page
+    // /methodologie. Seuls les libellés des cartes restent ici.
     depute: {
         profession: {
             translation: 'Profession',
@@ -221,82 +224,20 @@ Elle joue un rôle central dans la définition des règles qui structurent la vi
 Elle ne décrit ni une fonction parlementaire, ni un statut actuel, mais permet de situer le parcours professionnel antérieur de l’élu (enseignant, avocat, journaliste, ouvrier, médecin, etc.).
 
 Cette information aide à comprendre la diversité des origines socioprofessionnelles des élus, mais elle n’implique pas qu’ils continuent à exercer cette activité pendant leur mandat.`},
-        presences: {
-            translation: `Interventions en séance et en commission`,
-            dialog: `Ce chiffre correspond au nombre de prises de parole du député recensées dans les comptes rendus de l’Assemblée nationale, en séance publique comme en réunion de commission.
-
-Sont comptées les interventions de fond (code « parole générique » dans les comptes rendus). Sont exclues les prises de parole faites en présidant les débats — au perchoir de l’hémicycle comme à la tête d’une commission — parce qu’elles relèvent de la conduite de la séance et non d’une position sur le texte.
-
-Ces interventions écartées ne sont pas perdues : quand il y en a, leur nombre est affiché en petit à gauche du chiffre principal. Un président de séance apparaîtrait sinon à zéro sans qu’on sache pourquoi.
-
-Il ne s’agit pas d’une mesure de présence : un député présent toute la journée sans prendre la parole ne compte pas, et un député qui intervient dix fois dans la même séance compte dix fois.`,
-        },
-        nb_documents_publie: {
-            translation: `Documents publiés`,
-            dialog: `Le nombre de documents publiés correspond aux rapports, avis, propositions de loi, amendements ou interventions écrites produits par un député.
-
-Ces documents traduisent l’implication rédactionnelle et le travail de fond d’un élu au sein de l’Assemblée, notamment dans les commissions.
-Ils sont recensés à partir des publications officielles sur les sites institutionnels.`,
-        },
+        presences: { translation: `Interventions en séance et en commission`, methode: "interventions" },
+        presences_commission: { translation: `Présences en commission`, methode: "commissions" },
+        nb_amendements: { translation: `Amendements`, methode: "amendements" },
+        nb_documents_publie: { translation: `Documents signés`, methode: "documents" },
+        nb_questions_ecrite: { translation: `Questions écrites`, methode: "questions-ecrites" },
+        nb_questions_orale: { translation: `Questions orales sans débat`, methode: "questions-orales" },
         interventions_presidence: {
             translation: `Interventions en présidant les débats`,
             tooltip: `Pourquoi ces interventions sont comptées à part`,
-            dialog: `Présider, c’est conduire les débats : donner la parole, annoncer les scrutins, faire respecter le règlement. Ce n’est pas prendre position sur un texte.
-
-Ces prises de parole sont donc écartées du compteur d’interventions, sans quoi tenir le perchoir ou présider une commission suffirait à figurer parmi les députés les plus actifs. Elles ne sont pas perdues pour autant : elles sont comptées et affichées ici.
-
-La règle est la même pour tout le monde et s’applique partout où le compte rendu désigne l’orateur par sa fonction — au perchoir de l’hémicycle comme à la tête d’une commission. Elle concerne donc bien au-delà des seuls membres du Bureau.
-
-Le classement affiché sous le chiffre ne tient pas compte de ces interventions : un député qui préside beaucoup y apparaîtra peu actif. C’est exact au sens de l’indicateur, et c’est précisément ce que ce nombre-ci vient corriger.`,
+            methode: "presidence",
         },
-        activite_seance_publique: {
-            translation: `Séance publique`,
-            tooltip: `Comment ce chiffre est établi`,
-            dialog: `La barre entière représente les jours où l’Assemblée a tenu séance publique dans la semaine. La partie colorée, les jours où le député y a pris la parole de façon substantielle.
-
-⚠️ Ce n’est pas une mesure de présence. L’Assemblée nationale ne publie aucun registre de présence en séance : nous ne pouvons établir qu’une prise de parole, à partir des comptes rendus. Un député présent toute la journée sans intervenir apparaît donc dans la partie grise.
-
-C’est pourquoi la partie grise est intitulée « séance sans prise de parole » et non « absent » : sa présence, ce jour-là, nous est inconnue.`,
-        },
-        activite_commission: {
-            translation: `Commissions`,
-            tooltip: `Comment ce chiffre est établi`,
-            dialog: `La barre entière représente les réunions auxquelles le député était convoqué dans la semaine — celles de ses commissions, délégations, commissions d’enquête et groupes d’amitié. La partie colorée, celles où il a émargé présent.
-
-Ici, rien n’est déduit : pour chaque réunion tenue, l’Assemblée publie la liste nominative des députés attendus et leur état — présent, excusé ou absent. C’est un émargement, et c’est l’indicateur de présence le plus solide dont nous disposons.
-
-Les réunions annulées ou supprimées ne sont pas comptées.`,
-        },
-        presences_commission: {
-            translation: `Présences en commission`,
-            dialog: `Ce chiffre correspond au nombre de réunions auxquelles le député est enregistré comme présent : commissions permanentes, commissions d’enquête, missions d’information, délégations, commissions mixtes paritaires et groupes d’amitié.
-
-Contrairement à la séance publique, la présence n’est pas ici déduite des prises de parole : l’Assemblée nationale publie, pour chaque réunion, la liste nominative des députés présents, excusés ou absents. Nous comptons les réunions où le député figure comme « présent » — un député noté « excusé » n’est pas compté.
-
-Seules les réunions de commission effectivement tenues entrent dans le calcul : les réunions annulées ou supprimées sont écartées, et les séances publiques ne sont pas comptées ici — elles relèvent de l’indicateur de séance publique.`,
-        },
-        nb_questions_ecrite: {
-            translation: `Questions écrites`,
-            dialog: `Les questions écrites sont des questions formelles envoyées par les députés aux ministres, pour obtenir des précisions ou attirer l’attention sur un sujet précis.
-
-Elles doivent recevoir une réponse écrite du gouvernement, publiée au Journal officiel. Le nombre de questions écrites reflète la vigilance et le suivi thématique du député sur certains dossiers.`,
-        },
-        nb_questions_orale: {
-            translation: `Questions orales`,
-            dialog: `Les questions orales sont posées directement au gouvernement, en séance publique (ex. : séances de questions au gouvernement du mardi et du mercredi).
-
-Elles permettent un échange direct et public entre députés et ministres, sur des sujets d’actualité ou de politique publique.
-Le nombre de questions orales reflète donc la visibilité et la participation publique du député dans l’hémicycle.`,
-        },
-        nb_amendements: {
-            translation: `Amendements`,
-            dialog: `Le nombre d’amendements correspond au total des modifications qu’un député a proposées sur des textes de loi pendant leur examen.
-
-Un amendement peut ajouter, supprimer ou reformuler une partie d’un article de loi.
-Il traduit souvent l’investissement législatif concret d’un député : travail d’analyse, de négociation et de rédaction.
-
-Tous les amendements sont publiés et tracés officiellement par l’Assemblée nationale, qu’ils soient adoptés, rejetés ou retirés.`,
-        },
+        activite_seance_publique: { translation: `Séance publique`, tooltip: `Comment ce chiffre est établi`, methode: "seance-publique" },
+        activite_commission: { translation: `Commissions`, tooltip: `Comment ce chiffre est établi`, methode: "commissions" },
+        classement: { translation: `Comment ce classement est établi`, tooltip: `Comment ce classement est établi`, methode: "classement" },
     },
 
     travaux_legistlatifs: {

@@ -18,7 +18,7 @@ export default function InfoDialogIcon(
 
   const info = infoDialogContents[category]?.[item];
 
-  if (!info || (!info.dialog && !info.tooltip)) {
+  if (!info || (!info.dialog && !info.tooltip && !info.methode)) {
     return null;
   }
 
@@ -28,7 +28,7 @@ export default function InfoDialogIcon(
         size="small"
         {...other}
         onClick={
-          info.dialog ? () => setContentKey?.(category + "." + item) : undefined
+          info.dialog || info.methode ? () => setContentKey?.(category + "." + item) : undefined
         }
       >
         <InfoIcon fontSize="inherit" />

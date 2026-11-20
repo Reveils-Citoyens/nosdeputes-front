@@ -1,12 +1,33 @@
 import * as React from "react";
 import { Box, Container, Divider, Link, Stack, Typography } from "@mui/material";
 import type { Metadata } from "next";
+import RubriquesMethode from "@/components/methode/RubriquesMethode";
+import { HISTORIQUE, INDICATEURS, PRINCIPES, SIGNALER } from "@/data/methodeStatistiques";
+import { getValeursMethode } from "@/data/mongo/getValeursMethode";
+import { SommaireLateral, type EntreeSommaire } from "@/components/navigation/SommaireLateral";
 
 export const metadata: Metadata = {
   title: "Méthodologie & transparence — NosDéputés.fr",
   description:
-    "Comment est calculé le score d'activité (heat score) des dossiers et comment sont produits les résumés générés automatiquement.",
+    "Comment sont calculées les statistiques d'activité des députés et le score d'activité des dossiers, et comment sont produits les résumés générés automatiquement.",
 };
+
+// Les explications citent des valeurs calculées (effectif, date du calcul),
+// absentes au build : rendu à la demande, valeurs en cache une heure.
+export const dynamic = "force-dynamic";
+
+// Les ancres sont visées depuis les fenêtres « ⓘ » : sans marge, le titre
+// passerait sous la barre de navigation.
+const ancreSx = { scrollMarginTop: "96px" };
+
+const SOMMAIRE: EntreeSommaire[] = [
+  { id: "statistiques", libelle: "Statistiques d'activité des députés", niveau: 1 },
+  ...INDICATEURS.map((section) => ({ id: section.id, libelle: section.titre, niveau: 2 as const })),
+  { id: "signaler", libelle: "Signaler une erreur", niveau: 2 },
+  { id: "score-dossiers", libelle: "Score d'activité d'un dossier", niveau: 1 },
+  { id: "resumes", libelle: "Résumés générés automatiquement", niveau: 1 },
+  { id: "sources", libelle: "Sources & code", niveau: 1 },
+];
 
 // Prompt transmis tel quel au modèle — reproduit verbatim pour transparence.
 const MISTRAL_PROMPT = `Mission: produire un résumé structuré et concret du contenu du dossier législatif.
@@ -55,9 +76,9 @@ Cas particuliers:
 •⁠  ⁠Pour un rapport ou une mission d'information, résume les constats et recommandations plutôt que des mesures législatives inexistantes.
 •⁠  ⁠Pour un texte très court ou peu documenté, produis moins de mesures mais reste concret.`;
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
-    <Box component="section">
+    <Box component="section" id={id} sx={ancreSx}>
       <Typography variant="h5" component="h2" fontWeight="bold" gutterBottom>
         {title}
       </Typography>
@@ -68,9 +89,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export default function Methodologie() {
+export default async function Methodologie() {
+  const valeurs = await getValeursMethode();
   return (
-    <Container maxWidth="md" sx={{ py: { xs: 4, md: 8 } }}>
+    <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 } }}>
+      <Box sx={{ display: "flex", gap: 5, alignItems: "flex-start" }}>
+      {/* Sommaire collant à gauche (comme les pages débats), sous la barre de
+          navigation (80 px). */}
+      <Box component="aside" sx={{ width: 280, flexShrink: 0, display: { xs: "none", md: "block" }, alignSelf: "stretch" }}>
+        <SommaireLateral entrees={SOMMAIRE} haut={96} />
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 0, maxWidth: 820 }}>
       <Typography variant="h3" component="h1" fontWeight="bold" gutterBottom>
         Méthodologie &amp; transparence
       </Typography>
@@ -80,8 +109,30 @@ export default function Methodologie() {
         ni d&apos;orientation politique.
       </Typography>
 
+      {/* Sur mobile, au-dessus du contenu et replié. */}
+      <Box sx={{ display: { xs: "block", md: "none" }, mb: 4 }}>
+        <SommaireLateral entrees={SOMMAIRE} replie sx={{ position: "static" }} />
+      </Box>
+
       <Stack spacing={4} divider={<Divider />}>
-        <Section title="Score d'activité d'un dossier (« heat score »)">
+        <Section title="Statistiques d'activité des députés" id="statistiques">
+          <Box>
+            <RubriquesMethode rubriques={PRINCIPES} valeurs={valeurs} />
+          </Box>
+          {INDICATEURS.map((section) => (
+            <Box key={section.id} id={section.id} sx={{ ...ancreSx, pt: 1 }}>
+              <Typography variant="h6" component="h3" fontWeight="bold" sx={{ color: "text.primary", mb: 1.5 }}>
+                {section.titre}
+              </Typography>
+              <RubriquesMethode rubriques={section.rubriques} valeurs={valeurs} niveauTitre="h4" />
+            </Box>
+          ))}
+          <Box id="signaler" sx={ancreSx}>
+            <RubriquesMethode rubriques={[SIGNALER, HISTORIQUE]} valeurs={valeurs} />
+          </Box>
+        </Section>
+
+        <Section title="Score d'activité d'un dossier" id="score-dossiers">
           <Typography variant="body1">
             Pour proposer un tri « les plus discutés », chaque dossier reçoit un score compris
             entre 0 et 1 qui mesure <strong>l&apos;intensité de l&apos;activité parlementaire</strong>{" "}
@@ -140,7 +191,7 @@ export default function Methodologie() {
           </Typography>
         </Section>
 
-        <Section title="Résumés et analyses générés automatiquement">
+        <Section title="Résumés et analyses générés automatiquement" id="resumes">
           <Typography variant="body1">
             Les éléments de synthèse affichés sur les pages dossiers — résumé en une phrase
             (TLDR), « pourquoi ce texte », enjeux, « ce que ça change », acteurs concernés,
@@ -176,7 +227,7 @@ export default function Methodologie() {
           </Box>
         </Section>
 
-        <Section title="Sources & code">
+        <Section title="Sources & code" id="sources">
           <Typography variant="body1">
             Les données parlementaires proviennent des données ouvertes de l&apos;Assemblée
             nationale (via l&apos;API Tricoteuses). Le code de la plateforme, y compris le calcul
@@ -193,6 +244,8 @@ export default function Methodologie() {
           </Typography>
         </Section>
       </Stack>
+      </Box>
+      </Box>
     </Container>
   );
 }

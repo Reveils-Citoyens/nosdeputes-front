@@ -4,13 +4,15 @@ import {
   getMetriquesActeur,
 } from "@/data/mongo/getStatistiquesMetriques";
 import { getFonctionPresidence } from "@/data/mongo/getFonctionPresidence";
+import { getValeursMethode } from "@/data/mongo/getValeursMethode";
 import { ActeurStatSectionClient } from "./ActeurStatSectionClient";
 
 export async function ActeurStatsSection({ acteurUid }: { acteurUid: string }) {
-  const [metriques, distributions, fonctionPresidence] = await Promise.all([
+  const [metriques, distributions, fonctionPresidence, valeurs] = await Promise.all([
     getMetriquesActeur(acteurUid),
     getDistributions(),
     getFonctionPresidence(acteurUid),
+    getValeursMethode(),
   ]);
 
   // Sans distribution, les cartes afficheraient un classement calculé sur rien.
@@ -25,6 +27,7 @@ export async function ActeurStatsSection({ acteurUid }: { acteurUid: string }) {
       metriques={metriques}
       distributions={distributions}
       fonctionPresidence={fonctionPresidence}
+      dateCalcul={valeurs.dateCalcul}
     />
   );
 }

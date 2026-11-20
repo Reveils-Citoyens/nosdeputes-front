@@ -30,7 +30,11 @@ body {
   /* 100% (et non 100vw) : on s'aligne sur la zone de contenu de <html> (hors
      gouttière réservée) pour éviter un débordement de ~15px sous la scrollbar. */
   max-width: 100%;
-  overflow-x: hidden;
+  /* clip et non hidden : avec overflow-y:scroll sur <html>, un overflow-x:hidden
+     fait de <body> un conteneur de défilement, ce qui désactive tous les
+     position:sticky du site (barre de navigation, sommaires). clip empêche le
+     débordement horizontal de la même façon, sans créer ce conteneur. */
+  overflow-x: clip;
 }
 
 @media (min-width: 900px) {
