@@ -25,6 +25,8 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ScrutinCard } from "@/app/[legislature]/dossier/[id]/votes/ScrutinCard";
 import { libelleScrutin, type ScrutinResume } from "@/data/liseuse/scrutinsAmendements";
+import LienSource from "@/components/LienSource";
+import { urlAmendement } from "@/lib/sourcesAN";
 
 function getStatus(label: string | null) {
   switch (label) {
@@ -349,10 +351,15 @@ export default function AmendementCard(props: AmendementCardProps) {
           )}
 
           <Box sx={{ pt: 1 }}>
+            {/* Passe à la ligne dans les colonnes étroites (liseuse) au lieu
+                de comprimer les valeurs. */}
             <Stack
-              direction={{ xs: "column", sm: "row" }}
+              direction="row"
               justifyContent="space-between"
-              spacing={{ xs: 2, sm: 0 }}
+              flexWrap="wrap"
+              useFlexGap
+              columnGap={2}
+              rowGap={1.5}
               sx={{ bgcolor: "grey.100", p: 1.5, borderRadius: 1 }}
             >
               <MetaItem label="Numéro" value={`N°${amendement.numeroLong}`} />
@@ -378,6 +385,18 @@ export default function AmendementCard(props: AmendementCardProps) {
                   value={new Date(amendement.dateSort).toLocaleDateString("fr-FR")}
                 />
               )}
+              <MetaItem
+                label="Source"
+                value={
+                  <LienSource
+                    href={urlAmendement(amendement.uid)}
+                    type="amendement"
+                    sx={{ fontSize: "0.85rem", fontWeight: 600, color: "text.primary", whiteSpace: "normal" }}
+                  >
+                    Assemblée nationale
+                  </LienSource>
+                }
+              />
             </Stack>
           </Box>
         </Stack>
@@ -386,7 +405,7 @@ export default function AmendementCard(props: AmendementCardProps) {
   );
 }
 
-function MetaItem({ label, value }: { label: string; value: string }) {
+function MetaItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Box>
       <Typography
@@ -401,7 +420,7 @@ function MetaItem({ label, value }: { label: string; value: string }) {
       >
         {label}
       </Typography>
-      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.85rem" }}>
+      <Typography variant="body2" component="div" sx={{ fontWeight: 600, fontSize: "0.85rem" }}>
         {value}
       </Typography>
     </Box>

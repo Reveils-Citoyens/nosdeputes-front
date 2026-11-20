@@ -10,6 +10,8 @@ import { CardLayout } from "@/components/folders/CardLayout";
 import type { MissionReunion } from "@/data/mongo/getMissionReunions";
 import type { Video } from "@/data/getVideoReunion";
 import BoutonVideoReunion from "@/components/BoutonVideoReunion";
+import LienSource from "@/components/LienSource";
+import { urlCompteRendu } from "@/lib/sourcesAN";
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
@@ -110,6 +112,9 @@ export function MissionReunionsCard({
                       Lire le compte rendu
                     </Typography>
                   )}
+                  <LienSource href={urlCompteRendu(r.compteRenduRefUid)} type="compte-rendu-commission">
+                    Compte rendu officiel
+                  </LienSource>
                 </Stack>
               )}
             </Box>

@@ -16,6 +16,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Alert, Button, Skeleton } from "@mui/material";
 import StatusChip from "@/components/StatusChip";
 import { VotesGroups } from "./VotesGroups";
+import LienSource from "@/components/LienSource";
+import { urlScrutin } from "@/lib/sourcesAN";
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -113,6 +115,9 @@ export function ScrutinCard({
               {scrutin.dateScrutin?.toLocaleDateString("fr-FR")}
               {compact && typeVote ? ` • ${typeVote}` : null}
             </Typography>
+            <LienSource href={urlScrutin(scrutin.uid)} type="scrutin" sx={{ mb: compact ? 0 : 0.5 }}>
+              Analyse officielle du scrutin
+            </LienSource>
             {!compact && (
               <Typography
                 variant="subtitle1"

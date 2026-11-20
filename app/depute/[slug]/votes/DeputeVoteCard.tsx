@@ -11,6 +11,8 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import { Vote, Scrutin, Dossier } from "@prisma/client";
 import StatusChip from "@/components/StatusChip";
 import CircleDiv from "@/icons/CircleDiv";
+import LienSource from "@/components/LienSource";
+import { urlScrutin } from "@/lib/sourcesAN";
 
 const VOTE_COLOR = {
   pour: "green",
@@ -103,6 +105,9 @@ export function DeputeVoteCard({
                 }}
               />
             )}
+            <LienSource href={urlScrutin(scrutin.uid)} type="scrutin">
+              Analyse officielle du scrutin
+            </LienSource>
           </Stack>
           <StatusChip
             label={scrutinMeta.label}

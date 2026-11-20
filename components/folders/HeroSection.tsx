@@ -20,6 +20,9 @@ import { getTermForProcedure } from "@/data/glossaire";
 import { statusInfo } from "@/app/[legislature]/dossier/[id]/dataFunctions";
 import { THEMES, type ThemeSlug } from "@/data/themes";
 import { THEME_ICONS } from "@/app/themes/themeIcons";
+import Button from "@mui/material/Button";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import { urlDossier } from "@/lib/sourcesAN";
 
 const breadcrumbs = [
   <Link key="1" href="/">
@@ -185,7 +188,44 @@ export const HeroSection = ({
                     subjectLabel={titre}
                     variant="button"
                     fluxRss={fluxRss}
+                    fondSombreMobile
                   />
+                )}
+                {/* Même forme de pastille que « Suivre », contour discret : action
+                    secondaire, qui ouvre le dossier officiel. */}
+                {urlDossier(dossierUid) && (
+                  <Button
+                    component="a"
+                    href={urlDossier(dossierUid)!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-umami-event="source-an"
+                    data-umami-event-type="dossier"
+                    aria-label="Voir le dossier sur le site de l’Assemblée nationale (nouvel onglet)"
+                    variant="outlined"
+                    size="small"
+                    endIcon={<OpenInNewIcon sx={{ fontSize: "14px !important" }} />}
+                    sx={{
+                      borderRadius: "30px",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      fontSize: "12px",
+                      letterSpacing: 0,
+                      px: 1.5,
+                      py: 0.5,
+                      // Fond sombre de l'en-tête sur mobile, clair à partir de md.
+                      borderColor: { xs: "rgba(255,255,255,0.5)", md: "grey.300" },
+                      color: { xs: "#fff", md: "text.secondary" },
+                      "&:hover": {
+                        borderColor: { xs: "#fff", md: "#1A1A1B" },
+                        color: { xs: "#fff", md: "#1A1A1B" },
+                        bgcolor: { xs: "rgba(255,255,255,0.1)", md: "#f5f5f5" },
+                      },
+                      "& .MuiButton-endIcon": { ml: 0.5 },
+                    }}
+                  >
+                    Assemblée nationale
+                  </Button>
                 )}
               </Stack>
 

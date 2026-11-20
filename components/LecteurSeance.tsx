@@ -8,6 +8,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import CloseIcon from "@mui/icons-material/Close";
 import type { Video } from "@/data/getVideoReunion";
+import LienSource from "@/components/LienSource";
 
 /**
  * Lecteur de la vidéo d'une séance, calé à la seconde d'une intervention.
@@ -131,6 +132,10 @@ export default function LecteurSeance(props: {
         <Typography variant="caption" color="text.secondary" noWrap>
           {props.legende}
         </Typography>
+        {/* La captation officielle, aussi quand elle est lisible ici. */}
+        {!indisponible ? (
+          <LienSource href={props.video.page} type="video" icone sx={{ ml: "auto", mr: 0.5 }} />
+        ) : null}
         <IconButton size="small" onClick={props.onFermer} aria-label="Fermer la vidéo">
           <CloseIcon fontSize="inherit" />
         </IconButton>

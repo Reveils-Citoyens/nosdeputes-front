@@ -7,6 +7,8 @@ import Typography from "@mui/material/Typography";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
 import { getDocument } from "@/data/getDocument";
+import LienSource from "@/components/LienSource";
+import { urlTexte } from "@/lib/sourcesAN";
 
 interface DocumentInlineCardProps {
   documentUid: string | null;
@@ -97,6 +99,9 @@ export const DocumentInlineCard = async ({
               Ouvrir le PDF <OpenInNewIcon sx={{ fontSize: 16 }} />
             </Typography>
           )}
+          <LienSource href={urlTexte(documentUid)} type="document" sx={{ flexShrink: 0 }}>
+            Texte officiel
+          </LienSource>
         </Stack>
 
         {document.pdfUrl ? (

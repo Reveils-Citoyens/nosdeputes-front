@@ -12,6 +12,8 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Organe, Question } from "@prisma/client";
 import StatusChip from "@/components/StatusChip";
 import { capitalizeFirst } from "@/lib/strings";
+import LienSource from "@/components/LienSource";
+import { urlQuestion } from "@/lib/sourcesAN";
 
 type QuestionCardProps = {
   question: Question & { ministerInteroge: Organe | null };
@@ -65,20 +67,29 @@ export default function QuestionCard(props: QuestionCardProps) {
         aria-controls={pannelId}
         id={headerId}
       >
+        {/* Le titre prend la place restante et passe à la ligne ; les
+            pastilles restent groupées sur une ligne (sous le titre sur
+            mobile), au lieu de s'empiler quand le titre est long. */}
         <Stack
-          direction="row"
-          alignItems="center"
-          spacing={2}
-          sx={{ width: "100%", mr: 1 }}
+          direction={{ xs: "column", sm: "row" }}
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          gap={{ xs: 1, sm: 2 }}
+          sx={{ width: "100%", mr: 1, minWidth: 0 }}
         >
           <Typography
             variant="subtitle2"
-            sx={{ fontWeight: "medium", flexGrow: 1 }}
+            sx={{ fontWeight: "medium", flex: 1, minWidth: 0 }}
           >
             {titre || `Question N°${numero}`}
           </Typography>
 
-          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            useFlexGap
+            sx={{ flexShrink: 0, flexWrap: { xs: "wrap", sm: "nowrap" } }}
+          >
             {rubrique && (
               <StatusChip size="small" label={capitalizeFirst(rubrique)} />
             )}
@@ -178,6 +189,10 @@ export default function QuestionCard(props: QuestionCardProps) {
             <Stack
               direction="row"
               justifyContent="space-between"
+              flexWrap="wrap"
+              useFlexGap
+              columnGap={2}
+              rowGap={1.5}
               sx={{ bgcolor: "grey.100", p: 1.5, borderRadius: 1 }}
             >
               <MetaItem label="N° Question" value={numero.toString()} />
@@ -193,6 +208,14 @@ export default function QuestionCard(props: QuestionCardProps) {
                     : "-"
                 }
               />
+              <MetaItem
+                label="Source"
+                value={
+                  <LienSource href={urlQuestion(uid)} type="question" sx={metaLienSx}>
+                    Assemblée nationale
+                  </LienSource>
+                }
+              />
             </Stack>
           </Box>
         </Stack>
@@ -201,7 +224,10 @@ export default function QuestionCard(props: QuestionCardProps) {
   );
 }
 
-function MetaItem({ label, value }: { label: string; value: string }) {
+// Le lien vers la source se lit comme les autres valeurs de la barre.
+const metaLienSx = { fontSize: "0.85rem", fontWeight: 600, color: "text.primary", whiteSpace: "normal" };
+
+function MetaItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Box>
       <Typography
@@ -216,7 +242,7 @@ function MetaItem({ label, value }: { label: string; value: string }) {
       >
         {label}
       </Typography>
-      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.85rem" }}>
+      <Typography variant="body2" component="div" sx={{ fontWeight: 600, fontSize: "0.85rem" }}>
         {value}
       </Typography>
     </Box>

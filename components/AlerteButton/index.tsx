@@ -25,6 +25,11 @@ type Props = {
   variant?: "icon" | "button";
   /** Chemin du flux RSS du sujet, proposé en alternative à l'email. */
   fluxRss?: string;
+  /**
+   * Placé sur un fond sombre en mobile et clair à partir de md (en-tête de
+   * dossier) : couleurs inversées en mobile pour rester visible.
+   */
+  fondSombreMobile?: boolean;
 };
 
 type SubmitStatus =
@@ -125,6 +130,7 @@ export default function AlerteButton({
   subjectLabel,
   variant = "button",
   fluxRss,
+  fondSombreMobile = false,
 }: Props) {
   const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
   const [email, setEmail] = React.useState("");
@@ -223,9 +229,25 @@ export default function AlerteButton({
             letterSpacing: 0,
             px: 1.5,
             py: 0.5,
-            ...(isFollowed
-              ? { bgcolor: "#1A1A1B", color: "white", borderColor: "#1A1A1B", "&:hover": { bgcolor: "#333" } }
-              : { borderColor: "#1A1A1B", color: "#1A1A1B", "&:hover": { bgcolor: "#f5f5f5" } }),
+            ...(fondSombreMobile
+              ? isFollowed
+                ? {
+                    bgcolor: { xs: "#fff", md: "#1A1A1B" },
+                    color: { xs: "#1A1A1B", md: "white" },
+                    borderColor: { xs: "#fff", md: "#1A1A1B" },
+                    "&:hover": { bgcolor: { xs: "#e5e5e5", md: "#333" } },
+                  }
+                : {
+                    borderColor: { xs: "rgba(255,255,255,0.7)", md: "#1A1A1B" },
+                    color: { xs: "#fff", md: "#1A1A1B" },
+                    "&:hover": {
+                      borderColor: { xs: "#fff", md: "#1A1A1B" },
+                      bgcolor: { xs: "rgba(255,255,255,0.1)", md: "#f5f5f5" },
+                    },
+                  }
+              : isFollowed
+                ? { bgcolor: "#1A1A1B", color: "white", borderColor: "#1A1A1B", "&:hover": { bgcolor: "#333" } }
+                : { borderColor: "#1A1A1B", color: "#1A1A1B", "&:hover": { bgcolor: "#f5f5f5" } }),
             "& .MuiButton-startIcon": { marginRight: 0.5 },
           }}
         >

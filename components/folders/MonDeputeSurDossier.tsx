@@ -16,6 +16,8 @@ import {
   CompareArrowsSharp as DissidentIcon,
 } from "@mui/icons-material";
 import { MON_DEPUTE_EVENT, readMonDepute, MonDepute } from "@/lib/monDepute";
+import LienSource from "@/components/LienSource";
+import { urlScrutin } from "@/lib/sourcesAN";
 import type {
   ActeurSurDossier,
   ActeurVoteSurDossier,
@@ -426,6 +428,9 @@ function VoteRow({ vote }: { vote: ActeurVoteSurDossier }) {
               </Stack>
             </Tooltip>
           )}
+          <LienSource href={urlScrutin(vote.scrutinUid)} type="scrutin">
+            Scrutin officiel
+          </LienSource>
         </Stack>
       </Box>
     </Stack>

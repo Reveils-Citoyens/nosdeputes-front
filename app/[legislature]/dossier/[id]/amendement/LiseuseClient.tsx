@@ -28,6 +28,8 @@ import { loadRemainingAmendments, type AmendmentsPage } from "@/data/liseuse/loa
 import { ArticleTextSkeleton, LiseuseContentSkeleton, LiseuseFiltersSkeleton } from "@/components/navigation/LiseuseSkeleton";
 import { liseuseToolbarSx, liseuseFiltersSx, liseusePanelSx, liseuseContentSx } from "@/components/navigation/LiseuseLayout";
 import { ScrutinsAmendementsContext, useScrutinsAmendements } from "./useScrutinsAmendements";
+import LienSource from "@/components/LienSource";
+import { urlTexte } from "@/lib/sourcesAN";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -115,11 +117,14 @@ function ColumnHeader({
   subtitle,
   icon,
   bg = "grey.100",
+  action,
 }: {
   label: React.ReactNode;
   subtitle?: React.ReactNode;
   icon?: React.ReactNode;
   bg?: string;
+  /** Élément aligné à droite de l'en-tête (lien vers la source). */
+  action?: React.ReactNode;
 }) {
   return (
     <Box
@@ -163,6 +168,7 @@ function ColumnHeader({
           </Typography>
         )}
       </Box>
+      {action ? <Box sx={{ ml: "auto" }}>{action}</Box> : null}
     </Box>
   );
 }
@@ -455,8 +461,9 @@ function SidebarNav({
     <Box
       sx={{
         position: { md: "sticky" },
-        top: 16,
-        maxHeight: { md: "calc(100vh - 130px)" },
+        // Sous la barre de navigation collante (80 px).
+        top: 96,
+        maxHeight: { md: "calc(100vh - 112px)" },
         overflowY: { md: "auto" },
         pr: 1,
       }}
@@ -646,6 +653,11 @@ function ArticleView({
             label="Texte de l'article"
             bg="grey.100"
             icon={<ArticleOutlinedIcon sx={{ fontSize: 14, color: "text.secondary" }} />}
+            action={
+              <LienSource href={urlTexte(docUid)} type="texte" sx={{ fontSize: "0.68rem" }}>
+                Texte officiel
+              </LienSource>
+            }
           />
           {item.isUncat ? (
             <Typography

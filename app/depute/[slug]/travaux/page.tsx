@@ -13,7 +13,7 @@ import {
   Description as DescriptionIcon,
   Campaign as CampaignIcon,
   FolderOpen as FolderIcon,
-  OpenInNew as OpenInNewIcon,
+  PictureAsPdfOutlined as PdfIcon,
 } from "@mui/icons-material";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -23,6 +23,8 @@ import { getActeurBySlug } from "@/data/getActeurBySlug";
 import { searchDocument } from "@/data/searchDocument";
 import { searchDossier } from "@/data/searchDossier";
 import { DeputeTravauxSkeleton } from "@/components/navigation/DeputeTabSkeleton";
+import LienSource from "@/components/LienSource";
+import { urlTexte } from "@/lib/sourcesAN";
 
 // ─── Section shell (identique à /recherche pour cohérence) ────────────────────
 
@@ -85,10 +87,12 @@ function DocumentRow({
   titre,
   date,
   pdfUrl,
+  uid,
 }: {
   titre: string | null | undefined;
   date: Date | null | undefined;
   pdfUrl: string | null | undefined;
+  uid: string;
 }) {
   const inner = (
     <Stack
@@ -106,9 +110,12 @@ function DocumentRow({
           <Typography variant="body2" fontWeight="bold" sx={{ minWidth: 0 }}>
             {titre ?? "Document"}
           </Typography>
+          {/* Le titre ouvre le PDF ; la source officielle est le lien texte
+              à droite. Deux actions, deux apparences. */}
           {pdfUrl && (
-            <OpenInNewIcon
-              sx={{ fontSize: 14, color: "grey.500", flexShrink: 0 }}
+            <PdfIcon
+              aria-label="PDF"
+              sx={{ fontSize: 16, color: "grey.500", flexShrink: 0 }}
             />
           )}
         </Stack>
@@ -129,18 +136,31 @@ function DocumentRow({
     </Stack>
   );
 
-  if (pdfUrl) {
-    return (
-      <Link
-        href={pdfUrl}
-        target="_blank"
-        style={{ textDecoration: "none", color: "inherit" }}
-      >
-        {inner}
-      </Link>
-    );
-  }
-  return inner;
+  // Le PDF est une copie hébergée par Tricoteuses ; la source officielle est
+  // proposée à côté, hors du lien de la ligne (pas de lien dans un lien).
+  const source = (
+    <LienSource href={urlTexte(uid)} type="document" sx={{ flexShrink: 0, pl: 2, pr: 1 }}>
+      Assemblée nationale
+    </LienSource>
+  );
+  return (
+    <Stack direction="row" alignItems="center">
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        {pdfUrl ? (
+          <Link
+            href={pdfUrl}
+            target="_blank"
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            {inner}
+          </Link>
+        ) : (
+          inner
+        )}
+      </Box>
+      {source}
+    </Stack>
+  );
 }
 
 // ─── Row pour un dossier législatif initié ───────────────────────────────────
@@ -301,6 +321,7 @@ export default function Travaux() {
                     titre={doc.titrePrincipalCourt}
                     date={doc.dateCreation}
                     pdfUrl={doc.pdfUrl}
+                    uid={doc.uid}
                   />
                 ))}
               </Stack>
@@ -322,6 +343,7 @@ export default function Travaux() {
                     titre={doc.titrePrincipalCourt}
                     date={doc.dateCreation}
                     pdfUrl={doc.pdfUrl}
+                    uid={doc.uid}
                   />
                 ))}
               </Stack>
@@ -343,6 +365,7 @@ export default function Travaux() {
                     titre={doc.titrePrincipalCourt}
                     date={doc.dateCreation}
                     pdfUrl={doc.pdfUrl}
+                    uid={doc.uid}
                   />
                 ))}
               </Stack>

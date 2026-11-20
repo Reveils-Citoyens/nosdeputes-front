@@ -7,6 +7,8 @@ import { getFiabiliteCompteRendu } from "@/data/getFiabiliteCompteRendu";
 import AlerteCompteRenduNonCertifie from "@/components/AlerteCompteRenduNonCertifie";
 import { getVideoDuCompteRendu } from "@/data/getVideoReunion";
 import BoutonVideoReunion from "@/components/BoutonVideoReunion";
+import LienSource from "@/components/LienSource";
+import { urlCompteRendu } from "@/lib/sourcesAN";
 
 function formatDate(value: unknown): string | null {
   if (!value) return null;
@@ -82,6 +84,14 @@ export default async function CompteRenduPage({
             />
           </div>
         ) : null}
+        <div style={{ marginBottom: 12 }}>
+          <LienSource
+            href={urlCompteRendu(crUid)}
+            type={crUid.startsWith("CRS") ? "compte-rendu-seance" : "compte-rendu-commission"}
+          >
+            Compte rendu officiel sur le site de l’Assemblée nationale
+          </LienSource>
+        </div>
         <AlerteCompteRenduNonCertifie fiabilite={fiabilite} />
         <DebateTranscript
           title={dateLabel ?? "Compte rendu"}

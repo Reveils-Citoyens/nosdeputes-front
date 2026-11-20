@@ -32,6 +32,8 @@ import RemoveIcon from "@mui/icons-material/Remove";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 import HandshakeOutlinedIcon from "@mui/icons-material/HandshakeOutlined";
+import LienSource from "@/components/LienSource";
+import { urlScrutin } from "@/lib/sourcesAN";
 
 type Outcome = {
   label: string;
@@ -254,7 +256,7 @@ function AdoptionBadge({
 }: {
   adoption: boolean;
   size?: "sm" | "md";
-  voteInfo?: { pour: number; contre: number; abstentions: number; href?: string };
+  voteInfo?: { pour: number; contre: number; abstentions: number; href?: string; scrutinUid?: string };
 }) {
   const isLarge = size === "md";
 
@@ -312,6 +314,13 @@ function AdoptionBadge({
           Voir le détail du vote →
         </Typography>
       )}
+      <LienSource
+        href={urlScrutin(voteInfo.scrutinUid)}
+        type="scrutin"
+        sx={{ color: "#93c5fd", mt: 0.5, "&:hover": { color: "#bfdbfe" } }}
+      >
+        Analyse officielle du scrutin
+      </LienSource>
     </Box>
   );
 
@@ -611,7 +620,7 @@ const TimelineItemLvl1 = ({
   act: ActeLegislatif;
   groupDate?: Date;
   isMobile: boolean;
-  voteInfo?: { pour: number; contre: number; abstentions: number; href?: string };
+  voteInfo?: { pour: number; contre: number; abstentions: number; href?: string; scrutinUid?: string };
 }>) => {
   const title = act.nomCanonique || act.codeActe;
   const dateStr = formatDate(act.dateActe ?? groupDate);
@@ -766,7 +775,7 @@ export const TimelineCard = ({
       );
       if (!rep.ok) return {};
       const { data } = await rep.json();
-      const map: Record<string, { pour: number; contre: number; abstentions: number }> = {};
+      const map: Record<string, { pour: number; contre: number; abstentions: number; scrutinUid?: string }> = {};
       for (const acte of data?.actesLegislatifs ?? []) {
         const scrutin = acte.voteRefs?.[0]?.voteRef;
         if (scrutin && acte.uid) {
@@ -774,6 +783,7 @@ export const TimelineCard = ({
             pour: scrutin.pour ?? 0,
             contre: scrutin.contre ?? 0,
             abstentions: scrutin.abstentions ?? 0,
+            scrutinUid: scrutin.uid,
           };
         }
       }

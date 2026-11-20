@@ -25,6 +25,7 @@ import { openGraphPage } from "@/lib/metadata";
 import { alternateRss } from "@/lib/rss";
 import { TabNavigationProvider, TabNavigationContent } from "@/components/navigation/TabNavigation";
 import TabRouteSkeleton from "@/components/navigation/TabRouteSkeleton";
+import { urlDepute } from "@/lib/sourcesAN";
 
 export async function generateMetadata({
   params,
@@ -78,6 +79,25 @@ export async function generateMetadata({
   };
 }
 
+// Bouton rond des liens sortants (réseaux sociaux, fiche officielle).
+const socialLinkSx = {
+  width: 44,
+  height: 44,
+  borderRadius: "50%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  bgcolor: "white",
+  boxShadow: "0px 2px 8px rgba(0,0,0,0.08)",
+  border: "1px solid #f0f0f0",
+  color: "#1A1A1B",
+  transition: "all 0.2s",
+  "&:hover": {
+    transform: "scale(1.1)",
+    color: "#000",
+  },
+};
+
 const SocialLink = ({
   Icon,
   href,
@@ -92,23 +112,7 @@ const SocialLink = ({
     rel="noopener noreferrer"
     data-umami-event="lien-sortant"
     data-umami-event-type="reseau-social"
-    sx={{
-      width: 44,
-      height: 44,
-      borderRadius: "50%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      bgcolor: "white",
-      boxShadow: "0px 2px 8px rgba(0,0,0,0.08)",
-      border: "1px solid #f0f0f0",
-      color: "#1A1A1B",
-      transition: "all 0.2s",
-      "&:hover": {
-        transform: "scale(1.1)",
-        color: "#000",
-      },
-    }}
+    sx={socialLinkSx}
   >
     <Icon sx={{ fontSize: 20 }} />
   </Box>
@@ -157,6 +161,7 @@ export default async function Page({
   // (démissionnaires, défunts, fin de législature, etc.).
   const mandatAcheve = depute.chambre === "AN" && depute.actif === false;
   const auGouvernement = depute.auGouvernement === true;
+  const ficheOfficielle = urlDepute(depute.uid);
 
   const twitter = adressesElectroniques.find(
     (c) => c.typeLibelle === "Twitter"
@@ -285,6 +290,24 @@ export default async function Page({
           gap={1.5}
           sx={{ width: { xs: "100%", md: "auto" } }}
         >
+          {/* Source officielle, en tête des liens sortants. */}
+          {ficheOfficielle && (
+            <Tooltip title="Fiche officielle sur le site de l’Assemblée nationale">
+              <Box
+                component="a"
+                href={ficheOfficielle}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Fiche officielle sur le site de l’Assemblée nationale (nouvel onglet)"
+                data-umami-event="source-an"
+                data-umami-event-type="depute"
+                sx={socialLinkSx}
+              >
+                {/* Bâtiment du logo de l'Assemblée, sans le lettrage, illisible à cette taille. */}
+                <Box component="img" src="/logo-an-hemicycle.svg" alt="" sx={{ width: 28, borderRadius: "3px" }} />
+              </Box>
+            </Tooltip>
+          )}
           {website && (
             <SocialLink Icon={WebsiteIcon} href={`https://${website}`} />
           )}

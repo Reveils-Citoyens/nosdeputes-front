@@ -9,6 +9,8 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import LecteurSeance from "@/components/LecteurSeance";
+import LienSource from "@/components/LienSource";
+import { urlCompteRendu } from "@/lib/sourcesAN";
 import type { PriseDeParole } from "@/data/getDernieresPrisesDeParole";
 
 /**
@@ -182,6 +184,16 @@ export default function DernieresPrisesDeParole(props: {
                     Voir le débat
                   </Button>
                 ) : null}
+                <LienSource
+                  href={urlCompteRendu(prise.compteRenduUid)}
+                  type="compte-rendu-seance"
+                  sx={{ alignSelf: "center" }}
+                >
+                  Compte rendu officiel
+                </LienSource>
+                <LienSource href={prise.video.page} type="video" sx={{ alignSelf: "center" }}>
+                  Vidéo officielle
+                </LienSource>
               </Stack>
             </CardContent>
           </Card>
