@@ -1,5 +1,6 @@
 import { getParlementDb } from "@/lib/mongodb";
 import { cache } from "react";
+import { liste } from "@/data/mongo/conversionAN";
 
 export type Collaborateur = {
   qualite: string | null;
@@ -15,12 +16,17 @@ export const getActeurCollaborateurs = cache(
       { projection: { _id: 0, "mandats.mandat": 1 } }
     );
 
-    const mandats: Array<Record<string, unknown>> =
-      acteur?.mandats?.mandat ?? [];
+    // L'open data rend un objet seul, et non une liste, quand il n'y a qu'un
+    // élément (un seul mandat, un seul collaborateur) : `.map` plantait alors
+    // toute la fiche du député.
+    const mandats = liste<Record<string, unknown>>(acteur?.mandats?.mandat);
     const mandatAN = mandats.find((m) => m.typeOrgane === "ASSEMBLEE");
-    const collaborateurs: Array<Record<string, string | null>> =
-      (mandatAN?.collaborateurs as { collaborateur?: Array<Record<string, string | null>> })
-        ?.collaborateur ?? [];
+    const collaborateurs = liste<Record<string, string | null>>(
+      (mandatAN?.collaborateurs as { collaborateur?: unknown } | undefined)?.collaborateur as
+        | Record<string, string | null>
+        | Record<string, string | null>[]
+        | undefined
+    );
 
     return collaborateurs.map((c) => ({
       qualite: c.qualite ?? null,

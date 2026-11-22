@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { Mandat } from "@prisma/client";
 import { cacheTricoteuses } from "../cacheTricoteuses";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 /**
  * Quand un député est nommé au gouvernement, son `mandatPrincipal` côté API
@@ -33,8 +34,14 @@ function deputePhotoUrl(uid: string): string {
 }
 
 async function fetchActiveAssembleeMandat(acteurUid: string): Promise<Mandat | null> {
+  // Serveur : notre base d'abord (cf. data/mongo/referentielAN.ts).
+  if (typeof window === "undefined") {
+    const { getMandatsActifsAN } = await import("../mongo/referentielAN");
+    const mandats = await getMandatsActifsAN(acteurUid);
+    if (mandats) return mandats.find((m) => m.typeOrgane === "ASSEMBLEE") ?? null;
+  }
   try {
-    const rep = await fetch(
+    const rep = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/mandats?acteurRefUid=${acteurUid}&perPage=100`,
       cacheTricoteuses("stable")
     );

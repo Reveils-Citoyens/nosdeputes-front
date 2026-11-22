@@ -2,6 +2,7 @@ import * as React from "react";
 import { Mandat, Organe } from "@prisma/client";
 import { getOrganes } from "./getOrgane";
 import { cacheTricoteuses } from "./cacheTricoteuses";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 export type MandatWithOrgane = Mandat & {
   organeRef: Organe | null;
@@ -10,8 +11,12 @@ export type MandatWithOrgane = Mandat & {
 async function getActeurMandatsUnCached(
   acteurUid: string
 ): Promise<MandatWithOrgane[]> {
+  // Notre base d'abord (cf. data/mongo/referentielAN.ts), l'API en repli.
+  const { getMandatsActifsAN } = await import("./mongo/referentielAN");
+  const depuisBase = await getMandatsActifsAN(acteurUid);
+  if (depuisBase) return depuisBase;
   try {
-    const rep = await fetch(
+    const rep = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/mandats?acteurRefUid=${acteurUid}&actif=true&perPage=100`,
       cacheTricoteuses("stable")
     );

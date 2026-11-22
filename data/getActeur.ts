@@ -2,6 +2,7 @@ import { Acteur, Mandat, Organe } from "@prisma/client";
 import { getOrgane } from "./getOrgane";
 import { resolveAuGouvernement } from "./helpers/resolveAuGouvernement";
 import { cacheTricoteuses } from "./cacheTricoteuses";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 export type ReturnedActeur = Acteur & {
   groupeParlementaire: Organe | null;
@@ -10,8 +11,25 @@ export type ReturnedActeur = Acteur & {
 };
 
 async function fetchActeur(uid: string): Promise<ReturnedActeur | null> {
+  // Serveur : notre base d'abord (cf. data/mongo/referentielAN.ts). Navigateur :
+  // notre route, qui fait de même et profite du cache du serveur.
+  if (typeof window === "undefined") {
+    const { getActeurAN } = await import("./mongo/referentielAN");
+    const acteur = await getActeurAN(uid);
+    if (acteur) return acteur as unknown as ReturnedActeur;
+  } else {
+    try {
+      const rep = await fetch(`/api/acteurs?uid=${encodeURIComponent(uid)}`);
+      if (!rep.ok) return null;
+      const { data } = await rep.json();
+      return data ?? null;
+    } catch (error) {
+      console.warn("getActeur: échec de récupération", uid, error);
+      return null;
+    }
+  }
   try {
-    const rep = await fetch(
+    const rep = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/acteurs/${uid}?include=mandatPrincipal`,
       cacheTricoteuses("contenu")
     );

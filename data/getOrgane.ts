@@ -1,9 +1,20 @@
 import { Organe } from "@prisma/client";
 import { cacheTricoteuses } from "./cacheTricoteuses";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
+// Sur le serveur, le référentiel est lu dans notre base (cf.
+// data/mongo/referentielAN.ts) ; l'API ne sert plus que de repli pour les
+// organes que nous n'importons pas (législatures antérieures). Le test sur
+// `window` est résolu à la compilation : le module MongoDB n'est pas embarqué
+// dans le code envoyé au navigateur.
 async function fetchOrgane(uid: string): Promise<Organe | null> {
+  if (typeof window === "undefined") {
+    const { getOrganeAN } = await import("./mongo/referentielAN");
+    const organe = await getOrganeAN(uid);
+    if (organe) return organe;
+  }
   try {
-    const rep = await fetch(`${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/organes/${uid}`, cacheTricoteuses("stable"));
+    const rep = await fetchTricoteuses(`${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/organes/${uid}`, cacheTricoteuses("stable"));
     if (!rep.ok) return null;
     const { data } = await rep.json();
     return data ?? null;
@@ -55,7 +66,14 @@ const ORGANES_PAR_LOT = 40;
  */
 export async function getOrganes(uids: (string | null | undefined)[]): Promise<Map<string, Organe | null>> {
   const demandes = [...new Set(uids.filter((uid): uid is string => !!uid))];
-  const manquants = demandes.filter((uid) => !cache.has(uid));
+  let manquants = demandes.filter((uid) => !cache.has(uid));
+
+  if (typeof window === "undefined" && manquants.length > 0) {
+    const { getOrganesAN } = await import("./mongo/referentielAN");
+    const trouves = await getOrganesAN(manquants);
+    for (const [uid, organe] of trouves) cache.set(uid, Promise.resolve(organe));
+    manquants = manquants.filter((uid) => !trouves.has(uid));
+  }
 
   const lots: string[][] = [];
   for (let debut = 0; debut < manquants.length; debut += ORGANES_PAR_LOT) {
@@ -65,7 +83,7 @@ export async function getOrganes(uids: (string | null | undefined)[]): Promise<M
     lots.map(async (lot) => {
       try {
         const parametres = new URLSearchParams({ uid: lot.join(","), perPage: String(ORGANES_PAR_LOT) });
-        const rep = await fetch(
+        const rep = await fetchTricoteuses(
           `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/organes/?${parametres}`,
           cacheTricoteuses("stable")
         );

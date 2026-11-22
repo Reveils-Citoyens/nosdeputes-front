@@ -6,6 +6,7 @@ import {
   Organe,
 } from "@prisma/client";
 import { cacheTricoteuses } from "./cacheTricoteuses";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 export type MandatWithOrgane = Mandat & {
   organeRef: Organe | null;
@@ -14,8 +15,12 @@ export type MandatWithOrgane = Mandat & {
 async function getActeurAdressesElectroniquesUnCached(
   acteurUid: string
 ): Promise<AdresseElectronique[]> {
+  // Notre base d'abord (cf. data/mongo/referentielAN.ts), l'API en repli.
+  const { getAdressesAN } = await import("./mongo/referentielAN");
+  const depuisBase = await getAdressesAN(acteurUid);
+  if (depuisBase) return depuisBase.electroniques;
   try {
-    const rep = await fetch(
+    const rep = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/adressesElectroniques?acteurRefUid=${acteurUid}`,
       cacheTricoteuses("stable")
     );
@@ -36,8 +41,11 @@ export const getActeurAdressesElectroniques = React.cache(
 async function getActeurAdressesPostalesUnCached(
   acteurUid: string
 ): Promise<AdressePostale[]> {
+  const { getAdressesAN } = await import("./mongo/referentielAN");
+  const depuisBase = await getAdressesAN(acteurUid);
+  if (depuisBase) return depuisBase.postales;
   try {
-    const rep = await fetch(
+    const rep = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/adressesPostales?acteurRefUid=${acteurUid}`,
       cacheTricoteuses("stable")
     );

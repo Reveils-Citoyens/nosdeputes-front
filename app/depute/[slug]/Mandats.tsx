@@ -91,8 +91,10 @@ export default async function Mandats({ acteurUid }: { acteurUid: string }) {
                     ).length === 1
                   );
                 })
-                .map(({ libelle, libQualiteSex }) => (
-                  <ListItem key={libelle} 
+                .map(({ libelle, libQualiteSex, organeRefUid }) => (
+                  // Deux organes peuvent porter le même libellé (commissions
+                  // mixtes paritaires successives sur un même texte).
+                  <ListItem key={`${organeRefUid}-${libQualiteSex}`} 
                       disablePadding 
                       sx={{ display: 'list-item', mb: 0.5 }}>
                     <Typography variant="body2" fontWeight="medium">

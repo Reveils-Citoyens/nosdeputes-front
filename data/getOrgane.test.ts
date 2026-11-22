@@ -36,7 +36,7 @@ describe("getOrganes", () => {
     const resultat = await getOrganes([...uids, "PO1", null, undefined]);
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls[0][1]).toEqual({ next: { revalidate: 86400 } });
+    expect(fetchMock.mock.calls[0][1]).toEqual({ next: { revalidate: 86400 }, signal: expect.any(AbortSignal) });
     expect(resultat.size).toBe(45);
     expect(resultat.get("PO44")).toMatchObject({ uid: "PO44" });
   });
