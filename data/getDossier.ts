@@ -4,6 +4,8 @@ import { parseActeLefislatif } from "./parsers/parseActeLegislatif";
 import { parseDossier } from "./parsers/parseDossier";
 import { getParlementDb } from "@/lib/mongodb";
 import { cacheTricoteuses } from "./cacheTricoteuses";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
+import { dossierDepuisAN } from "./mongo/conversionDossierAN";
 
 export type ReturnedDossier = Dossier & {
   actesLegislatifs: ActeLegislatif[];
@@ -11,47 +13,32 @@ export type ReturnedDossier = Dossier & {
 };
 
 /**
- * Fallback MongoDB : certains dossiers (missions d'information code 10,
- * commissions d'enquête code 9) sont présents en base mais NON exposés par
- * l'API Tricoteuses. On renvoie alors les métadonnées (titre, procédure,
- * législature) dans la forme attendue par les pages, pour qu'elles s'affichent.
- * Le détail des actes n'est pas reconstruit depuis le format brut AN.
+ * Dossier lu dans notre base (collection `dossiers`, importée chaque nuit par
+ * ND.py) et converti dans la forme de l'API Tricoteuses (cf.
+ * data/mongo/conversionDossierAN.ts). `null` si le dossier n'y est pas : les
+ * dossiers propres au Sénat (« ppl22-031 ») ne sont pas importés.
  */
 async function getDossierFromMongo(uid: string): Promise<ReturnedDossier | null> {
   try {
     const db = await getParlementDb();
-    const d = await db.collection("dossiers").findOne(
+    const brut = await db.collection("dossiers").findOne(
       { uid },
-      {
-        projection: {
-          _id: 0,
-          uid: 1,
-          legislature: 1,
-          "titreDossier.titre": 1,
-          "procedureParlementaire.code": 1,
-          "procedureParlementaire.libelle": 1,
-          documentDeposeRefUid: 1,
-        },
-      }
+      // Champs ajoutés par nos calculs nocturnes : inutiles ici.
+      { projection: { _id: 0, heatComponents: 0, enrichmentKeywords: 0 } }
     );
-    if (!d) return null;
-
-    return {
-      uid: d.uid,
-      legislature: d.legislature != null ? Number(d.legislature) : null,
-      titre: d.titreDossier?.titre ?? null,
-      libelleProcedure: d.procedureParlementaire?.libelle ?? null,
-      codeProcedure: d.procedureParlementaire?.code ?? null,
-      theme: null,
-      documentDeposeRefUid: d.documentDeposeRefUid ?? null,
-      actesLegislatifs: [],
-      rapporteurs: [],
-      // Métadonnées minimales : on complète la forme attendue par les pages.
-    } as unknown as ReturnedDossier;
+    if (!brut) return null;
+    return dossierDepuisAN(brut as unknown as Parameters<typeof dossierDepuisAN>[0]);
   } catch (error) {
-    console.error("[getDossier] fallback Mongo erreur:", error);
+    console.error("[getDossier] lecture Mongo impossible:", error);
     return null;
   }
+}
+
+/** Dates des chaînes ISO converties en objets Date, comme pour l'API. */
+function parser(data: ReturnedDossier): ReturnedDossier {
+  parseDossier(data);
+  data.actesLegislatifs?.forEach((_, i) => parseActeLefislatif(data.actesLegislatifs[i]));
+  return data;
 }
 
 async function getDossierUnCached(uid: string): Promise<
@@ -61,29 +48,25 @@ async function getDossierUnCached(uid: string): Promise<
     })
   | null
 > {
+  // Notre base d'abord : l'API Tricoteuses, lente quand elle est saturée,
+  // bloquait toutes les pages du dossier. Elle reste le repli pour les
+  // dossiers que nous n'importons pas.
+  const depuisBase = await getDossierFromMongo(uid);
+  if (depuisBase) return parser(depuisBase);
+
   try {
-    const rep = await fetch(
+    const rep = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/${uid}?include=actesLegislatifs,rapporteurs`,
       cacheTricoteuses("contenu")
     );
 
     const { data } = await rep.json();
 
-    if (data) {
-      // Transforms all the "yyy-mm-dd" string into Date objects.
-      parseDossier(data);
-      data?.actesLegislatifs?.forEach((_: any, i: number) =>
-        parseActeLefislatif(data.actesLegislatifs[i])
-      );
-      return data;
-    }
+    if (data) return parser(data);
   } catch (error) {
     console.error("Error fetching dossier:", error);
   }
-
-  // L'API n'a rien renvoyé (cas des missions d'information / commissions
-  // d'enquête) → on tente la base MongoDB.
-  return getDossierFromMongo(uid);
+  return null;
 }
 
 export const getDossier = React.cache(getDossierUnCached);

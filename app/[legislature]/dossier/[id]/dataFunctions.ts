@@ -38,7 +38,8 @@ export function getCurrentStatus(acts: ActeLegislatif[]) {
 
   for (let i = 0; i < statusOrder.length; i += 1) {
     const status = statusOrder[statusOrder.length - 1 - i];
-    if (codes.some((code) => code.startsWith(status))) {
+    // « AN2 » ou « AN2-… », mais pas « AN20-MISINF » (mission d'information).
+    if (codes.some((code) => code === status || code.startsWith(`${status}-`))) {
       return status;
     }
   }
