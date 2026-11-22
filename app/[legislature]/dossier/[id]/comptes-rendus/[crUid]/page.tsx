@@ -29,7 +29,10 @@ export default async function CompteRenduPage({
     getVideoDuCompteRendu(crUid),
   ]);
 
-  if (!interventions || interventions.length === 0) {
+  if (interventions === null) {
+    return <p>Le texte de cette réunion n&apos;a pas pu être chargé : cette transcription provisoire provient d&apos;un service partenaire momentanément indisponible. Réessayez dans quelques instants.</p>;
+  }
+  if (interventions.length === 0) {
     return <p>Le compte rendu de cette réunion n&apos;est pas disponible.</p>;
   }
 

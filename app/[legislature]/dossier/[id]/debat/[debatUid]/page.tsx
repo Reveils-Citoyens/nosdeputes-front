@@ -28,7 +28,10 @@ export default async function Page({
   // La vidéo est portée par la réunion, pas par le compte rendu.
   const video = await getVideoReunion(debat?.reunionRefUid);
 
-  if (!interventions || interventions.length === 0) {
+  if (interventions === null) {
+    return <p>Le texte de cette réunion n&apos;a pas pu être chargé : cette transcription provisoire provient d&apos;un service partenaire momentanément indisponible. Réessayez dans quelques instants.</p>;
+  }
+  if (interventions.length === 0) {
     return <p>Aucun débat trouvé pour cette séance.</p>;
   }
 

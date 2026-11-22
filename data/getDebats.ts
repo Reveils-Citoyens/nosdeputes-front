@@ -1,9 +1,10 @@
 import * as React from "react";
 import { Debat } from "@prisma/client";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 export type DebateType = "seance" | "commission";
 
-type DebateMeta = {
+export type DebateMeta = {
   uid: string;
   debateType: DebateType;
   organeLibelle: string | null;
@@ -11,7 +12,7 @@ type DebateMeta = {
   lectureLabel: string | null;
 };
 
-type AgendaWithDebates = {
+export type AgendaWithDebates = {
   uid?: string;
   chambre?: string;
   xsiType?: string;
@@ -24,7 +25,7 @@ type AgendaWithDebates = {
   compteRenduRef?: Debat[];
 };
 
-type DossierAct = {
+export type DossierAct = {
   chambre?: string | null;
   codeActe?: string | null;
   dateActe?: string | null;
@@ -37,13 +38,13 @@ type DossierAct = {
   } | null;
 };
 
-const DOSSIER_SPECIFIC_COMMISSION_TYPES = new Set(["CNPS", "COMNL"]);
+export const DOSSIER_SPECIFIC_COMMISSION_TYPES = new Set(["CNPS", "COMNL"]);
 
 // Cache uniquement les réponses HTTP réussies, pas une liste agrégée qui
 // pourrait être incomplète après une panne. Fraîcheur bornée à une minute.
 const metadataFetchOptions = { next: { revalidate: 60 } };
 
-function debatesFromAgenda(
+export function debatesFromAgenda(
   agenda: AgendaWithDebates | null | undefined,
   fallbackOrganeLibelle: string | null = null,
   lectureLabel: string | null = null
@@ -82,7 +83,7 @@ function debatesFromAgenda(
     : [];
 }
 
-function isCommissionAct(act: DossierAct): boolean {
+export function isCommissionAct(act: DossierAct): boolean {
   return (
     (act.chambre == null || act.chambre === "AN") &&
     /(?:^|-)COM-(?:FOND|AVIS)(?:-|$)/.test(act.codeActe ?? "")
@@ -117,7 +118,7 @@ function lectureStages(acts: DossierAct[]): { label: string; timestamp: number }
   return [...stages.values()].sort((a, b) => a.timestamp - b.timestamp);
 }
 
-function getLectureLabel(
+export function getLectureLabel(
   agenda: AgendaWithDebates,
   debateType: DebateType,
   acts: DossierAct[]
@@ -200,7 +201,7 @@ async function getCommissionFallbackMeta(
   }
 
   const directRequests = [...directReunionUids].map(async (reunionUid) => {
-    const response = await fetch(
+    const response = await fetchTricoteuses(
       `${apiUrl}/reunions/${reunionUid}?include=compteRenduRef`,
       metadataFetchOptions
     );
@@ -220,7 +221,7 @@ async function getCommissionFallbackMeta(
       include: "compteRenduRef",
       perPage: "100",
     });
-    const response = await fetch(`${apiUrl}/reunions/?${params}`, metadataFetchOptions);
+    const response = await fetchTricoteuses(`${apiUrl}/reunions/?${params}`, metadataFetchOptions);
     if (!response.ok) return [];
     const body = (await response.json()) as { data?: AgendaWithDebates[] };
     return (body.data ?? [])
@@ -256,7 +257,7 @@ export async function getDebatsUnCached(
     // Ces deux sources sont indépendantes. Les actes restent facultatifs :
     // leur indisponibilité ne doit pas masquer les points ODJ disponibles.
     const pointsPromise = (async () => {
-      const rep = await fetch(
+      const rep = await fetchTricoteuses(
         `${apiUrl}/points_odj/?dossierLegislatifUid=${dossierUid}&include=agendaRef.compteRenduRef&perPage=100`,
         metadataFetchOptions
       );
@@ -265,7 +266,7 @@ export async function getDebatsUnCached(
     })();
     const actsPromise = (async (): Promise<DossierAct[]> => {
       try {
-        const dossierResponse = await fetch(
+        const dossierResponse = await fetchTricoteuses(
           `${apiUrl}/dossiers/${dossierUid}?include=actesLegislatifs.organeRef`,
           metadataFetchOptions
         );
@@ -331,7 +332,7 @@ export async function getDebatsUnCached(
       uniqueMeta.map(
         async ({ uid, debateType, organeLibelle, reunionDate, lectureLabel }) => {
           try {
-            const r = await fetch(
+            const r = await fetchTricoteuses(
               `${apiUrl}/debats/${uid}?include=_count.paragraphes`,
               metadataFetchOptions
             );
@@ -385,7 +386,20 @@ export type ReturnedDebat = Debat & {
 };
 
 export const getDebats = React.cache(async (dossierUid: string) => {
-  if (typeof window === "undefined") return getDebatsUnCached(dossierUid);
+  if (typeof window === "undefined") {
+    // Serveur : notre base d'abord (cf. data/mongo/debatsAN.ts), qui applique
+    // les mêmes règles sans les 5 à 30 appels à l'API par dossier. L'API reste
+    // le repli (dossier absent de la base, base indisponible). L'import reste
+    // DANS ce bloc : c'est ce qui le retire du code envoyé au navigateur.
+    try {
+      const { getDebatsAN } = await import("./mongo/debatsAN");
+      const depuisBase = await getDebatsAN(dossierUid);
+      if (depuisBase) return depuisBase;
+    } catch (error) {
+      console.warn("getDebats: lecture de la base impossible, repli sur l'API", dossierUid, error);
+    }
+    return getDebatsUnCached(dossierUid);
+  }
   // Les consommateurs clients (onglets, chronologie, panneau député) passent
   // par le même cache serveur au lieu de refaire tous les appels externes.
   try {

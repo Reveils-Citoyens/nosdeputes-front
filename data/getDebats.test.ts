@@ -29,7 +29,7 @@ describe("getDebatsUnCached", () => {
     expect(mock).toHaveBeenCalledTimes(2);
     release(response([]));
     expect(await pending).toEqual([]);
-    expect(mock.mock.calls[0][1]).toEqual({ next: { revalidate: 60 } });
+    expect(mock.mock.calls[0][1]).toEqual({ next: { revalidate: 60 }, signal: expect.any(AbortSignal) });
   });
 
   it("conserve une transcription en commission et en séance quand le CR est absent", async () => {
