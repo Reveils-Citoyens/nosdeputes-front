@@ -760,21 +760,29 @@ export const TimelineCard = ({
     }
   };
 
-  const { data: debats } = useQuery({
+  // Les données chargées dans le navigateur ne sont utilisées qu'après
+  // l'hydratation : le rendu serveur ne les a pas, et un autre composant (les
+  // onglets) peut les avoir déjà mises en cache — rendre des liens dès la
+  // première passe ferait diverger le HTML du serveur et celui du navigateur.
+  const [hydrate, setHydrate] = React.useState(false);
+  React.useEffect(() => setHydrate(true), []);
+
+  const { data: debatsCharges } = useQuery({
     queryKey: ["debats", dossierUid],
     queryFn: async () => await getDebats(dossierUid),
   });
 
   // Charge les scrutins (pour/contre/abstentions) pour les actes de décision
-  // avec un include léger — uniquement pour le tooltip du badge Adopté/Rejeté.
-  const { data: acteVoteMap } = useQuery({
+  // — uniquement pour le tooltip du badge Adopté/Rejeté. Par notre route, qui
+  // lit la base, plutôt que directement l'API Tricoteuses.
+  const { data: votesCharges } = useQuery({
     queryKey: ["timeline-votes", dossierUid],
     queryFn: async () => {
-      const rep = await fetch(
-        `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/${dossierUid}?include=actesLegislatifs.voteRefs.voteRef`
-      );
+      const rep = await fetch(`/api/dossiers/${encodeURIComponent(dossierUid)}/votes`);
       if (!rep.ok) return {};
-      const { data } = await rep.json();
+      const data = (await rep.json()) as {
+        actesLegislatifs?: { uid: string; voteRefs?: { voteRef: { uid: string; pour: number; contre: number; abstentions: number } | null }[] }[];
+      };
       const map: Record<string, { pour: number; contre: number; abstentions: number; scrutinUid?: string }> = {};
       for (const acte of data?.actesLegislatifs ?? []) {
         const scrutin = acte.voteRefs?.[0]?.voteRef;
@@ -791,6 +799,9 @@ export const TimelineCard = ({
     },
     staleTime: 60_000,
   });
+
+  const debats = hydrate ? debatsCharges : undefined;
+  const acteVoteMap = hydrate ? votesCharges : undefined;
 
   const agendatsToDebatMap: Record<string, string> = {};
   debats?.forEach((debat) => {

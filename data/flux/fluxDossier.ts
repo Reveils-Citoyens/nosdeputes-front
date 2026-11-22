@@ -9,6 +9,7 @@ import {
   type ActeDossier,
   type AmendementsDuJour,
 } from "./actesDossier";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 /** Jours d'amendements repris dans le flux (les plus récents). */
 const JOURS_AMENDEMENTS = 30;
@@ -28,7 +29,7 @@ type DossierApi = {
  * (et l'ancienne version reste servie) plutôt que de publier un flux vide.
  */
 async function lireDossierApi(uid: string): Promise<DossierApi | null> {
-  const rep = await fetch(
+  const rep = await fetchTricoteuses(
     `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/${encodeURIComponent(uid)}?include=actesLegislatifs.voteRefs.voteRef`,
     cacheTricoteuses("contenu"),
   );
@@ -36,6 +37,33 @@ async function lireDossierApi(uid: string): Promise<DossierApi | null> {
   if (!rep.ok) throw new Error(`API dossiers : HTTP ${rep.status}`);
   const { data } = await rep.json();
   return data ?? null;
+}
+
+/**
+ * Dossier et actes lus dans notre base (même conversion que getDossier),
+ * avec les scrutins rattachés à chaque acte (cf. data/mongo/votesDossierAN.ts).
+ * `null` si le dossier est absent de la base.
+ */
+async function lireDossierBase(uid: string): Promise<DossierApi | null> {
+  const db = await getParlementDb();
+  const brut = await db
+    .collection("dossiers")
+    .findOne({ uid }, { projection: { _id: 0, heatComponents: 0, enrichmentKeywords: 0 } });
+  if (!brut) return null;
+  const { dossierDepuisAN } = await import("@/data/mongo/conversionDossierAN");
+  const { getDossierVotesSummaryAN } = await import("@/data/mongo/votesDossierAN");
+  const dossier = dossierDepuisAN(brut as unknown as Parameters<typeof dossierDepuisAN>[0]);
+  const votes = await getDossierVotesSummaryAN(uid);
+  const votesParActe = new Map((votes?.actesLegislatifs ?? []).map((a) => [a.uid, a.voteRefs]));
+  return {
+    uid: dossier.uid,
+    legislature: dossier.legislature,
+    titre: dossier.titre,
+    actesLegislatifs: dossier.actesLegislatifs.map((acte) => ({
+      ...(acte as unknown as ActeDossier),
+      voteRefs: (votesParActe.get(acte.uid) ?? []) as unknown as ActeDossier["voteRefs"],
+    })),
+  };
 }
 
 /**
@@ -123,7 +151,14 @@ async function lireAmendementsParJour(dossierUid: string): Promise<AmendementsDu
 }
 
 export async function getFluxDossier(legislature: string, uid: string): Promise<Flux | null> {
-  const dossier = (await lireDossierApi(uid)) ?? (await lireDossierMongo(uid));
+  // Notre base d'abord ; l'API pour un dossier que nous n'avons pas.
+  let dossier: DossierApi | null = null;
+  try {
+    dossier = await lireDossierBase(uid);
+  } catch (error) {
+    console.warn("getFluxDossier: lecture de la base impossible, repli sur l'API", uid, error);
+  }
+  dossier ??= (await lireDossierApi(uid)) ?? (await lireDossierMongo(uid));
   if (!dossier) return null;
 
   const actes = dossier.actesLegislatifs ?? [];
