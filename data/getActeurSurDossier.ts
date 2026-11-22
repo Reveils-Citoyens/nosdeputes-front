@@ -2,6 +2,7 @@ import { getDossier } from "./getDossier";
 import { getDossierVotes } from "./getDossierVotes";
 import { getDebats } from "./getDebats";
 import { searchAmendement } from "./searchAmendement";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 export type ActeurVoteSurDossier = {
   scrutinUid: string;
@@ -167,7 +168,7 @@ async function getInterventionsCount(
     const counts = await Promise.all(
       debats.map(async (debat) => {
         const url = `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/interventions/?debatRefUid=${debat.uid}&acteurRefUid=${acteurUid}&perPage=500`;
-        const rep = await fetch(url);
+        const rep = await fetchTricoteuses(url);
         if (!rep.ok) return 0;
         const body = await rep.json();
         return Array.isArray(body?.data) ? body.data.length : 0;

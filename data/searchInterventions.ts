@@ -1,6 +1,7 @@
 import { getParlementDb } from "@/lib/mongodb";
 import { unique } from "@/utils/unique";
 import { cacheTricoteuses } from "./cacheTricoteuses";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 /**
  * Recherche plein-texte dans le verbatim des débats (séance + commission),
@@ -275,7 +276,7 @@ export async function searchInterventions(
       // recherche interne (~24 Ko) en plus du texte intégral.
       select: CHAMPS_INTERVENTION,
     });
-    const rep = await fetch(
+    const rep = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/interventions/?${params}`,
       cacheTricoteuses("contenu")
     );

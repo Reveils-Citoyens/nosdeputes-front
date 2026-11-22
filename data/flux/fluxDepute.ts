@@ -10,6 +10,7 @@ import {
   type InterventionVideo,
   type QuestionBrute,
 } from "./elementsDepute";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 const GROUPES_AMENDEMENTS = 30;
 const QUESTIONS = 20;
@@ -121,7 +122,7 @@ async function lireInterventions(acteurUid: string): Promise<InterventionVideo[]
  * donne null.
  */
 async function lireActeur(slug: string): Promise<{ uid: string; prenom: string; nom: string } | null> {
-  const rep = await fetch(
+  const rep = await fetchTricoteuses(
     `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/acteurs/?slug=${encodeURIComponent(slug)}`,
     cacheTricoteuses("contenu"),
   );

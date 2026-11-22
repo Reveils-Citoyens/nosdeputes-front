@@ -3,6 +3,7 @@ import { Question, Organe } from "@prisma/client";
 import { getOrgane } from "./getOrgane";
 import { extractPaginationMetadata, PaginatedResponse } from "./pagination";
 import { cacheTricoteuses } from "./cacheTricoteuses";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 type GetQuestionsParams = {
   perPage?: number;
@@ -38,7 +39,7 @@ async function getQuestionsUnCached(
       searchParams.set("search", search);
     }
 
-    const rep = await fetch(
+    const rep = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/questions/?${searchParams.toString()}`,
       cacheTricoteuses("contenu")
     );

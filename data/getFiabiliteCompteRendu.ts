@@ -1,4 +1,5 @@
 import * as React from "react";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 /**
  * Le document affiché est-il un compte rendu officiel ou une transcription ?
@@ -55,7 +56,7 @@ async function getFiabiliteCompteRenduUnCached(
 
   // Repli pour les formats historiques ou futurs ne respectant pas CR/TR.
   try {
-    const reponse = await fetch(
+    const reponse = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/debats/${compteRenduUid}?select=uid,validite,version`,
       { next: { revalidate: 86400 } }
     );

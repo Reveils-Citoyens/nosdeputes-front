@@ -1,6 +1,7 @@
 import { Vote } from "@prisma/client";
 import { PaginatedResponse, extractPaginationMetadata } from "./pagination";
 import { cacheTricoteuses } from "./cacheTricoteuses";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 interface SearchVoteParams {
   /**
@@ -58,7 +59,7 @@ export async function searchVote(
   if (positionVote) searchParams.set("positionVote", positionVote);
 
   try {
-    const rep = await fetch(
+    const rep = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/votes?${searchParams}`,
       cacheTricoteuses("activite")
     );
@@ -145,7 +146,7 @@ async function lireTout<T>(chemin: string, parametres: URLSearchParams): Promise
   for (let page = 1; page <= 5; page++) {
     parametres.set("perPage", String(parPage));
     parametres.set("page", String(page));
-    const rep = await fetch(`${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}${chemin}?${parametres}`, cacheTricoteuses("activite"));
+    const rep = await fetchTricoteuses(`${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}${chemin}?${parametres}`, cacheTricoteuses("activite"));
     if (!rep.ok) throw new Error(`${chemin}: HTTP ${rep.status}`);
     const { data } = (await rep.json()) as { data?: T[] };
     resultats.push(...(data ?? []));
@@ -197,7 +198,7 @@ async function detaillerVotes(
   });
   if (acteurRefUid) parametres.set("acteurRefUid", acteurRefUid);
   if (include) parametres.set("include", include);
-  const rep = await fetch(`${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/votes?${parametres}`, cacheTricoteuses("activite"));
+  const rep = await fetchTricoteuses(`${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/votes?${parametres}`, cacheTricoteuses("activite"));
   if (!rep.ok) throw new Error(`votes: HTTP ${rep.status}`);
   const { data } = (await rep.json()) as { data?: Vote[] };
   const parScrutin = new Map((data ?? []).map((vote) => [vote.scrutinRefUid, vote]));

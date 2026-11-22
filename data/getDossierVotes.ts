@@ -3,6 +3,7 @@ import { ActeLegislatif, Dossier, Scrutin, Vote, Acteur, GroupeVotant, Organe } 
 import { parseDossier } from "./parsers/parseDossier";
 import { parseActeLefislatif } from "./parsers/parseActeLegislatif";
 import { cacheTricoteuses } from "./cacheTricoteuses";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 export type ScrutinComplet = Scrutin & {
   votes: (Vote & {
@@ -28,7 +29,7 @@ async function getDossierVotesUnCached(uid: string): Promise<DossierVotes | null
       "actesLegislatifs.voteRefs.voteRef.votes.groupeVotantRef.organeRef"
     ].join(",");
 
-    const rep = await fetch(
+    const rep = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/dossiers/${uid}?include=${includeParams}`,
       cacheTricoteuses("activite")
     );

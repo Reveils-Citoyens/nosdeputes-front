@@ -1,6 +1,7 @@
 import { Document } from "@prisma/client";
 import { PaginatedResponse, extractPaginationMetadata } from "./pagination";
 import { cacheTricoteuses } from "./cacheTricoteuses";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 type ClasseCode =
   | "ALLOCUTION"
@@ -81,7 +82,7 @@ export async function searchDocument(
   });
 
   try {
-    const rep = await fetch(
+    const rep = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/documents?${searchParams}`,
       cacheTricoteuses("contenu")
     );

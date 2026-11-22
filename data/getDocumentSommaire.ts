@@ -1,4 +1,5 @@
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 export type ArticleEntry = {
   label: string;
@@ -107,7 +108,7 @@ export async function getDocumentSommaire(uid: string): Promise<ArticleEntry[] |
   const url = buildSommaireUrl(uid);
   if (!url) return null;
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const res = await fetchTricoteuses(url, { next: { revalidate: 3600 } });
     if (!res.ok) return null;
     const raw: RawSommaire = await res.json();
     return flattenRaw(raw);

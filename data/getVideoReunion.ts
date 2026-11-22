@@ -6,6 +6,7 @@ import {
   type ReunionApi,
   type Video,
 } from "./prisesDeParoleVideo";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 /**
  * Liens vidéo d'une réunion (type `Video`, défini avec les règles de sélection
@@ -26,7 +27,7 @@ async function getVideoReunionUnCached(
   if (!reunionUid) return null;
 
   try {
-    const reponse = await fetch(
+    const reponse = await fetchTricoteuses(
       `${API}/reunions/${reunionUid}?select=${CHAMPS}`,
       { next: { revalidate: 86400 } }
     );
@@ -53,7 +54,7 @@ async function getReunionDuCompteRenduUnCached(
 ): Promise<string | null> {
   if (!compteRenduUid) return null;
   try {
-    const reponse = await fetch(
+    const reponse = await fetchTricoteuses(
       `${API}/debats/${compteRenduUid}?select=uid,reunionRefUid`,
       { next: { revalidate: 86400 } }
     );
@@ -114,7 +115,7 @@ async function getVideosDesReunionsUnCached(
           perPage: String(PAR_LOT),
           select: CHAMPS,
         });
-        const reponse = await fetch(`${API}/reunions/?${parametres}`, {
+        const reponse = await fetchTricoteuses(`${API}/reunions/?${parametres}`, {
           next: { revalidate: 86400 },
         });
         if (!reponse.ok) return [];

@@ -4,6 +4,7 @@ import { Acteur, Mandat, Organe } from "@prisma/client";
 import { unique } from "@/utils/unique";
 import { getOrganes } from "./getOrgane";
 import { resolveAuGouvernementBatch } from "./helpers/resolveAuGouvernement";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 export type ActeurDepute = Acteur & {
   mandatPrincipal: Mandat;
@@ -20,7 +21,7 @@ async function getDeputesUnCached(legislature: number): Promise<{
   groups: Record<string, Organe>;
 } | null> {
   try {
-    const rep = await fetch(
+    const rep = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/acteurs/?chambre=AN&actif=true&perPage=1000&include=mandatPrincipal`
     );
 
