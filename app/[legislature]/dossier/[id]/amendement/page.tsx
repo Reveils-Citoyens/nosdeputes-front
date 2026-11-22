@@ -4,6 +4,8 @@ import { buildSommaireUrl, getDocumentSommaire } from "@/data/getDocumentSommair
 import LiseuseClient from "./LiseuseClient";
 import type { ArticleEntry } from "@/data/getDocumentSommaire";
 import { liseusePageSx } from "@/components/navigation/LiseuseLayout";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
+import type { TexteDuDossier } from "@/data/mongo/documentsAN";
 
 export type DocOption = {
   uid: string;
@@ -71,17 +73,24 @@ async function hasSommaire(uid: string): Promise<boolean> {
   const url = buildSommaireUrl(uid);
   if (!url) return false;
   try {
-    const res = await fetch(url, { method: "HEAD", next: { revalidate: 3600 } });
+    const res = await fetchTricoteuses(url, { method: "HEAD", next: { revalidate: 3600 } });
     return res.ok;
   } catch {
     return false;
   }
 }
 
-// Vérifie si le document a des amendements via l'API Tricoteuses
+// Vérifie si le document a des amendements : notre base d'abord (cf.
+// data/mongo/amendementsAN.ts), l'API Tricoteuses en repli.
 async function hasAmendements(uid: string): Promise<boolean> {
   try {
-    const res = await fetch(
+    const { compterAmendementsTexteAN } = await import("@/data/mongo/amendementsAN");
+    if ((await compterAmendementsTexteAN(uid)) > 0) return true;
+  } catch {
+    // Base indisponible : on interroge l'API.
+  }
+  try {
+    const res = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/amendements?documentRefUid=${uid}&chambre=AN&perPage=1`,
       { next: { revalidate: 60 } },
     );
@@ -100,17 +109,27 @@ export default async function Page({
 }) {
   const { id: dossierUid } = await params;
 
-  const [prjlRes, pionRes] = await Promise.all([
-    searchDocument({ dossierRefUid: dossierUid, classeCode: "PRJLOI", sort: "dateCreation.asc", perPage: 100 }),
-    searchDocument({ dossierRefUid: dossierUid, classeCode: "PIONLOI", sort: "dateCreation.asc", perPage: 100 }),
-  ]);
+  // Textes du dossier : notre base d'abord, l'API Tricoteuses en repli.
+  let textesBase: TexteDuDossier[] | null = null;
+  try {
+    const { getTextesDuDossierAN } = await import("@/data/mongo/documentsAN");
+    textesBase = await getTextesDuDossierAN(dossierUid);
+  } catch (erreur) {
+    console.warn("Liseuse : lecture des textes en base impossible", dossierUid, erreur);
+  }
+  const textesApi = async () => {
+    const [prjlRes, pionRes] = await Promise.all([
+      searchDocument({ dossierRefUid: dossierUid, classeCode: "PRJLOI", sort: "dateCreation.asc", perPage: 100 }),
+      searchDocument({ dossierRefUid: dossierUid, classeCode: "PIONLOI", sort: "dateCreation.asc", perPage: 100 }),
+    ]);
+    return [...(prjlRes?.data ?? []), ...(pionRes?.data ?? [])];
+  };
+  const textes: { uid: string; dateCreation: Date | null; depotLibelle: string | null }[] =
+    textesBase ?? (await textesApi());
 
   // Déduplique et trie par date
   const seenUids = new Set<string>();
-  const allDocs = [
-    ...(prjlRes?.data ?? []),
-    ...(pionRes?.data ?? []),
-  ]
+  const allDocs = textes
     .filter((d) => {
       if (seenUids.has(d.uid)) return false;
       seenUids.add(d.uid);

@@ -15,6 +15,24 @@ describe("pagination exhaustive des métadonnées de la liseuse", () => {
     const load = vi.fn().mockRejectedValue(new Error("HTTP 503"));
     await expect(loadRemainingAmendments({ items: [1, 2], total: 4 }, 2, load)).rejects.toThrow("HTTP 503");
   });
+  it("retente une fois une page en échec", async () => {
+    const load = vi.fn()
+      .mockRejectedValueOnce(new Error("Timeout"))
+      .mockResolvedValue({ items: [3, 4], total: 4 });
+    await expect(loadRemainingAmendments({ items: [1, 2], total: 4 }, 2, load)).resolves.toEqual([3, 4]);
+    expect(load).toHaveBeenCalledTimes(2);
+  });
+  it("charge au plus 4 pages à la fois, dans l'ordre", async () => {
+    let enCours = 0, maximum = 0;
+    const load = vi.fn(async (page: number) => {
+      enCours++; maximum = Math.max(maximum, enCours);
+      await new Promise((r) => setTimeout(r, 5));
+      enCours--;
+      return { items: [page], total: 11 };
+    });
+    await expect(loadRemainingAmendments({ items: [1], total: 11 }, 1, load)).resolves.toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(maximum).toBe(4);
+  });
   it("ne fait aucun appel lorsque tous les résultats sont déjà chargés", async () => {
     const load = vi.fn();
     await expect(loadRemainingAmendments({ items: [1], total: 1 }, 2, load)).resolves.toEqual([]);

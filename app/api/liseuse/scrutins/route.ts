@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { startServerTiming } from "@/lib/serverTiming";
 import { estUidScrutin, versResume, type ScrutinResume } from "@/data/liseuse/scrutinsAmendements";
+import { DELAI_TRICOTEUSES_LISTE_MS, fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 const CHAMPS = "uid,numero,titre,dateScrutin,code,pour,contre,abstentions,libelleTypeVote";
 const PAR_PAGE = 500;
@@ -17,7 +18,7 @@ async function lireDocument(api: string, documentRefUid: string): Promise<Scruti
     url.searchParams.set("perPage", String(PAR_PAGE));
     url.searchParams.set("page", String(page));
     url.searchParams.set("select", CHAMPS);
-    const res = await fetch(url.toString(), { next: { revalidate: 300 } });
+    const res = await fetchTricoteuses(url.toString(), { next: { revalidate: 300 } }, DELAI_TRICOTEUSES_LISTE_MS);
     if (!res.ok) throw new Error(`Upstream HTTP ${res.status}`);
     const { data } = await res.json();
     if (!Array.isArray(data)) throw new Error("Invalid scrutin list");
@@ -37,7 +38,7 @@ async function lireDocument(api: string, documentRefUid: string): Promise<Scruti
 async function lireUids(api: string, uids: string[]): Promise<ScrutinResume[]> {
   const resultats = await Promise.all(
     uids.map(async (uid) => {
-      const res = await fetch(`${api}/scrutins/${uid}?select=${CHAMPS}`, { next: { revalidate: 300 } });
+      const res = await fetchTricoteuses(`${api}/scrutins/${uid}?select=${CHAMPS}`, { next: { revalidate: 300 } });
       if (res.status === 404) return null;
       if (!res.ok) throw new Error(`Upstream HTTP ${res.status}`);
       const { data } = await res.json();
@@ -59,6 +60,21 @@ export async function GET(req: NextRequest) {
   }
   if (uids.length > UIDS_MAX || !uids.every(estUidScrutin)) {
     return NextResponse.json({ error: "Invalid uids" }, { status: 400 });
+  }
+
+  // Notre base d'abord (cf. data/mongo/scrutinsAN.ts) ; l'API reste le repli
+  // pour un texte absent de la base ou des scrutins qu'elle n'a pas encore.
+  try {
+    const { getScrutinsTexteAN, getScrutinsParUidsAN } = await import("@/data/mongo/scrutinsAN");
+    const depuisBase = documentRefUid ? await getScrutinsTexteAN(documentRefUid) : await getScrutinsParUidsAN(uids);
+    if (depuisBase && (documentRefUid || depuisBase.length === uids.length)) {
+      return NextResponse.json(
+        { scrutins: depuisBase },
+        { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600", "Server-Timing": finishTiming() } },
+      );
+    }
+  } catch (e) {
+    console.warn("[liseuse/scrutins] lecture de la base impossible, repli sur l'API", e);
   }
 
   try {

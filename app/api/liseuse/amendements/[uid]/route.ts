@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
 
 export async function GET(_request: Request, { params }: {
   params: Promise<{ uid: string }>;
@@ -7,8 +8,18 @@ export async function GET(_request: Request, { params }: {
   if (!/^AMANR\d+L\d+[A-Z0-9]+$/.test(uid)) {
     return NextResponse.json({ error: "Invalid amendment UID" }, { status: 400 });
   }
+  // Notre base d'abord (texte en HTML, plus riche que celui de l'API), l'API en repli.
   try {
-    const response = await fetch(
+    const { getTexteAmendementAN } = await import("@/data/mongo/amendementsAN");
+    const texte = await getTexteAmendementAN(uid);
+    if (texte && (texte.dispositif || texte.exposeSommaire)) {
+      return NextResponse.json(texte, { headers: { "Cache-Control": "no-store" } });
+    }
+  } catch {
+    // Base indisponible : on interroge l'API.
+  }
+  try {
+    const response = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/amendements/${uid}?select=uid,dispositif,exposeSommaire`,
       { next: { revalidate: 60 } }
     );
