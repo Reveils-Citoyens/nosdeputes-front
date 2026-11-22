@@ -1,6 +1,9 @@
 "use client";
 import * as React from "react";
-import { getQuestions } from "@/data/getQuestion";
+import type { QuestionActeur } from "@/data/mongo/questionsAN";
+import type { PaginatedResponse } from "@/data/pagination";
+import { lireJson } from "@/lib/lireJson";
+import ErreurChargement from "@/components/ErreurChargement";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { Alert, Box, Stack, Typography } from "@mui/material";
@@ -36,13 +39,15 @@ export default function PaginatedQuestions({
     debouncedSetSearch(next);
   };
 
-  const { data: result, isPending } = useQuery({
+  // Lu par une route du site (notre base, l'API Tricoteuses en repli) plutôt
+  // que directement dans l'API : sa lenteur faisait afficher « Aucune question ».
+  const { data: result, isPending, isError, refetch } = useQuery({
     queryKey: ["questions", acteurUid, page, search],
-    queryFn: async () =>
-      getQuestions(acteurUid, {
-        page,
-        search,
-      }),
+    queryFn: async ({ signal }) =>
+      lireJson<PaginatedResponse<QuestionActeur>>(
+        `/api/acteurs/${acteurUid}/questions?${new URLSearchParams({ page: String(page), search })}`,
+        signal,
+      ),
     placeholderData: keepPreviousData,
   });
 
@@ -83,7 +88,9 @@ export default function PaginatedQuestions({
         </Alert>
       )}
 
-      {isPending ? <DeputeListSkeleton variant="qag" showFilters={false} /> : data.length === 0 ? (
+      {isError ? (
+        <ErreurChargement onRetry={() => refetch()} />
+      ) : isPending ? <DeputeListSkeleton variant="qag" showFilters={false} /> : data.length === 0 ? (
         <Box sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>
           <Typography>
             {search
@@ -93,12 +100,6 @@ export default function PaginatedQuestions({
         </Box>
       ) : (
         <>
-          <Pagination
-            {...pagination}
-            page={page}
-            setPage={setPage}
-            isPending={isPending}
-          />
           <div>
             {data?.map((question) => (
               <QuestionCard
@@ -108,6 +109,13 @@ export default function PaginatedQuestions({
               />
             ))}
           </div>
+          {/* Sous la liste, comme dans l'onglet Amendements. */}
+          <Pagination
+            {...pagination}
+            page={page}
+            setPage={setPage}
+            isPending={isPending}
+          />
         </>
       )}
     </Stack>

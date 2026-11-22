@@ -2,7 +2,10 @@
 
 import React from "react";
 import { Vote, Scrutin, Acteur, Dossier } from "@prisma/client";
-import { searchVote } from "@/data/searchVote";
+import type { VoteActeur } from "@/data/mongo/votesActeurAN";
+import type { PaginatedResponse } from "@/data/pagination";
+import { lireJson } from "@/lib/lireJson";
+import ErreurChargement from "@/components/ErreurChargement";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Stack from "@mui/material/Stack";
 import Select from "@mui/material/Select";
@@ -48,29 +51,43 @@ export default function VotesClient({ acteur }: VotesClientProps) {
     debouncedSetSearch(next);
   };
 
-  const { data: result, isPending } = useQuery({
+  // Lu par une route du site (notre base, l'API Tricoteuses en repli) plutôt
+  // que directement dans l'API : sa lenteur faisait afficher « Aucun vote ».
+  const { data: result, isPending, isError, refetch } = useQuery({
     queryKey: ["votes", page, acteur.uid, positionVote, search, onlySolennel],
-    queryFn: async () => {
-      const result = await searchVote({
-        page,
-        perPage: 10,
-        acteurRefUid: acteur.uid,
+    queryFn: async ({ signal }) => {
+      const parametres = new URLSearchParams({
+        page: String(page),
+        perPage: "10",
         positionVote,
         search,
-        include: "scrutinRef.dossierRef",
-        codeTypeVote: onlySolennel ? "SPS" : undefined,
+        codeTypeVote: onlySolennel ? "SPS" : "",
       });
-      return result;
+      const reponse = await lireJson<PaginatedResponse<VoteActeur>>(
+        `/api/acteurs/${acteur.uid}/votes?${parametres}`,
+        signal,
+      );
+      // Dates en chaînes dans le JSON ; la carte les veut en Date.
+      return {
+        ...reponse,
+        data: reponse.data.map((vote) => ({
+          ...vote,
+          dateVote: vote.dateVote ? new Date(vote.dateVote) : null,
+          scrutinRef: {
+            ...vote.scrutinRef,
+            dateScrutin: vote.scrutinRef.dateScrutin ? new Date(vote.scrutinRef.dateScrutin) : null,
+          },
+        })),
+      };
     },
     placeholderData: keepPreviousData,
   });
 
   const pagination = result?.pagination;
 
-  // La recherche est faite par l'API (scrutins correspondants, puis votes du
-  // député) : aucun filtrage supplémentaire ici, il ne verrait que la page
-  // affichée et écarterait les correspondances sans accent ou au pluriel.
-  const filteredData = (result?.data as VoteWithDetails[] | undefined) ?? [];
+  // La recherche est faite côté serveur sur toute la liste : aucun filtrage
+  // supplémentaire ici, il ne verrait que la page affichée.
+  const filteredData = (result?.data as unknown as VoteWithDetails[] | undefined) ?? [];
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -150,9 +167,10 @@ export default function VotesClient({ acteur }: VotesClientProps) {
       </Stack>
 
       <Stack spacing={2} sx={{ mt: 3 }}>
-        {isPending && <DeputeListSkeleton variant="votes" showFilters={false} />}
+        {isError && <ErreurChargement onRetry={() => refetch()} />}
+        {isPending && !isError && <DeputeListSkeleton variant="votes" showFilters={false} />}
         {/* Message si vide */}
-        {filteredData.length === 0 && !isPending && (
+        {filteredData.length === 0 && !isPending && !isError && (
           <Box sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>
             <Typography>Aucun vote ne correspond à vos critères.</Typography>
             {search && (

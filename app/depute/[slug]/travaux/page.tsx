@@ -20,8 +20,9 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
 import { getActeurBySlug } from "@/data/getActeurBySlug";
-import { searchDocument } from "@/data/searchDocument";
-import { searchDossier } from "@/data/searchDossier";
+import type { DocumentTravaux, DossierTravaux } from "@/data/mongo/travauxAN";
+import { lireJson } from "@/lib/lireJson";
+import ErreurChargement from "@/components/ErreurChargement";
 import { DeputeTravauxSkeleton } from "@/components/navigation/DeputeTabSkeleton";
 import LienSource from "@/components/LienSource";
 import { urlTexte } from "@/lib/sourcesAN";
@@ -237,33 +238,33 @@ export default function Travaux() {
     queryFn: async () => await getActeurBySlug(slug),
   });
 
-  const { data: documentsResult, isPending: docsIsPending } = useQuery({
-    queryKey: ["documents", acteur?.uid],
-    queryFn: async () => {
-      if (!acteur?.uid) return null;
-      return await searchDocument({
-        perPage: 100,
-        auteurPrincipalUid: acteur.uid,
-        sort: "dateCreation.desc",
-      });
+  // Lu par une route du site (notre base, l'API Tricoteuses en repli) plutôt
+  // que directement dans l'API : sa lenteur faisait afficher des listes vides.
+  const {
+    data: travaux,
+    isPending: travauxIsPending,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["travaux", acteur?.uid],
+    queryFn: async ({ signal }) => {
+      const reponse = await lireJson<{ documents: DocumentTravaux[]; dossiers: DossierTravaux[] }>(
+        `/api/acteurs/${acteur!.uid}/travaux`,
+        signal,
+      );
+      return {
+        documents: reponse.documents.map((d) => ({
+          ...d,
+          dateCreation: d.dateCreation ? new Date(d.dateCreation) : null,
+        })),
+        dossiers: reponse.dossiers,
+      };
     },
     enabled: !!acteur?.uid,
   });
 
-  const { data: dossiersResult, isPending: dossierIsPending } = useQuery({
-    queryKey: ["dossiers", acteur?.uid],
-    queryFn: async () => {
-      if (!acteur?.uid) return null;
-      return await searchDossier({
-        perPage: 100,
-        acteurPrincipalRefUid: acteur.uid,
-      });
-    },
-    enabled: !!acteur?.uid,
-  });
-
-  const documents = documentsResult?.data ?? [];
-  const dossiers = dossiersResult?.data ?? [];
+  const documents = travaux?.documents ?? [];
+  const dossiers = travaux?.dossiers ?? [];
 
   const propositionsDeLoi = dedupeByDossier(
     documents.filter((doc) => doc.classeCode === "PIONLOI"),
@@ -272,10 +273,10 @@ export default function Travaux() {
     (doc) => doc.classeCode === "RAPPORT" || doc.classeCode === "RAPINF",
   );
   const resolutions = dedupeByDossier(
-    documents.filter((doc) => doc.classeCode === "RES"),
+    documents.filter((doc) => doc.classeCode === "PIONRES"),
   );
 
-  const isLoading = acteurIsPending || docsIsPending || dossierIsPending;
+  const isLoading = acteurIsPending || (travauxIsPending && !isError);
 
   return (
     <Container sx={{ pt: 3, pb: 6 }}>
@@ -302,7 +303,9 @@ export default function Travaux() {
         </Typography>
       </Stack>
 
-      {isLoading ? (
+      {isError ? (
+        <ErreurChargement onRetry={() => refetch()} />
+      ) : isLoading ? (
         <DeputeTravauxSkeleton contentOnly />
       ) : (
         <Stack spacing={3}>

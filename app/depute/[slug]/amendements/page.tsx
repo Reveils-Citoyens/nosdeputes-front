@@ -1,11 +1,11 @@
 "use client";
 import React from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import {
-  searchAmendement,
-  sortAmendementPossible,
-  type AmendementWithDossierRef,
-} from "@/data/searchAmendement";
+import { sortAmendementPossible } from "@/data/searchAmendement";
+import type { AmendementActeur } from "@/data/mongo/amendementsActeurAN";
+import type { PaginatedResponse } from "@/data/pagination";
+import { lireJson } from "@/lib/lireJson";
+import ErreurChargement from "@/components/ErreurChargement";
 import { useParams } from "next/navigation";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
 import AmendementCard from "@/components/folders/AmendementCard";
@@ -33,18 +33,17 @@ export default function Amendements() {
     queryFn: () => getActeurBySlug(slug),
   });
 
-  const { data: result, isPending } = useQuery({
+  // Lu par une route du site (notre base, l'API Tricoteuses en repli) plutôt
+  // que directement dans l'API : sa lenteur faisait afficher « Aucun amendement ».
+  const { data: result, isPending, isError, refetch } = useQuery({
     queryKey: ["amendements", page, acteur?.uid, sortAmendement, search],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!acteur?.uid) return null;
-      return await searchAmendement({
-        page,
-        perPage: 10,
-        acteurRefUid: acteur.uid,
-        sortAmendement,
-        search,
-        include: "dossierRef",
-      });
+      const parametres = new URLSearchParams({ page: String(page), perPage: "10", sortAmendement, search });
+      return await lireJson<PaginatedResponse<AmendementActeur>>(
+        `/api/acteurs/${acteur.uid}/amendements?${parametres}`,
+        signal,
+      );
     },
     enabled: !!acteur?.uid,
     placeholderData: keepPreviousData,
@@ -114,8 +113,9 @@ export default function Amendements() {
         </Select>
       </Stack>
 
+      {isError && <ErreurChargement onRetry={() => refetch()} />}
       {isPending && <DeputeListSkeleton variant="amendements" showFilters={false} />}
-      {(data as AmendementWithDossierRef[]).map((amendement) => {
+      {data.map((amendement) => {
         const dossierTitre = amendement.dossierRef?.titre;
         const titre = dossierTitre
           ? `${dossierTitre} — N°${amendement.numeroOrdreDepot}`
@@ -124,14 +124,14 @@ export default function Amendements() {
         return (
           <AmendementCard
             key={amendement.uid}
-            amendement={amendement}
+            amendement={amendement as unknown as React.ComponentProps<typeof AmendementCard>["amendement"]}
             acteurUid={null}
             titre={titre}
           />
         );
       })}
 
-      {data.length === 0 && !isPending && (
+      {data.length === 0 && !isPending && !isError && (
         <Typography
           sx={{
             textAlign: "center",
