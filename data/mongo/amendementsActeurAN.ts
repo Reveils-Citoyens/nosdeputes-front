@@ -9,8 +9,9 @@ import { motifRechercheHtml, normaliserTexte } from "./rechercheTexte";
  * dans notre base plutôt que dans l'API Tricoteuses. Serveur uniquement.
  *
  * Même périmètre que l'API (`/amendements?acteurRefUid=…&chambre=AN`) : les
- * amendements dont le député est l'auteur, cosignés exclus ; même ordre
- * (numéro d'ordre de dépôt croissant). La recherche diffère volontairement :
+ * amendements dont le député est l'auteur, cosignés exclus. L'ordre, lui,
+ * diffère : du plus récent au plus ancien (l'API suivait le numéro d'ordre
+ * de dépôt croissant). La recherche diffère aussi, volontairement :
  * l'API cherchait des mots racinisés et ignorait les numéros ; on cherche le
  * texte tel que saisi, sans tenir compte des accents, et le numéro.
  */
@@ -80,7 +81,14 @@ async function chargerListe(acteurUid: string): Promise<Resume[]> {
         texteLegislatifRef: valeur(brut.texteLegislatifRef),
       };
     })
-    .sort((a, b) => (a.numeroOrdreDepot ?? 0) - (b.numeroOrdreDepot ?? 0) || a.uid.localeCompare(b.uid));
+    // Du plus récent au plus ancien, comme les questions et les votes ; le
+    // numéro d'ordre départage les dépôts d'un même jour.
+    .sort(
+      (a, b) =>
+        String(b.dateDepot ?? "").localeCompare(String(a.dateDepot ?? "")) ||
+        (b.numeroOrdreDepot ?? 0) - (a.numeroOrdreDepot ?? 0) ||
+        b.uid.localeCompare(a.uid)
+    );
 }
 
 function listeEnMemoire(acteurUid: string): Promise<Resume[]> {
