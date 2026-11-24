@@ -414,7 +414,14 @@ export const INDICATEURS: Section[] = [
 ];
 
 /** Libellés des cinq tranches, de la moins active à la plus active. */
-export const LIBELLES_TRANCHES = INDICATEURS.find((s) => s.id === "classement")!.rubriques[1].liste!;
+/**
+ * Phrases des cinq tranches, reprises sur les cartes de la fiche. Rubrique
+ * cherchée par son titre : la retrouver par sa position cassait toutes les
+ * cartes dès qu'une rubrique était ajoutée avant elle.
+ */
+export const LIBELLES_TRANCHES = INDICATEURS.find((s) => s.id === "classement")!.rubriques.find(
+  (r) => r.titre === "Les cinq tranches"
+)!.liste!;
 
 /** Parties générales de la section de /methodologie, avant et après les indicateurs. */
 export const PRINCIPES: Rubrique[] = [
