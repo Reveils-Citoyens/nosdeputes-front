@@ -105,6 +105,34 @@ function memoiser(fn) {
 }
 
 const http = creerSourcesHttp({ api, fetch: fetchLimite });
+
+/**
+ * Vignettes trouvées lors des imports précédents, par page vidéo. La page
+ * d'une séance ne déclare parfois pas encore sa vignette au moment de
+ * l'import (24 novembre 2026 : 74 pages sans vignette ; vingt d'entre elles,
+ * relues le lendemain, en déclaraient toutes une). Une vignette connue n'est
+ * jamais remplacée par une absence.
+ */
+const vignettesConnues = new Map();
+const bilanVignettes = { trouvees: 0, seconde: 0, reprises: 0, absentes: 0 };
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function vignette(page) {
+  if (!page) return null;
+  let trouvee = await http.vignette(page);
+  if (!trouvee) {
+    await pause(1500);
+    trouvee = await http.vignette(page);
+    if (trouvee) bilanVignettes.seconde++;
+  }
+  if (trouvee) {
+    bilanVignettes.trouvees++;
+    return trouvee;
+  }
+  const connue = vignettesConnues.get(page);
+  bilanVignettes[connue ? "reprises" : "absentes"]++;
+  return connue ?? null;
+}
 const sources = {
   // Une nouvelle tentative après une pause : un épisode de surcharge passager
   // de l'API (observé : 248 échecs sur 591 lors d'un essai, 0 au suivant) ne
@@ -118,7 +146,7 @@ const sources = {
   reunionDuCompteRendu: memoiser(http.reunionDuCompteRendu),
   videoReunion: memoiser(http.videoReunion),
   fluxDisponible: memoiser(http.fluxDisponible),
-  vignette: memoiser(http.vignette),
+  vignette: memoiser(vignette),
   titreDossier: memoiser(http.titreDossier),
 };
 
@@ -138,6 +166,13 @@ const client = mongoUri ? await new MongoClient(mongoUri).connect() : null;
 try {
   const collection = client?.db("parlement").collection(COLLECTION);
   const uids = await deputesEnExercice();
+  if (collection) {
+    for await (const entree of collection.find({}, { projection: { "prises.video.page": 1, "prises.vignette": 1 } })) {
+      for (const prise of entree.prises ?? []) {
+        if (prise.video?.page && prise.vignette) vignettesConnues.set(prise.video.page, prise.vignette);
+      }
+    }
+  }
   const existants = new Set(
     collection ? await collection.distinct("_id", { _id: { $in: uids } }) : []
   );
@@ -193,7 +228,9 @@ try {
   const resume =
     `Prises de parole vidéo : ${uids.length} députés, ${bilan.ecrits} écrits ` +
     `(${bilan.avecVideos} avec vidéos), ${bilan.conserves} conservés (vérification indéterminée), ` +
-    `${bilan.echecs} en échec — ${requetes} requêtes, ${duree} s` +
+    `${bilan.echecs} en échec — ${requetes} requêtes, ${duree} s. ` +
+    `Vignettes : ${bilanVignettes.trouvees} pages lues (dont ${bilanVignettes.seconde} à la seconde tentative), ` +
+    `${bilanVignettes.reprises} reprises d'un import précédent, ${bilanVignettes.absentes} absentes` +
     (args["dry-run"] ? " (dry-run, aucune écriture)" : "");
   console.log(resume);
   for (const [cle, nombre] of anomalies) console.log(`  ${cle} : ${nombre}`);
