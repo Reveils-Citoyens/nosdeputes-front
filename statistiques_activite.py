@@ -52,7 +52,7 @@ from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta, timezone
 from math import ceil
 from pathlib import Path
-from typing import Any, Iterator, NamedTuple
+from typing import Any, Callable, Iterator, NamedTuple
 
 from pymongo import UpdateOne
 
@@ -575,6 +575,110 @@ def _est_presidence(paragraphe: dict) -> bool:
     return fonction in ROLES_PRESIDENCE
 
 
+CODE_PAROLE = "PAROLE_GENERIQUE"
+CODE_INTERRUPTION = "INTERRUPTION_1_10"
+# Rappels au règlement : procédure, exclus du compteur (cf. méthodologie).
+PREFIXE_RAPPEL_REGLEMENT = "RAP_REGLEMENT"
+
+
+def est_intervention_de_fond(paragraphe: dict) -> bool:
+    """
+    Paragraphe prononcé par un député sur le fond du débat.
+
+    Le compte rendu de séance ne classe pas toutes les prises de parole en
+    `PAROLE_GENERIQUE` : la défense d'un amendement (`DISC_ARTICLES_3_4_1`,
+    16 000 paragraphes sur la 17e législature), un avis sur un sous-amendement
+    (`DISC_ARTICLES_4_20`), une question orale sans débat (`QOSD_2_2`) ou la
+    défense d'une motion de rejet (`MOTION_RP_2_2`) gardent le code de leur
+    rubrique. Ils sont retenus dès lors qu'un orateur nommé les prononce.
+
+    Restent écartés : les interruptions, les rappels au règlement, et les
+    paragraphes sans orateur nommé, qui portent pourtant un `id_acteur`
+    (« Présidence de M. X », « (Les amendements sont adoptés.) »).
+
+    Hors `PAROLE_GENERIQUE`, la présidence n'est pas retenue : ces codes
+    portent surtout ses formules (« La séance est ouverte », « Je mets aux
+    voix… », résultats de scrutin), qui doubleraient le décompte « en
+    présidant » sans rien dire de plus.
+    """
+    code = paragraphe.get("code_grammaire") or ""
+    if not texte_du_paragraphe(paragraphe).strip():
+        return False
+    if code == CODE_PAROLE:
+        return True
+    if code == CODE_INTERRUPTION or code.startswith(PREFIXE_RAPPEL_REGLEMENT):
+        return False
+    return bool(_nom_orateur(paragraphe).strip()) and not _est_presidence(paragraphe)
+
+
+def coupe_la_parole(paragraphe: dict) -> bool:
+    """
+    Le paragraphe interrompt-il la prise de parole en cours ?
+
+    Non pour une interruption lancée depuis les bancs (« C'est faux ! »,
+    « Veuillez conclure ») : l'orateur garde la parole. Non plus pour un
+    paragraphe vide ou sans orateur nommé (didascalie, conteneur d'un bloc
+    d'amendements). Oui pour toute autre prise de parole, présidence comprise.
+    """
+    if paragraphe.get("code_grammaire") == CODE_INTERRUPTION:
+        return False
+    if not texte_du_paragraphe(paragraphe).strip():
+        return False
+    return bool(_nom_orateur(paragraphe).strip())
+
+
+def decouper_en_prises(
+    paragraphes: list[dict], orateur: Callable[[dict], Any]
+) -> list[list[dict]]:
+    """
+    Regroupe les paragraphes d'un compte rendu, dans l'ordre du débat, en
+    prises de parole : suites de paragraphes consécutifs d'un même orateur.
+
+    L'unité compte : le compte rendu découpe un discours en paragraphes selon
+    ses conventions de saisie. Compter des paragraphes donnait quatre
+    interventions pour un discours de président de groupe ; une prise de
+    parole en vaut une, qu'elle tienne en un mot ou en vingt minutes.
+    """
+    prises: list[list[dict]] = []
+    precedent: Any = object()
+    for paragraphe in paragraphes:
+        if not coupe_la_parole(paragraphe):
+            continue
+        cle = orateur(paragraphe)
+        if cle != precedent or not prises:
+            prises.append([])
+            precedent = cle
+        prises[-1].append(paragraphe)
+    return prises
+
+
+def _compter_prises(
+    accumulateur: dict[tuple[str, date], dict],
+    prises: list[list[dict]],
+    acteur: Callable[[dict], str | None],
+    jour: date,
+    compte_rendu_uid: str,
+) -> None:
+    """Une intervention par prise de parole qui contient au moins un paragraphe de fond."""
+    for prise in prises:
+        retenus = [p for p in prise if est_intervention_de_fond(p)]
+        if not retenus:
+            continue
+        premier = retenus[0]
+        acteur_uid = acteur(premier)
+        if acteur_uid is None:
+            continue
+        _ajouter_intervention(
+            accumulateur,
+            acteur_uid=acteur_uid,
+            jour=jour,
+            compte_rendu_uid=compte_rendu_uid,
+            presidence=_est_presidence(premier),
+            ordre=_entier(premier.get("ordre_absolu_seance")),
+            suite=[_entier(p.get("ordre_absolu_seance")) for p in retenus[1:]],
+        )
+
+
 def normaliser_role(role: Any) -> str:
     return role.strip().lower() if isinstance(role, str) else ""
 
@@ -583,8 +687,9 @@ def calculer_interventions_seance_publique(db: Any, legislature: int) -> list[di
     """
     Prises de parole en séance publique, attribuées par `id_acteur`.
 
-    Seules les interventions de fond sont comptées (`PAROLE_GENERIQUE`). Celles
-    faites en présidant la séance sont comptabilisées à part : conduire les
+    Une intervention est une prise de parole (`decouper_en_prises`) qui
+    contient au moins un paragraphe de fond (`est_intervention_de_fond`).
+    Celles faites en présidant la séance sont comptabilisées à part : conduire les
     débats (« La parole est à Mme X ») n'est pas prendre position sur un texte,
     et le tour de présidence ne doit pas gonfler le compteur d'un député.
     """
@@ -602,17 +707,20 @@ def calculer_interventions_seance_publique(db: Any, legislature: int) -> list[di
             continue
         jour = horodatage.date()
 
-        for paragraphe in iter_paragraphes(compte_rendu.get("contenu")):
-            if paragraphe.get("code_grammaire") != "PAROLE_GENERIQUE":
-                continue
-            _ajouter_intervention(
-                accumulateur,
-                acteur_uid=paragraphe["id_acteur"],
-                jour=jour,
-                compte_rendu_uid=compte_rendu["uid"],
-                presidence=_est_presidence(paragraphe),
-                ordre=_entier(paragraphe.get("ordre_absolu_seance")),
-            )
+        # Un bloc de discussion d'amendements porte l'ordre de son premier
+        # paragraphe, avec un texte vide : seul le paragraphe est gardé.
+        paragraphes = sorted(
+            (p for p in iter_paragraphes(compte_rendu.get("contenu"))
+             if texte_du_paragraphe(p).strip()),
+            key=lambda p: _entier(p.get("ordre_absolu_seance")),
+        )
+        _compter_prises(
+            accumulateur,
+            decouper_en_prises(paragraphes, lambda p: p.get("id_acteur")),
+            acteur=lambda p: p.get("id_acteur"),
+            jour=jour,
+            compte_rendu_uid=compte_rendu["uid"],
+        )
 
     return _documents_interventions(accumulateur, legislature, TYPE_INTERVENTION_SEANCE)
 
@@ -661,21 +769,27 @@ def calculer_interventions_commission(
                 continue
         jour = horodatage.date()
 
+        # Rattachement dans l'ordre du débat (« M. le rapporteur » renvoie au
+        # nom cité plus tôt), puis découpage en prises de parole. Un orateur
+        # non rattaché coupe la parole comme les autres, sous son nom.
         resolveur.nouveau_compte_rendu()
-        for paragraphe in _paragraphes_ordonnes(compte_rendu.get("contenu")):
-            if paragraphe.get("code_grammaire") != "PAROLE_GENERIQUE":
-                continue
-            acteur_uid = resolveur.resoudre(_nom_orateur(paragraphe))
-            if acteur_uid is None:
-                continue
-            _ajouter_intervention(
-                accumulateur,
-                acteur_uid=acteur_uid,
-                jour=jour,
-                compte_rendu_uid=compte_rendu["uid"],
-                presidence=_est_presidence(paragraphe),
-                ordre=_entier(paragraphe.get("ordre_absolu_seance")),
-            )
+        paragraphes = _paragraphes_ordonnes(compte_rendu.get("contenu"))
+        rattachement = {
+            id(p): resolveur.resoudre(_nom_orateur(p))
+            for p in paragraphes
+            if est_intervention_de_fond(p)
+        }
+        _compter_prises(
+            accumulateur,
+            decouper_en_prises(
+                paragraphes,
+                lambda p: rattachement.get(id(p))
+                or resolution_orateurs.normaliser(_nom_orateur(p)),
+            ),
+            acteur=lambda p: rattachement.get(id(p)),
+            jour=jour,
+            compte_rendu_uid=compte_rendu["uid"],
+        )
 
     if sans_date:
         log.warning("%d comptes rendus de commission sans date exploitable", sans_date)
@@ -746,6 +860,7 @@ def _ajouter_intervention(
     compte_rendu_uid: str,
     presidence: bool,
     ordre: int | None = None,
+    suite: list[int] | None = None,
 ) -> None:
     entree = accumulateur.setdefault(
         (acteur_uid, jour),
@@ -761,10 +876,13 @@ def _ajouter_intervention(
     # qui a été retenu. Indispensable en commission : l'attribution par le nom
     # dépend de l'ordre du compte rendu (« M. le rapporteur »), elle ne peut pas
     # être refaite à l'affichage sans risquer d'en différer.
+    # Une entrée par prise de parole : son premier paragraphe (l'ancre du
+    # site) et, s'il y en a, les paragraphes qui la prolongent.
     if ordre is not None:
-        entree["paragraphes"][compte_rendu_uid].append(
-            {"ordre": ordre, "presidence": presidence}
-        )
+        paragraphe = {"ordre": ordre, "presidence": presidence}
+        if suite:
+            paragraphe["suite"] = suite
+        entree["paragraphes"][compte_rendu_uid].append(paragraphe)
 
 
 def _documents_interventions(
@@ -1197,6 +1315,60 @@ def calculer_metriques(
     return metriques, distributions
 
 
+# Période des députés dont le mandat est achevé : la durée de leur mandat.
+PERIODE_MANDAT = "MANDAT"
+
+
+def calculer_metriques_mandat(
+    quotidiennes: list[dict],
+    legislature: int,
+    mandats: dict[str, list[tuple[date, date | None]]],
+    anciens: set[str],
+) -> list[dict]:
+    """
+    Totaux des députés dont le mandat est achevé, sur la durée de ce mandat.
+
+    Ils ne sont pas classés : un mandat plus court et terminé ne se compare pas à
+    celui des députés en exercice, d'où l'absence de distribution. Seule compte
+    l'activité exercée pendant le mandat : les prises de parole d'un ancien
+    député devenu ministre, par exemple, en sont écartées.
+    """
+    par_acteur: dict[str, list[dict]] = defaultdict(list)
+    for ligne in quotidiennes:
+        if ligne["acteurUid"] in anciens:
+            par_acteur[ligne["acteurUid"]].append(ligne)
+
+    metriques: list[dict] = []
+    for acteur_uid in sorted(anciens):
+        periodes = mandats.get(acteur_uid, [])
+        lignes = [
+            ligne for ligne in par_acteur[acteur_uid]
+            if _en_mandat(periodes, date.fromisoformat(ligne["date"][:10]))
+        ]
+        for mesure, types in MESURES.items():
+            valeur = 0
+            annexes: Counter = Counter()
+            for ligne in lignes:
+                if ligne["type"] not in types:
+                    continue
+                valeur += ligne["valeur"]
+                for champ in CHAMPS_ANNEXES:
+                    if champ in ligne:
+                        annexes[champ] += ligne[champ]
+            metriques.append({
+                "uid": f"{legislature}-{mesure}-{acteur_uid}-{PERIODE_MANDAT}".upper(),
+                "legislature": legislature,
+                "mesure": mesure,
+                "periode": PERIODE_MANDAT,
+                "acteurUid": acteur_uid,
+                "valeur": valeur,
+                "unite": UNITES[types[0]],
+                "attribution": _attribution_mesure(types),
+                **annexes,
+            })
+    return metriques
+
+
 def _attribution_mesure(types: tuple[str, ...]) -> str:
     """Une mesure composite ne vaut que par son maillon le plus faible."""
     modes = {ATTRIBUTIONS[type_statistique] for type_statistique in types}
@@ -1236,6 +1408,304 @@ def _quantile(valeurs_triees: list[int], ratio: float) -> int:
         return 0
     rang = max(1, min(len(valeurs_triees), ceil(ratio * len(valeurs_triees))))
     return valeurs_triees[rang - 1]
+
+
+# ---------------------------------------------------------------------------
+# Indicateurs : scrutins solennels (participation, votes dissidents)
+# ---------------------------------------------------------------------------
+
+# Scrutins publics solennels : les votes sur l'ensemble des textes importants,
+# annoncés à l'avance et tenus à heure fixe. C'est sur eux que l'assiduité au
+# vote a un sens : chaque député sait qu'il est attendu.
+CODE_SCRUTIN_SOLENNEL = "SPS"
+MESURE_PARTICIPATION = "participation-votes-solennels"
+MESURE_DISSIDENCE = "dissidence-votes-solennels"
+
+# Non-votants empêchés par leur fonction : présidente de l'Assemblée (PAN),
+# président de séance (PSE), membre du Gouvernement (MG). Ils ne peuvent pas
+# voter : le scrutin sort du dénominateur au lieu de compter comme une absence.
+CAUSES_EMPECHEMENT = {"PAN", "PSE", "MG"}
+
+RUBRIQUES_VOTE = {
+    "pours": "pour",
+    "contres": "contre",
+    "abstentions": "abstention",
+    "nonVotants": "nonVotant",
+}
+
+
+def mandats_assemblee(db: Any, legislature: int) -> dict[str, list[tuple[date, date | None]]]:
+    """Périodes de mandat de député de chaque acteur pendant la législature."""
+    periodes: dict[str, list[tuple[date, date | None]]] = defaultdict(list)
+    for acteur in db.acteurs.find(
+        {"mandats.mandat.typeOrgane": "ASSEMBLEE"}, {"uid": 1, "mandats.mandat": 1}
+    ):
+        uid = acteur.get("uid")
+        for mandat in liste((acteur.get("mandats") or {}).get("mandat")):
+            if not isinstance(mandat, dict) or mandat.get("typeOrgane") != "ASSEMBLEE":
+                continue
+            if str(mandat.get("legislature") or "") != str(legislature):
+                continue
+            debut = _parse_jour(mandat.get("dateDebut"))
+            if uid and debut:
+                periodes[uid].append((debut, _parse_jour(mandat.get("dateFin"))))
+    return periodes
+
+
+def _en_mandat(periodes: list[tuple[date, date | None]], jour: date) -> bool:
+    return any(debut <= jour and (fin is None or jour <= fin) for debut, fin in periodes)
+
+
+def groupes_non_inscrits(db: Any, legislature: int) -> set[str]:
+    """
+    Organes « non inscrits » : l'Assemblée les traite comme un groupe dans la
+    ventilation des votes, mais ils ne réunissent aucune ligne politique
+    commune. Voter autrement que la majorité des non-inscrits n'est pas une
+    dissidence.
+    """
+    return {
+        organe["uid"]
+        for organe in db.organes.find(
+            {"codeType": "GP", "libelleAbrev": "NI"},
+            {"uid": 1, "codeType": 1, "libelleAbrev": 1, "legislature": 1},
+        )
+        if organe.get("codeType") == "GP"
+        and organe.get("libelleAbrev") == "NI"
+        and str(organe.get("legislature") or legislature) == str(legislature)
+    }
+
+
+def position_majoritaire(decompte: dict) -> str | None:
+    """
+    Position la plus suivie au sein d'un groupe : pour, contre ou abstention,
+    d'après les votes nominatifs de ses membres. `None` à égalité : sans
+    majorité, aucun vote ne s'en écarte.
+
+    Le champ `positionMajoritaire` publié par l'Assemblée n'est pas fiable : il
+    vaut par exemple « abstention » pour un groupe qui a voté 121 pour et 2
+    abstentions (scrutin n° 2106). Il n'est donc pas utilisé.
+    """
+    comptes = {
+        position: len([v for v in liste((decompte.get(rubrique) or {}).get("votant")) if isinstance(v, dict)])
+        for rubrique, position in RUBRIQUES_VOTE.items()
+        if position != "nonVotant"
+    }
+    maximum = max(comptes.values(), default=0)
+    gagnantes = [position for position, nombre in comptes.items() if nombre == maximum]
+    return gagnantes[0] if maximum and len(gagnantes) == 1 else None
+
+
+def lire_scrutins_solennels(db: Any, legislature: int) -> list[dict]:
+    """
+    Les scrutins solennels de la législature et, pour chacun, la position de
+    chaque député : position, vote par délégation, cause d'un non-vote, groupe
+    sous lequel il a voté et position la plus suivie dans ce groupe.
+    """
+    debut = LEGISLATURE_DATE_DEBUT[legislature]
+    scrutins: list[dict] = []
+    for scrutin in db.scrutins.find(
+        {"legislature": str(legislature), "typeVote.codeTypeVote": CODE_SCRUTIN_SOLENNEL},
+        {"uid": 1, "numero": 1, "dateScrutin": 1, "typeVote.codeTypeVote": 1,
+         "ventilationVotes": 1},
+    ):
+        if (scrutin.get("typeVote") or {}).get("codeTypeVote") != CODE_SCRUTIN_SOLENNEL:
+            continue
+        jour = _parse_jour(scrutin.get("dateScrutin"))
+        if jour is None or jour < debut:
+            continue
+        votes: dict[str, dict] = {}
+        organe = (scrutin.get("ventilationVotes") or {}).get("organe") or {}
+        for groupe in liste((organe.get("groupes") or {}).get("groupe")):
+            if not isinstance(groupe, dict):
+                continue
+            vote = groupe.get("vote") or {}
+            decompte = vote.get("decompteNominatif") or {}
+            majoritaire = position_majoritaire(decompte)
+            for rubrique, position in RUBRIQUES_VOTE.items():
+                for votant in liste((decompte.get(rubrique) or {}).get("votant")):
+                    if not isinstance(votant, dict):
+                        continue
+                    acteur_uid = uid_acteur(votant.get("acteurRef"))
+                    if acteur_uid is None:
+                        continue
+                    votes[acteur_uid] = {
+                        "position": position,
+                        "delegation": str(votant.get("parDelegation")).lower() == "true",
+                        "cause": votant.get("causePositionVote"),
+                        "groupe": groupe.get("organeRef"),
+                        "majoritaire": majoritaire,
+                    }
+        scrutins.append({"uid": scrutin["uid"], "jour": jour, "votes": votes})
+    log.info("Scrutins solennels : %d", len(scrutins))
+    return scrutins
+
+
+def compter_votes_solennels(
+    scrutins: list[dict],
+    periodes_mandat: list[tuple[date, date | None]],
+    acteur_uid: str,
+    non_inscrits: set[str],
+) -> dict[str, int]:
+    """
+    Compteurs d'un député sur une liste de scrutins solennels.
+
+    - `scrutins` : scrutins tenus pendant son mandat, hors ceux où sa fonction
+      l'empêchait de voter (présidence, Gouvernement) ;
+    - `votes` : ceux où il a voté pour, contre ou abstention, en personne ou
+      par délégation — un vote confié à un collègue est un vote émis ;
+    - `votesDelegation` : la part de ces votes émis par délégation ;
+    - `votesExprimes` : ses votes émis au sein d'un groupe politique (hors
+      non-inscrits), base de la dissidence ;
+    - `votesDissidents` : ceux qui diffèrent de la position la plus suivie au
+      sein de son groupe (cf. `position_majoritaire`). S'abstenir quand son
+      groupe vote pour est une dissidence. Un scrutin où le groupe est partagé
+      à égalité n'entre pas dans le calcul.
+    """
+    compteurs = Counter(scrutins=0, votes=0, votesDelegation=0, votesExprimes=0, votesDissidents=0)
+    for scrutin in scrutins:
+        if not _en_mandat(periodes_mandat, scrutin["jour"]):
+            continue
+        vote = scrutin["votes"].get(acteur_uid)
+        if vote and vote["position"] == "nonVotant" and vote["cause"] in CAUSES_EMPECHEMENT:
+            continue
+        compteurs["scrutins"] += 1
+        if not vote or vote["position"] == "nonVotant":
+            continue
+        compteurs["votes"] += 1
+        compteurs["votesDelegation"] += int(vote["delegation"])
+        if vote["groupe"] in non_inscrits or not vote["majoritaire"]:
+            continue
+        compteurs["votesExprimes"] += 1
+        compteurs["votesDissidents"] += int(vote["position"] != vote["majoritaire"])
+    return dict(compteurs)
+
+
+def _taux(numerateur: int, denominateur: int) -> float | None:
+    """Pourcentage à une décimale ; indéfini sans dénominateur."""
+    return round(100 * numerateur / denominateur, 1) if denominateur else None
+
+
+def _distribution_taux(
+    legislature: int, mesure: str, periode: str, valeurs: list[float]
+) -> dict:
+    """
+    Distribution d'un taux. Seuls les députés pour qui le taux est défini y
+    entrent : un député arrivé hier n'a pas une participation nulle, il n'en
+    a pas encore.
+    """
+    return {
+        "uid": f"{legislature}-{mesure}-{periode}".upper(),
+        "legislature": legislature,
+        "mesure": mesure,
+        "periode": periode,
+        "unite": "pourcentage",
+        "attribution": "identifiant",
+        "effectifReference": len(valeurs),
+        "minimum": valeurs[0] if valeurs else 0,
+        "maximum": valeurs[-1] if valeurs else 0,
+        "moyenne": round(sum(valeurs) / len(valeurs), 1) if valeurs else 0,
+        "mediane": _quantile(valeurs, 0.5),
+        "q20": _quantile(valeurs, 0.2),
+        "q40": _quantile(valeurs, 0.4),
+        "q60": _quantile(valeurs, 0.6),
+        "q80": _quantile(valeurs, 0.8),
+        "q100": valeurs[-1] if valeurs else 0,
+    }
+
+
+def calculer_votes_solennels(
+    db: Any, legislature: int, population: set[str], anciens: set[str] = frozenset()
+) -> tuple[list[dict], list[dict]]:
+    """
+    Participation aux scrutins solennels et part des votes dissidents, par
+    député en exercice et par période, avec leurs distributions. Pour les
+    députés dont le mandat est achevé (`anciens`), les mêmes taux sur la durée
+    de leur mandat, sans distribution.
+    """
+    scrutins = lire_scrutins_solennels(db, legislature)
+    mandats = mandats_assemblee(db, legislature)
+    non_inscrits = groupes_non_inscrits(db, legislature)
+
+    metriques: list[dict] = []
+    distributions: list[dict] = []
+    for periode in PERIODES:
+        depuis = debut_periode(periode, legislature)
+        retenus = [scrutin for scrutin in scrutins if scrutin["jour"] >= depuis]
+        participations: list[float] = []
+        dissidences: list[float] = []
+        for acteur_uid in sorted(population):
+            compteurs = compter_votes_solennels(
+                retenus, mandats.get(acteur_uid, []), acteur_uid, non_inscrits
+            )
+            participation = _taux(compteurs["votes"], compteurs["scrutins"])
+            dissidence = _taux(compteurs["votesDissidents"], compteurs["votesExprimes"])
+            commun = {
+                "legislature": legislature,
+                "periode": periode,
+                "acteurUid": acteur_uid,
+                "unite": "pourcentage",
+                "attribution": "identifiant",
+            }
+            metriques.append({
+                **commun,
+                "uid": f"{legislature}-{MESURE_PARTICIPATION}-{acteur_uid}-{periode}".upper(),
+                "mesure": MESURE_PARTICIPATION,
+                "valeur": participation,
+                "scrutins": compteurs["scrutins"],
+                "votes": compteurs["votes"],
+                "votesDelegation": compteurs["votesDelegation"],
+            })
+            metriques.append({
+                **commun,
+                "uid": f"{legislature}-{MESURE_DISSIDENCE}-{acteur_uid}-{periode}".upper(),
+                "mesure": MESURE_DISSIDENCE,
+                "valeur": dissidence,
+                "votesExprimes": compteurs["votesExprimes"],
+                "votesDissidents": compteurs["votesDissidents"],
+            })
+            if participation is not None:
+                participations.append(participation)
+            if dissidence is not None:
+                dissidences.append(dissidence)
+
+        distributions.append(
+            _distribution_taux(legislature, MESURE_PARTICIPATION, periode, sorted(participations))
+        )
+        distributions.append(
+            _distribution_taux(legislature, MESURE_DISSIDENCE, periode, sorted(dissidences))
+        )
+
+    for acteur_uid in sorted(anciens):
+        # Tous les scrutins : compter_votes_solennels ne retient que ceux tenus
+        # pendant le mandat.
+        compteurs = compter_votes_solennels(
+            scrutins, mandats.get(acteur_uid, []), acteur_uid, non_inscrits
+        )
+        commun = {
+            "legislature": legislature,
+            "periode": PERIODE_MANDAT,
+            "acteurUid": acteur_uid,
+            "unite": "pourcentage",
+            "attribution": "identifiant",
+        }
+        metriques.append({
+            **commun,
+            "uid": f"{legislature}-{MESURE_PARTICIPATION}-{acteur_uid}-{PERIODE_MANDAT}".upper(),
+            "mesure": MESURE_PARTICIPATION,
+            "valeur": _taux(compteurs["votes"], compteurs["scrutins"]),
+            "scrutins": compteurs["scrutins"],
+            "votes": compteurs["votes"],
+            "votesDelegation": compteurs["votesDelegation"],
+        })
+        metriques.append({
+            **commun,
+            "uid": f"{legislature}-{MESURE_DISSIDENCE}-{acteur_uid}-{PERIODE_MANDAT}".upper(),
+            "mesure": MESURE_DISSIDENCE,
+            "valeur": _taux(compteurs["votesDissidents"], compteurs["votesExprimes"]),
+            "votesExprimes": compteurs["votesExprimes"],
+            "votesDissidents": compteurs["votesDissidents"],
+        })
+    return metriques, distributions
 
 
 # ---------------------------------------------------------------------------
@@ -1369,6 +1839,17 @@ def calculer_tout(db: Any, legislature: int) -> Resultat:
     en_exercice = population_actuelle(db, legislature)
     log.info("Classements calculés sur %d députés en exercice", len(en_exercice))
     metriques, distributions = calculer_metriques(quotidiennes, legislature, en_exercice)
+    # Députés de la législature dont le mandat est achevé : leurs totaux sur la
+    # durée du mandat, sans classement.
+    mandats = mandats_assemblee(db, legislature)
+    anciens = set(mandats) - en_exercice
+    log.info("Totaux sur le mandat de %d députés au mandat achevé", len(anciens))
+    metriques += calculer_metriques_mandat(quotidiennes, legislature, mandats, anciens)
+    metriques_votes, distributions_votes = calculer_votes_solennels(
+        db, legislature, en_exercice, anciens
+    )
+    metriques += metriques_votes
+    distributions += distributions_votes
 
     return Resultat(
         quotidiennes, hebdomadaires, metriques, distributions, rapport_resolution

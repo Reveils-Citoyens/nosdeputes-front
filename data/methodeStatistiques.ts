@@ -51,7 +51,7 @@ export const INDICATEURS: Section[] = [
       {
         titre: "Ce qui est compté",
         paragraphes: [
-          "Chaque prise de parole de fond du député, en séance publique et en réunion de commission. Une prise de parole de fond est un paragraphe que le compte rendu officiel classe en « parole générique ». Chaque paragraphe compte pour une intervention, quelle que soit sa longueur : dix prises de parole dans un même débat comptent dix.",
+          "Chaque prise de parole de fond du député, en séance publique et en réunion de commission : intervention dans la discussion, mais aussi défense d’un amendement, avis sur un amendement, question orale, défense d’une motion. Une prise de parole va du moment où le député reçoit la parole à celui où un autre orateur la prend ; une interruption lancée depuis les bancs ne la coupe pas. Elle compte pour une intervention quelle que soit sa longueur — « Défavorable. » comme un discours de vingt minutes — et quel que soit le nombre de paragraphes du compte rendu sur lequel elle s’étend. Dix prises de parole dans un même débat comptent dix.",
         ],
       },
       {
@@ -59,6 +59,7 @@ export const INDICATEURS: Section[] = [
         liste: [
           "Les interventions faites en présidant, en séance comme en commission (« La parole est à… », annonce d’un scrutin) : présider, c’est conduire les débats, pas prendre position sur un texte. Elles sont comptées à part et affichées en petit à gauche du chiffre principal.",
           "Les interventions de procédure : rappels au règlement, demandes de suspension, annonces liées au déroulement de la séance.",
+          "Les interruptions lancées depuis les bancs (« Très bien ! », « C’est faux ! »).",
         ],
       },
       {
@@ -72,6 +73,8 @@ export const INDICATEURS: Section[] = [
         titre: "Limites",
         paragraphes: [
           "Ni la durée ni le contenu d’une intervention ne sont pris en compte. Ce n’est pas une mesure de présence : un député présent qui ne prend pas la parole compte zéro.",
+          "En commission, les comptes rendus ne distinguent pas les interruptions des autres prises de parole : chacune y coupe la parole de l’orateur, ce qui compte un peu plus de prises de parole qu’en séance pour un même débat.",
+          "Jusqu’en novembre 2026, le compteur comptait des paragraphes du compte rendu, et seulement ceux classés « parole générique » : un discours découpé en quatre paragraphes comptait quatre, une défense d’amendement ne comptait pas.",
         ],
       },
     ],
@@ -254,6 +257,70 @@ export const INDICATEURS: Section[] = [
     ],
   },
   {
+    id: "votes-solennels",
+    titre: "Participation aux scrutins solennels",
+    rubriques: [
+      {
+        titre: "Ce qui est compté",
+        paragraphes: [
+          "La part des scrutins publics solennels auxquels le député a pris part, en votant pour, contre ou en s’abstenant. Les scrutins solennels portent sur l’ensemble des textes les plus importants ; ils sont annoncés à l’avance et se tiennent à heure fixe, généralement le mardi après les questions au Gouvernement : chaque député sait qu’il y est attendu.",
+          "Seuls comptent les scrutins tenus pendant le mandat du député, sur la période choisie.",
+        ],
+      },
+      {
+        titre: "Ce qui ne l’est pas",
+        liste: [
+          "Les scrutins où sa fonction l’empêchait de voter : présidence de l’Assemblée, présidence de la séance, appartenance au Gouvernement. Ils sortent du calcul au lieu de compter comme une absence.",
+          "Les autres scrutins publics (scrutins ordinaires sur un amendement, un article) et les votes à main levée.",
+        ],
+      },
+      {
+        titre: "Votes par délégation",
+        paragraphes: [
+          "Un vote confié à un collègue est un vote émis au nom du député : il compte comme une participation. Leur nombre est indiqué dans l’info-bulle du chiffre. C’est la différence avec la présence en séance publique, où un vote par délégation atteste au contraire l’absence.",
+        ],
+      },
+      {
+        titre: "Classement",
+        paragraphes: [
+          "Les députés sont répartis en cinq tranches comme pour les autres indicateurs, à une différence près : seuls ceux qui ont pu prendre part à au moins un scrutin solennel sur la période sont comparés. Un député arrivé après le dernier scrutin n’a pas une participation nulle, il n’en a pas encore.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "dissidence",
+    titre: "Votes dissidents",
+    rubriques: [
+      {
+        titre: "Ce qui est compté",
+        paragraphes: [
+          "La part des votes du député, lors des scrutins solennels, qui diffèrent de la position la plus suivie au sein de son groupe politique. Voter contre quand la majorité de son groupe vote pour est une dissidence ; s’abstenir aussi.",
+          "La position de son groupe est établie à partir des votes nominatifs de ses membres. Le champ « position majoritaire » publié par l’Assemblée n’est pas utilisé : il contredit parfois les votes eux-mêmes.",
+        ],
+      },
+      {
+        titre: "Ce qui ne l’est pas",
+        liste: [
+          "Les scrutins où le groupe s’est partagé à égalité : sans majorité, aucun vote ne s’en écarte.",
+          "Les non-inscrits : ils ne forment pas un groupe politique, voter autrement que d’autres non-inscrits n’est pas une dissidence. L’indicateur ne s’applique pas à eux.",
+        ],
+      },
+      {
+        titre: "Comment le lire",
+        paragraphes: [
+          "Le chiffre est rapproché de la médiane de l’Assemblée : la valeur atteinte par la moitié des députés membres d’un groupe. Une dissidence n’est ni une qualité ni un défaut : elle peut traduire une conviction personnelle, l’intérêt d’un territoire, ou un vote sur lequel le groupe a laissé à chacun sa liberté.",
+        ],
+      },
+      {
+        titre: "Limites",
+        paragraphes: [
+          "Certains groupes accordent la liberté de vote sur des textes de société (fin de vie, par exemple). Un vote différent de la majorité du groupe y est compté comme dissident, bien qu’aucune consigne n’ait été donnée : l’Assemblée ne publie pas les consignes de vote des groupes.",
+        ],
+      },
+    ],
+  },
+  {
     id: "presidence",
     titre: "Interventions en présidant",
     rubriques: [
@@ -293,6 +360,13 @@ export const INDICATEURS: Section[] = [
         titre: "Égalités",
         paragraphes: [
           "Quand beaucoup de députés ont la même valeur — c’est fréquent à zéro —, ils ne peuvent pas être départagés et sont placés dans la même tranche, la plus basse qu’atteint cette valeur. Exemple : près de la moitié des députés n’ont posé aucune question orale sans débat sur les 12 derniers mois ; ils sont tous classés dans la première tranche.",
+        ],
+      },
+      {
+        titre: "Députés dont le mandat est achevé",
+        paragraphes: [
+          "Démission, entrée au Gouvernement, élection au Sénat, décès : un député qui a quitté l’Assemblée n’est pas classé. Son mandat, plus court et terminé, ne se compare pas à celui des députés en exercice. Sa fiche présente ses totaux sur l’ensemble de son mandat, sans tranches, et seule l’activité exercée pendant le mandat est comptée.",
+          "Dans le graphe d’activité hebdomadaire, les semaines hors de son mandat sont hachurées : avant son arrivée, pour un député entré en cours de législature, et après son départ. Elles ne se lisent pas comme des absences.",
         ],
       },
     ],

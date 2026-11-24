@@ -25,7 +25,33 @@ const SEUIL_CARACTERES = parametres.seuilCaracteres;
 const ROLES_PRESIDENCE = ["president", "président", "presidente", "présidente"];
 
 /** Pourquoi un paragraphe n'est pas compté comme intervention. */
-export type MotifExclusion = "presidence" | "procedure";
+export type MotifExclusion = "presidence" | "procedure" | "suite";
+
+/**
+ * Prise de parole enregistrée par le calcul : son premier paragraphe et ceux
+ * qui la prolongent (`suite`, absent des chiffres calculés par paragraphe).
+ */
+type PriseComptee = { ordre: number; presidence: boolean; suite?: number[] };
+
+/**
+ * Statut d'un paragraphe d'après les prises de parole enregistrées par le
+ * calcul : la page relit ce qui a été compté au lieu de réappliquer la règle.
+ * `null` si le paragraphe n'appartient à aucune prise comptée.
+ */
+export function statutDansLesPrises(
+  ordre: number,
+  prises: PriseComptee[]
+): { retenue: boolean; motif: MotifExclusion | null } | null {
+  for (const prise of prises) {
+    if (prise.ordre === ordre) {
+      return prise.presidence ? { retenue: false, motif: "presidence" } : { retenue: true, motif: null };
+    }
+    if (prise.suite?.includes(ordre)) {
+      return { retenue: false, motif: prise.presidence ? "presidence" : "suite" };
+    }
+  }
+  return null;
+}
 
 export type Intervention = {
   /** Rang dans le débat, pour restituer l'ordre réel des prises de parole. */
@@ -135,8 +161,10 @@ function* iterParagraphes(noeud: any): Generator<any> {
 
 /**
  * Règles de statistiques_activite.py, appliquées paragraphe par paragraphe :
- * - intervention : « parole générique » hors présidence, sans seuil de longueur
- *   (calculer_interventions_seance_publique) ;
+ * - intervention : prise de parole de fond hors présidence, sans seuil de
+ *   longueur (est_intervention_de_fond, calculer_interventions_seance_publique).
+ *   Le découpage en prises de parole n'est pas refait ici : la page relit les
+ *   prises enregistrées par le calcul (statutDansLesPrises) ;
  * - présence : tout paragraphe de plus de SEUIL_CARACTERES caractères,
  *   présidence et procédure comprises (calculer_presences_seance_publique).
  */
@@ -144,11 +172,11 @@ export function analyserParagrapheSeance(
   paragraphe: any,
   texte: string,
 ): { retenue: boolean; motif: MotifExclusion | null; etablitPresence: boolean } {
-  const motif = motifExclusion(paragraphe);
+  const motif = motifExclusion(paragraphe, texte);
   return { retenue: motif === null, motif, etablitPresence: texte.length > SEUIL_CARACTERES };
 }
 
-function motifExclusion(paragraphe: any): MotifExclusion | null {
+function motifExclusion(paragraphe: any, texte: string): MotifExclusion | null {
   const role = String(paragraphe?.roledebat ?? "").toLowerCase();
   const orateur = paragraphe?.orateurs?.orateur;
   const nom = String((Array.isArray(orateur) ? orateur[0] : orateur)?.nom ?? "");
@@ -157,7 +185,15 @@ function motifExclusion(paragraphe: any): MotifExclusion | null {
   if (ROLES_PRESIDENCE.includes(role) || /présidente?\b/i.test(nom)) {
     return "presidence";
   }
-  if (paragraphe?.code_grammaire !== "PAROLE_GENERIQUE") return "procedure";
+  // Hors « parole générique » : défense d'amendement, question orale… retenues
+  // si un orateur nommé les prononce ; interruptions et rappels au règlement
+  // restent de la procédure.
+  const code = String(paragraphe?.code_grammaire ?? "");
+  if (!texte.trim()) return "procedure";
+  if (code === "PAROLE_GENERIQUE") return null;
+  if (code === "INTERRUPTION_1_10" || code.startsWith("RAP_REGLEMENT") || !nom.trim()) {
+    return "procedure";
+  }
   return null;
 }
 
@@ -184,7 +220,12 @@ export const getDetailJournee = cache(
 
       return {
         date,
-        seances: await chargerSeances(db, acteurUid, parType("presenceSeancePublique")),
+        seances: await chargerSeances(
+          db,
+          acteurUid,
+          parType("presenceSeancePublique"),
+          parType("interventionSeancePublique")
+        ),
         votes: await chargerVotes(db, parType("presenceSeancePublique")),
         reunions: await chargerReunions(db, parType("presenceCommission")),
         interventionsCommission: await chargerInterventionsCommission(db, parType("interventionCommission")),
@@ -202,10 +243,18 @@ export const getDetailJournee = cache(
 async function chargerSeances(
   db: any,
   acteurUid: string,
-  ligne: any
+  ligne: any,
+  ligneInterventions: any
 ): Promise<Seance[]> {
   const details = ligne?.details ?? [];
   if (details.length === 0) return [];
+  // Prises de parole comptées, par compte rendu. Absentes des chiffres
+  // calculés avant leur enregistrement : la règle est alors réappliquée.
+  const prisesParCompteRendu = new Map<string, PriseComptee[]>(
+    (ligneInterventions?.details ?? [])
+      .filter((d: any) => Array.isArray(d.paragraphes))
+      .map((d: any) => [d.compteRenduUid, d.paragraphes])
+  );
 
   const comptesRendus = await db
     .collection("comptes_rendus")
@@ -221,15 +270,27 @@ async function chargerSeances(
         (cr: any) => cr.uid === detail.compteRenduUid
       );
 
+      const prises = prisesParCompteRendu.get(detail.compteRenduUid);
       const interventions: Intervention[] = [];
       for (const paragraphe of iterParagraphes(compteRendu?.contenu)) {
         if (paragraphe.id_acteur !== acteurUid) continue;
         const texte = texteDuParagraphe(paragraphe);
+        // Conteneur d'un bloc d'amendements : même ordre que son paragraphe, sans texte.
+        if (!texte.trim()) continue;
+        const ordre = Number(paragraphe.ordre_absolu_seance) || 0;
+        const analyse = analyserParagrapheSeance(paragraphe, texte);
+        const statut = prises
+          ? statutDansLesPrises(ordre, prises) ?? {
+              retenue: false,
+              motif: analyse.motif ?? ("procedure" as const),
+            }
+          : null;
         interventions.push({
-          ordre: Number(paragraphe.ordre_absolu_seance) || 0,
+          ordre,
           texte,
           longueur: texte.length,
-          ...analyserParagrapheSeance(paragraphe, texte),
+          ...analyse,
+          ...(statut ?? {}),
           seconde: secondeDuParagraphe(paragraphe),
         });
       }
@@ -330,7 +391,7 @@ async function chargerInterventionsCommission(
     : [];
 
   return details.map((detail) => {
-    const paragraphesComptes: { ordre: number; presidence: boolean }[] | undefined = detail.paragraphes;
+    const paragraphesComptes: PriseComptee[] | undefined = detail.paragraphes;
     const presidence = (paragraphesComptes ?? []).filter((p) => p.presidence).length;
     const nombre = Number(detail.interventions ?? 0) - presidence;
     if (!paragraphesComptes) {
@@ -344,14 +405,14 @@ async function chargerInterventionsCommission(
     }
 
     const interventions: Intervention[] = paragraphesComptes
-      .map(({ ordre, presidence: enPresidant }) => {
+      .flatMap((prise) => [prise.ordre, ...(prise.suite ?? [])])
+      .map((ordre) => {
         const texte = texteDuParagraphe(parOrdre.get(ordre));
         return {
           ordre,
           texte,
           longueur: texte.length,
-          retenue: !enPresidant,
-          motif: enPresidant ? ("presidence" as const) : null,
+          ...statutDansLesPrises(ordre, paragraphesComptes)!,
           // Pas d'horodatage par intervention dans ces comptes rendus.
           seconde: null,
         };

@@ -159,10 +159,14 @@ def main() -> int:
         )
     scrutins = charger(
         f"{racine}/Scrutins_{roman}.json/**/*.json",
-        champs=("uid", "numero", "legislature", "dateScrutin", "ventilationVotes"),
+        champs=("uid", "numero", "legislature", "dateScrutin", "typeVote", "ventilationVotes"),
     )
     acteurs = charger(
         f"{racine}/AMO20_dep_sen_min_tous_mandats_et_organes_{roman}.json/acteur/**/*.json"
+    )
+    organes = charger(
+        f"{racine}/AMO20_dep_sen_min_tous_mandats_et_organes_{roman}.json/organe/**/*.json",
+        champs=("uid", "codeType", "libelleAbrev", "legislature"),
     )
 
     if not seances or not reunions or not acteurs:
@@ -185,6 +189,7 @@ def main() -> int:
         documents=CollectionFichiers(documents_legislatifs),
         questions=CollectionFichiers(questions),
         scrutins=CollectionFichiers(scrutins),
+        organes=CollectionFichiers(organes),
     )
 
     population = sp.population_par_semaine(db, legislature)
@@ -343,11 +348,39 @@ def main() -> int:
     # Les cartes de la fiche député : un total par (mesure, période) et une
     # distribution par mesure, calculés sur les députés en exercice.
     assert resultat.distributions, "aucune distribution calculée"
-    effectifs = {d["effectifReference"] for d in resultat.distributions}
+    effectifs = {
+        d["effectifReference"] for d in resultat.distributions if d["mesure"] in sp.MESURES
+    }
     assert len(effectifs) == 1, f"population de référence incohérente : {effectifs}"
+    effectif = effectifs.pop()
     log.info(
         "%d métriques, %d distributions, sur %d députés en exercice",
-        len(resultat.metriques), len(resultat.distributions), effectifs.pop(),
+        len(resultat.metriques), len(resultat.distributions), effectif,
+    )
+
+    # Scrutins solennels : des taux, calculés sur les seuls députés pour qui
+    # ils sont définis (ayant pu voter ; membres d'un groupe pour la dissidence).
+    taux = {
+        (d["mesure"], d["periode"]): d for d in resultat.distributions
+        if d["mesure"] in (sp.MESURE_PARTICIPATION, sp.MESURE_DISSIDENCE)
+    }
+    assert len(taux) == 2 * len(sp.PERIODES), f"distributions de taux manquantes : {sorted(taux)}"
+    participation = taux[(sp.MESURE_PARTICIPATION, "LEGISLATURE")]
+    dissidence = taux[(sp.MESURE_DISSIDENCE, "LEGISLATURE")]
+    # Presque tous les députés en exercice ont pu voter ; les non-inscrits
+    # n'ont pas de taux de dissidence.
+    assert participation["effectifReference"] >= 0.9 * effectif, participation["effectifReference"]
+    assert dissidence["effectifReference"] < participation["effectifReference"], (
+        dissidence["effectifReference"], participation["effectifReference"]
+    )
+    for metrique in resultat.metriques:
+        if metrique["mesure"] in (sp.MESURE_PARTICIPATION, sp.MESURE_DISSIDENCE):
+            assert metrique["valeur"] is None or 0 <= metrique["valeur"] <= 100, metrique
+    log.info(
+        "Scrutins solennels : participation médiane %.1f %% (%d députés), "
+        "votes dissidents : moyenne %.1f %% (%d députés)",
+        participation["mediane"], participation["effectifReference"],
+        dissidence["moyenne"], dissidence["effectifReference"],
     )
     for distribution in resultat.distributions:
         if distribution["periode"] != "LEGISLATURE":

@@ -17,13 +17,22 @@ import type { AttributionStatistique } from "./getStatistiquesHebdomadaires";
  *    carte à l'autre, ce qui n'était pas le cas avant.
  */
 
-export type PeriodeStatistique = "LEGISLATURE" | "LAST_YEAR" | "LAST_SIX_MONTHS";
+/**
+ * Périodes des députés en exercice, et « MANDAT » pour ceux dont le mandat est
+ * achevé : leurs totaux sur la durée de ce mandat, sans distribution.
+ */
+export type PeriodeStatistique = "LEGISLATURE" | "LAST_YEAR" | "LAST_SIX_MONTHS" | "MANDAT";
 
 export type MetriqueActeur = {
   mesure: string;
   periode: PeriodeStatistique;
   acteurUid: string;
-  valeur: number;
+  /**
+   * Nombre, ou pourcentage pour les mesures dont l'unité est « pourcentage ».
+   * `null` quand un taux n'est pas défini (aucun scrutin sur la période,
+   * député non inscrit pour la dissidence).
+   */
+  valeur: number | null;
   unite: string;
   attribution: AttributionStatistique | "mixte";
   /** Dénominateur, quand la mesure en a un : réunions où il était convoqué. */
@@ -36,6 +45,16 @@ export type MetriqueActeur = {
    * un président de séance apparaîtrait à zéro.
    */
   interventionsPresidence?: number;
+  /** Participation aux scrutins solennels : scrutins où il pouvait voter. */
+  scrutins?: number;
+  /** … ceux où il a voté (pour, contre, abstention). */
+  votes?: number;
+  /** … dont par délégation. */
+  votesDelegation?: number;
+  /** Votes dissidents : votes émis au sein d'un groupe politique. */
+  votesExprimes?: number;
+  /** … différents de la position la plus suivie dans son groupe. */
+  votesDissidents?: number;
 };
 
 export type DistributionMesure = {
@@ -48,6 +67,8 @@ export type DistributionMesure = {
   minimum: number;
   maximum: number;
   moyenne: number;
+  /** Médiane, pour les taux (scrutins solennels). */
+  mediane?: number;
   q20: number;
   q40: number;
   q60: number;
@@ -86,6 +107,11 @@ export const getMetriquesActeur = cache(
               excusees: 1,
               absences: 1,
               interventionsPresidence: 1,
+              scrutins: 1,
+              votes: 1,
+              votesDelegation: 1,
+              votesExprimes: 1,
+              votesDissidents: 1,
             },
           }
         )
@@ -115,6 +141,7 @@ export const getDistributions = cache(
               minimum: 1,
               maximum: 1,
               moyenne: 1,
+              mediane: 1,
               q20: 1,
               q40: 1,
               q60: 1,

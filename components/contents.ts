@@ -80,8 +80,10 @@ Si aucun accord n’est atteint, le dernier mot revient à l’Assemblée nation
 Un groupe politique est une structure parlementaire, qui organise le travail collectif et la représentation politique à l’intérieur du Parlement.`,
         },
         PARPOL: {
-            translation: "Parti politique",
-            dialog: `Un parti politique est une organisation extérieure au Parlement, créée pour rassembler des citoyens autour d’idées communes et conquérir le pouvoir par les élections.
+            translation: "Parti de rattachement",
+            dialog: `Chaque année, chaque député déclare le parti auquel il se rattache pour la répartition de l’aide publique aux partis politiques, dont une part dépend du nombre de parlementaires rattachés. Ce rattachement peut être purement financier : il ne signifie pas forcément que le député est adhérent de ce parti.
+
+Un parti politique est une organisation extérieure au Parlement, créée pour rassembler des citoyens autour d’idées communes et conquérir le pouvoir par les élections.
 - Il a une existence juridique propre, avec des adhérents, un financement, des statuts et une direction.
 - Il présente des candidats aux élections et élabore un programme politique.
 - Ses élus peuvent appartenir à un ou plusieurs groupes politiques une fois au Parlement, mais le parti n’a aucun rôle institutionnel direct à l’Assemblée ou au Sénat.
@@ -230,6 +232,8 @@ Cette information aide à comprendre la diversité des origines socioprofessionn
         nb_documents_publie: { translation: `Documents signés`, methode: "documents" },
         nb_questions_ecrite: { translation: `Questions écrites`, methode: "questions-ecrites" },
         nb_questions_orale: { translation: `Questions orales sans débat`, methode: "questions-orales" },
+        participation_votes_solennels: { translation: `Participation aux scrutins solennels`, methode: "votes-solennels" },
+        dissidence_votes: { translation: `Votes dissidents (scrutins solennels)`, methode: "dissidence" },
         interventions_presidence: {
             translation: `Interventions en présidant les débats`,
             tooltip: `Pourquoi ces interventions sont comptées à part`,
