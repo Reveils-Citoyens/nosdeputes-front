@@ -25,6 +25,8 @@ type DeputeCardProps<RootComponent extends React.ElementType = "div"> = Pick<
     shortName: string;
   } | null;
   smallGroupColor?: boolean;
+  /** Pastille mini au sigle du groupe, à côté du nom, comme sur les fiches. */
+  groupeBadge?: { abrev: string; couleur?: string | null; libelle?: string | null } | null;
   showVote?: boolean;
   /**
    * If true, the entire card is a link to the deputy page. Otherwise it's its name.
@@ -44,6 +46,7 @@ export default function DeputeCard<RootComponent extends React.ElementType>(
     slug,
     group,
     smallGroupColor,
+    groupeBadge,
     vote,
     showVote,
     groupPosition,
@@ -115,6 +118,24 @@ export default function DeputeCard<RootComponent extends React.ElementType>(
                 {prenom} {nom}
               </Typography>
             )}
+            {groupeBadge ? (
+              <Tooltip title={groupeBadge.libelle ?? groupeBadge.abrev}>
+                <Chip
+                  label={groupeBadge.abrev}
+                  size="small"
+                  sx={{
+                    bgcolor: groupeBadge.couleur ?? "#78909C",
+                    color: "#fff",
+                    fontWeight: 700,
+                    fontSize: "0.6rem",
+                    letterSpacing: "0.03em",
+                    height: 16,
+                    flexShrink: 0,
+                    "& .MuiChip-label": { px: 0.7 },
+                  }}
+                />
+              </Tooltip>
+            ) : null}
             {auGouvernement && (
               <Tooltip title="Membre du gouvernement (mandat de député suspendu)">
                 <Chip

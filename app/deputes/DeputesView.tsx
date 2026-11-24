@@ -18,7 +18,7 @@ import ClearIcon from "@mui/icons-material/Close";
 import Link from "next/link";
 
 import DeputeCard from "@/components/folders/DeputeCard";
-import { groupDeputes } from "./groupDeputes";
+import { comparerDeputes } from "./groupDeputes";
 import CircleDiv from "@/icons/CircleDiv";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
@@ -99,8 +99,8 @@ function Deputes({
         columnGap: 4,
       }}
     >
-      {deputes
-        .sort((a, b) => a.nom.localeCompare(b.nom, "fr"))
+      {[...deputes]
+        .sort(comparerDeputes)
         .map((depute) => {
           const {
             uid,
@@ -124,28 +124,21 @@ function Deputes({
               nom={nom}
               urlImage={urlImage}
               auGouvernement={auGouvernement}
+              // Membre du Gouvernement : son mandat principal est sa fonction
+              // ministérielle, sans circonscription à afficher.
               secondaryText={
-                grouping === "groupPolitique"
-                  ? formatCirco(mandatPrincipal?.numCirco, mandatPrincipal?.departement)
-                  : undefined
+                auGouvernement ? undefined : formatCirco(mandatPrincipal?.numCirco, mandatPrincipal?.departement)
               }
-              group={
-                grouping === "groupPolitique"
-                  ? undefined
-                  : !mandatPrincipal || mandatPrincipal.dateFin !== null
+              // Par ordre alphabétique, le groupe n'est plus donné par la
+              // section : pastille mini à côté du nom.
+              groupeBadge={
+                grouping === "alphabetique" && groupeParlementaire
                   ? {
-                      color: "black",
-                      fullName: "mandat terminé",
-                      shortName: "",
+                      abrev: groupeParlementaire.libelleAbrev,
+                      couleur: groupeParlementaire.couleurAssociee,
+                      libelle: groupeParlementaire.libelle,
                     }
-                  : groupeParlementaire &&
-                    groupeParlementaire.couleurAssociee !== null
-                  ? {
-                      color: groupeParlementaire.couleurAssociee,
-                      fullName: groupeParlementaire.libelle,
-                      shortName: groupeParlementaire.libelleAbrege,
-                    }
-                  : undefined
+                  : null
               }
               isFullCardLink
             />
@@ -176,21 +169,31 @@ export default function DeputesView({
   const AccordionHeader =
     grouping === "groupPolitique" ? GroupPolitiqueHeader : NameHeader;
 
-  // Compte cohérent avec ce qui est réellement affiché :
-  // - en mode "par groupe", les non-inscrits (sans groupeParlementaireUid) ne
-  //   sont pas affichés car la liste filtre les clés vides (cf. plus bas).
-  // - on applique aussi les filtres search / département pour que le compteur
-  //   se mette à jour en temps réel.
+  // Compte cohérent avec ce qui est réellement affiché, dans les deux vues :
+  // les députés qui siègent. Les membres du Gouvernement (sans groupe : leur
+  // mandat est suspendu, leur suppléant siège) sont listés à part, en fin de
+  // page. Les filtres recherche / département s'appliquent au compteur.
   const selectedDeptName = numeroDepartement !== null
     ? (departements.find((d) => d.numeroDepartement === numeroDepartement)?.nomDepartement ?? null)
     : null;
+
+  const correspond = ({ nom, prenom, mandatPrincipal }: DeputeListItem) =>
+    (!search ||
+      normalizeForSearch(`${nom} ${prenom} ${mandatPrincipal?.departement ?? ""}`).includes(
+        normalizeForSearch(search)
+      )) &&
+    (selectedDeptName === null ||
+      mandatPrincipal?.departement?.toLowerCase() === selectedDeptName.toLowerCase());
+
+  const membresGouvernement = (uidPerGroup[""] ?? []).map((uid) => deputes[uid]);
+  const membresGouvernementVisibles = membresGouvernement.filter(correspond);
 
   const visibleDeputes = Object.values(deputes).filter((depute) => {
     const { nom, prenom, mandatPrincipal, groupeParlementaireUid } = depute;
 
     if (!mandatPrincipal || mandatPrincipal.dateFin !== null) return false;
 
-    if (grouping === "groupPolitique" && !groupeParlementaireUid) return false;
+    if (!groupeParlementaireUid) return false;
 
     if (
       search &&
@@ -211,10 +214,6 @@ export default function DeputesView({
     return true;
   }).length;
 
-  const deputesMandatFinit = Object.values(deputes).filter(
-    (depute) =>
-      !depute.mandatPrincipal || depute.mandatPrincipal.dateFin !== null
-  ).length;
 
   const filterIsActive = !!search || numeroDepartement !== null;
   return (
@@ -222,9 +221,11 @@ export default function DeputesView({
       <Typography variant="h3" component="h1" fontWeight="bold">
         {visibleDeputes} Députés
       </Typography>
-      <Typography fontWeight="light">
-        plus {deputesMandatFinit} députés hors mandat
-      </Typography>
+      {membresGouvernement.length > 0 ? (
+        <Typography fontWeight="light">
+          plus {membresGouvernement.length} membres du Gouvernement, mandat de député suspendu
+        </Typography>
+      ) : null}
       <Stack direction="row" spacing={2} sx={{ my: 2 }}>
         <TextField
           fullWidth
@@ -282,21 +283,14 @@ export default function DeputesView({
         </Button>
       </Stack>
       {Object.keys(uidGroup).filter((key) => key !== "")
-        .sort((a, b) => uidGroup[b].length - uidGroup[a].length)
+        // Par groupe : du plus nombreux au moins nombreux ; par ordre
+        // alphabétique : de A à Z.
+        .sort((a, b) =>
+          grouping === "alphabetique" ? a.localeCompare(b, "fr") : uidGroup[b].length - uidGroup[a].length
+        )
         .map((key) => {
           const deputesUids = uidGroup[key];
-          const filteredDeputes = deputesUids
-            .map((uid) => deputes[uid])
-            .filter(({ nom, prenom, mandatPrincipal }) => {
-              return (
-                (!search ||
-                  normalizeForSearch(
-                    `${nom} ${prenom} ${mandatPrincipal?.departement ?? ""}`
-                  ).includes(normalizeForSearch(search))) &&
-                (selectedDeptName === null ||
-                  mandatPrincipal?.departement?.toLowerCase() === selectedDeptName.toLowerCase())
-              );
-            });
+          const filteredDeputes = deputesUids.map((uid) => deputes[uid]).filter(correspond);
 
           if (filteredDeputes.length === 0) {
             return null;
@@ -325,6 +319,23 @@ export default function DeputesView({
             </Accordion>
           );
         })}
+      {membresGouvernementVisibles.length > 0 ? (
+        <Accordion disableGutters elevation={0} slotProps={{ transition: { unmountOnExit: true } }}>
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="gouvernement-content"
+            id="gouvernement-header"
+          >
+            <Typography>
+              Membres du Gouvernement, mandat de député suspendu — {membresGouvernementVisibles.length}{" "}
+              {membresGouvernementVisibles.length > 1 ? "personnes" : "personne"}
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Deputes deputes={membresGouvernementVisibles} groups={groups} grouping="alphabetique" />
+          </AccordionDetails>
+        </Accordion>
+      ) : null}
     </Stack>
   );
 }
