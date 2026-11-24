@@ -66,7 +66,7 @@ export const GLOSSAIRE: Record<string, GlossaireEntry> = {
     slug: "scrutin-public-solennel",
     titre: "Scrutin public solennel",
     definitionCourte:
-      "Vote formel et nominatif sur l'ensemble d'un texte, après la discussion des articles. Le vote de chaque député est rendu public.",
+      "Scrutin public décidé à l'avance par la Conférence des présidents, le plus souvent sur l'ensemble d'un texte important. Il se tient à heure fixe, en général le mardi après les questions au Gouvernement, pour que chaque député puisse voter ; le vote de chacun est rendu public.",
   },
   "procedure-acceleree": {
     slug: "procedure-acceleree",
