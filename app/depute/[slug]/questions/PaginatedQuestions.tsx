@@ -6,7 +6,7 @@ import { lireJson } from "@/lib/lireJson";
 import ErreurChargement from "@/components/ErreurChargement";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { Alert, Box, Stack, Typography } from "@mui/material";
+import { Alert, Box, Stack, Tooltip, Typography } from "@mui/material";
 import Pagination from "@/components/Pagination";
 import QuestionCard from "./QuestionCard";
 import SearchInput from "@/components/SearchInput";
@@ -62,7 +62,7 @@ export default function PaginatedQuestions({
   const { data: result, isPending, isError, refetch } = useQuery({
     queryKey: ["questions", acteurUid, famille, page, search],
     queryFn: async ({ signal }) =>
-      lireJson<PaginatedResponse<QuestionActeur>>(
+      lireJson<PaginatedResponse<QuestionActeur> & { parType?: Record<string, number> }>(
         `/api/acteurs/${acteurUid}/questions?${new URLSearchParams({ page: String(page), perPage: String(PAR_PAGE), search, types })}`,
         signal,
       ),
@@ -71,6 +71,10 @@ export default function PaginatedQuestions({
 
   const data = React.useMemo(() => result?.data ?? [], [result?.data]);
   const pagination = result?.pagination;
+  // Questions orales : la carte de la fiche ne compte que les questions orales
+  // sans débat ; l'onglet liste aussi les questions au Gouvernement. On le dit.
+  const nombreQG = famille === "orales" ? result?.parType?.QG ?? 0 : 0;
+  const nombreQOSD = result?.parType?.QOSD ?? 0;
 
   // Si une question cible est passée en URL et qu'elle est sur la page
   // courante, on scroll vers elle après le rendu.
@@ -98,6 +102,22 @@ export default function PaginatedQuestions({
         onChange={handleSearchChange}
         placeholder={`Rechercher dans les ${nom}…`}
       />
+
+      {nombreQG > 0 && !search ? (
+        <Typography variant="body2" color="text.secondary">
+          {nombreQG} question{nombreQG > 1 ? "s" : ""} au Gouvernement et {nombreQOSD} question
+          {nombreQOSD > 1 ? "s" : ""} orale{nombreQOSD > 1 ? "s" : ""} sans débat.{" "}
+          <Tooltip title="Les questions au Gouvernement du mardi et du mercredi sont réparties entre les députés par leur groupe, selon un contingent hebdomadaire : elles n’entrent pas dans le compteur « Questions orales sans débat » de la fiche, qui mesure une initiative personnelle. Elles sont indiquées à côté.">
+            <Box
+              component="span"
+              tabIndex={0}
+              sx={{ borderBottom: "1px dotted", borderColor: "text.disabled", cursor: "help" }}
+            >
+              Seules les questions orales sans débat entrent dans le compteur de la fiche.
+            </Box>
+          </Tooltip>
+        </Typography>
+      ) : null}
 
       {targetUid && !isOnCurrentPage && !isPending && (
         <Alert severity="info">

@@ -19,6 +19,9 @@ import { normaliserTexte } from "./rechercheTexte";
 
 export type QuestionActeur = Question & { ministerInteroge: Organe | null };
 
+/** Liste paginée, avec le nombre de questions de chaque type (QG, QOSD…) après recherche. */
+export type QuestionsActeur = PaginatedResponse<QuestionActeur> & { parType?: Record<string, number> };
+
 const LEGISLATURE = "17";
 
 export async function getQuestionsActeurAN(
@@ -35,7 +38,7 @@ export async function getQuestionsActeurAN(
     /** QE, QG, QOSD : tous les types si absent. */
     types?: string[];
   }
-): Promise<PaginatedResponse<QuestionActeur>> {
+): Promise<QuestionsActeur> {
   const db = await getParlementDb();
   const bruts = await db
     .collection("questions")
@@ -67,6 +70,10 @@ export async function getQuestionsActeurAN(
   }
 
   const total = questions.length;
+  const parType: Record<string, number> = {};
+  for (const q of questions) {
+    if (q.type) parType[q.type] = (parType[q.type] ?? 0) + 1;
+  }
   const pageCourante = questions.slice((page - 1) * perPage, page * perPage);
   const ministeres = await getOrganesAN(
     pageCourante.map((q) => q.minIntRefUid).filter((u): u is string => !!u)
@@ -77,5 +84,6 @@ export async function getQuestionsActeurAN(
       ministerInteroge: q.minIntRefUid ? ministeres.get(q.minIntRefUid) ?? null : null,
     })),
     pagination: { total, totalPage: Math.ceil(total / perPage), perPage, currentPage: page },
+    parType,
   };
 }

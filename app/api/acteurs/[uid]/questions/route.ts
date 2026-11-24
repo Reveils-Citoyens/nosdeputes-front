@@ -48,6 +48,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ uid:
   const toutes = parType
     .flatMap((resultat) => resultat.data)
     .sort((a, b) => (b.dateDepot?.getTime() ?? 0) - (a.dateDepot?.getTime() ?? 0));
+  // Même forme que la réponse lue en base : le nombre de questions de chaque type.
+  const nombresParType = Object.fromEntries(
+    types.map((type, i) => [type, parType[i].pagination.total ?? parType[i].data.length])
+  );
   return NextResponse.json({
     data: toutes.slice((page - 1) * perPage, page * perPage),
     pagination: {
@@ -56,5 +60,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ uid:
       perPage,
       currentPage: page,
     },
+    parType: nombresParType,
   });
 }
