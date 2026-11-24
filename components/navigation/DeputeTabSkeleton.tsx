@@ -84,9 +84,6 @@ export function DeputeTravauxSkeleton({ contentOnly = false }: { contentOnly?: b
     <SkeletonStatus label="Chargement des travaux législatifs du député">
       {contentOnly ? sections : (
         <Container sx={{ pt: 3, pb: 6 }}>
-          <Stack spacing={0.5} sx={{ mb: 3 }}>
-            <Skeleton width={190} height={24} /><Skeleton width="65%" height={44} />
-          </Stack>
           {sections}
         </Container>
       )}
@@ -153,6 +150,7 @@ export default function DeputeTabSkeleton({ segment }: { segment: string }) {
   switch (segment) {
     case "travaux": return <DeputeTravauxSkeleton />;
     case "votes": case "amendements": case "qag": return <DeputeListSkeleton variant={segment} />;
+    case "questions-ecrites": case "questions-orales": return <DeputeListSkeleton variant="qag" />;
     case "activite": return <DeputeDetailSkeleton />;
     default: return <DeputeActivitySkeleton />;
   }

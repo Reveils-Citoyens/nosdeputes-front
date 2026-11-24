@@ -1,9 +1,9 @@
+import { notFound } from "next/navigation";
 import React from "react";
-
 import { getActeurBySlug } from "@/data/getActeurBySlug";
-import PaginatedQuestions from "./PaginatedQuestions";
+import PaginatedQuestions from "../questions/PaginatedQuestions";
 
-export default async function Votes({
+export default async function QuestionsOrales({
   params,
 }: {
   params: Promise<{ slug: string }>;
@@ -12,12 +12,8 @@ export default async function Votes({
   const depute = await getActeurBySlug(slug);
 
   if (depute === null) {
-    return <p>Deputé inconnu</p>;
+    notFound();
   }
 
-  return (
-    <div>
-      <PaginatedQuestions acteurUid={depute.uid} />
-    </div>
-  );
+  return <PaginatedQuestions acteurUid={depute.uid} famille="orales" />;
 }

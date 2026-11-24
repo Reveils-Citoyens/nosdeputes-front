@@ -96,6 +96,21 @@ const nextConfig = {
         destination: `${CANONICAL_URL}/:path*`,
         permanent: true,
       },
+      // Ancien onglet « Questions », scindé en questions écrites et questions
+      // orales. Les liens existants (flux RSS, alertes, partages) mènent au bon
+      // onglet, paramètre `question` conservé : une question écrite
+      // (identifiant …QE…) vers les questions écrites, le reste vers les orales.
+      {
+        source: "/depute/:slug/qag",
+        has: [{ type: "query", key: "question", value: ".*QE\\d+" }],
+        destination: "/depute/:slug/questions-ecrites",
+        permanent: true,
+      },
+      {
+        source: "/depute/:slug/qag",
+        destination: "/depute/:slug/questions-orales",
+        permanent: true,
+      },
     ];
   },
 };

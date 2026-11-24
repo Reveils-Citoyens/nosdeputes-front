@@ -13,11 +13,29 @@ import SearchInput from "@/components/SearchInput";
 import debounce from "@/utils/debounce";
 import { DeputeListSkeleton } from "@/components/navigation/DeputeTabSkeleton";
 
+/**
+ * Deux onglets de la fiche : questions écrites (QE) d'un côté, questions
+ * orales de l'autre — questions au Gouvernement (QG) et questions orales sans
+ * débat (QOSD), posées en séance.
+ */
+export type FamilleQuestions = "ecrites" | "orales";
+
+const FAMILLES: Record<FamilleQuestions, { types: string; nom: string; aucune: string }> = {
+  ecrites: { types: "QE", nom: "questions écrites", aucune: "Aucune question écrite enregistrée pour ce député." },
+  orales: { types: "QG,QOSD", nom: "questions orales", aucune: "Aucune question orale enregistrée pour ce député." },
+};
+
+/** Questions affichées par page. */
+const PAR_PAGE = 20;
+
 export default function PaginatedQuestions({
   acteurUid,
+  famille,
 }: {
   acteurUid: string;
+  famille: FamilleQuestions;
 }) {
+  const { types, nom, aucune } = FAMILLES[famille];
   const searchParams = useSearchParams();
   const targetUid = searchParams.get("question");
 
@@ -42,10 +60,10 @@ export default function PaginatedQuestions({
   // Lu par une route du site (notre base, l'API Tricoteuses en repli) plutôt
   // que directement dans l'API : sa lenteur faisait afficher « Aucune question ».
   const { data: result, isPending, isError, refetch } = useQuery({
-    queryKey: ["questions", acteurUid, page, search],
+    queryKey: ["questions", acteurUid, famille, page, search],
     queryFn: async ({ signal }) =>
       lireJson<PaginatedResponse<QuestionActeur>>(
-        `/api/acteurs/${acteurUid}/questions?${new URLSearchParams({ page: String(page), search })}`,
+        `/api/acteurs/${acteurUid}/questions?${new URLSearchParams({ page: String(page), perPage: String(PAR_PAGE), search, types })}`,
         signal,
       ),
     placeholderData: keepPreviousData,
@@ -78,7 +96,7 @@ export default function PaginatedQuestions({
       <SearchInput
         value={value}
         onChange={handleSearchChange}
-        placeholder="Rechercher dans les questions…"
+        placeholder={`Rechercher dans les ${nom}…`}
       />
 
       {targetUid && !isOnCurrentPage && !isPending && (
@@ -95,7 +113,7 @@ export default function PaginatedQuestions({
           <Typography>
             {search
               ? `Aucune question ne correspond à « ${search} ».`
-              : "Aucune question enregistrée pour ce député."}
+              : aucune}
           </Typography>
         </Box>
       ) : (
@@ -106,6 +124,8 @@ export default function PaginatedQuestions({
                 key={question.uid}
                 question={question}
                 defaultExpanded={question.uid === targetUid}
+                // Un seul type de question écrite : l'étiquette n'apprendrait rien.
+                afficherType={famille === "orales"}
               />
             ))}
           </div>

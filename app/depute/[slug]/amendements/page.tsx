@@ -21,6 +21,9 @@ import debounce from "@/utils/debounce";
 import Pagination from "@/components/Pagination";
 import { DeputeListSkeleton } from "@/components/navigation/DeputeTabSkeleton";
 
+/** Amendements affichés par page. */
+const PAR_PAGE = 20;
+
 export default function Amendements() {
   const { slug } = useParams<{ slug: string }>();
   const [value, setValue] = React.useState("");
@@ -39,7 +42,7 @@ export default function Amendements() {
     queryKey: ["amendements", page, acteur?.uid, sortAmendement, search],
     queryFn: async ({ signal }) => {
       if (!acteur?.uid) return null;
-      const parametres = new URLSearchParams({ page: String(page), perPage: "10", sortAmendement, search });
+      const parametres = new URLSearchParams({ page: String(page), perPage: String(PAR_PAGE), sortAmendement, search });
       return await lireJson<PaginatedResponse<AmendementActeur>>(
         `/api/acteurs/${acteur.uid}/amendements?${parametres}`,
         signal,

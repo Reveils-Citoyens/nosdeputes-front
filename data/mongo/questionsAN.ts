@@ -6,7 +6,8 @@ import { getOrganesAN } from "./referentielAN";
 import { normaliserTexte } from "./rechercheTexte";
 
 /**
- * Questions d'un député (onglet « Questions » de sa page), lues dans notre
+ * Questions d'un député (onglets « Questions écrites » et « Questions
+ * orales » de sa page), lues dans notre
  * base plutôt que dans l'API Tricoteuses. Serveur uniquement.
  *
  * Même périmètre et même ordre que l'API (`/questions?acteurRefUid=…`,
@@ -22,13 +23,28 @@ const LEGISLATURE = "17";
 
 export async function getQuestionsActeurAN(
   acteurUid: string,
-  { page = 1, perPage = 10, search = "" }: { page?: number; perPage?: number; search?: string }
+  {
+    page = 1,
+    perPage = 10,
+    search = "",
+    types,
+  }: {
+    page?: number;
+    perPage?: number;
+    search?: string;
+    /** QE, QG, QOSD : tous les types si absent. */
+    types?: string[];
+  }
 ): Promise<PaginatedResponse<QuestionActeur>> {
   const db = await getParlementDb();
   const bruts = await db
     .collection("questions")
     .find(
-      { "auteur.identite.acteurRef": acteurUid, "identifiant.legislature": LEGISLATURE },
+      {
+        "auteur.identite.acteurRef": acteurUid,
+        "identifiant.legislature": LEGISLATURE,
+        ...(types?.length ? { type: { $in: types } } : {}),
+      },
       { projection: { _id: 0 } }
     )
     .toArray();

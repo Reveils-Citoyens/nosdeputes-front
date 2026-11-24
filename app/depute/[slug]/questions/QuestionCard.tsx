@@ -9,6 +9,7 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import CheckIcon from "@mui/icons-material/Check";
 import { Organe, Question } from "@prisma/client";
 import StatusChip from "@/components/StatusChip";
 import { capitalizeFirst } from "@/lib/strings";
@@ -18,6 +19,15 @@ import { urlQuestion } from "@/lib/sourcesAN";
 type QuestionCardProps = {
   question: Question & { ministerInteroge: Organe | null };
   defaultExpanded?: boolean;
+  /** Étiquette du type de question : utile seulement quand plusieurs types se côtoient. */
+  afficherType?: boolean;
+};
+
+/** Noms des types de question de l'Assemblée, à la place de leur sigle. */
+const LIBELLES_TYPE: Record<string, string> = {
+  QE: "Question écrite",
+  QG: "Question au Gouvernement",
+  QOSD: "Question orale sans débat",
 };
 
 export default function QuestionCard(props: QuestionCardProps) {
@@ -36,6 +46,7 @@ export default function QuestionCard(props: QuestionCardProps) {
       ministerInteroge,
     },
     defaultExpanded = false,
+    afficherType = true,
   } = props;
 
   const pannelId = `${uid}-pannel`;
@@ -81,6 +92,32 @@ export default function QuestionCard(props: QuestionCardProps) {
             sx={{ fontWeight: "medium", flex: 1, minWidth: 0 }}
           >
             {titre || `Question N°${numero}`}
+            {/* Question écrite ayant reçu sa réponse : discret, à la suite du
+                titre, pour qu'il se lise avec lui plutôt qu'avec le thème. */}
+            {type === "QE" && texteReponse && (
+              <Box
+                component="span"
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.25,
+                  ml: 1,
+                  px: 0.75,
+                  height: 18,
+                  verticalAlign: "text-bottom",
+                  borderRadius: 999,
+                  bgcolor: "success.light",
+                  color: "success.main",
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <CheckIcon sx={{ fontSize: 12 }} aria-hidden />
+                Répondue
+              </Box>
+            )}
           </Typography>
 
           <Stack
@@ -93,10 +130,8 @@ export default function QuestionCard(props: QuestionCardProps) {
             {rubrique && (
               <StatusChip size="small" label={capitalizeFirst(rubrique)} />
             )}
-            {type && <StatusChip size="small" label={type} />}
-            {/* Badge "Répondue" pour les QE qui ont une réponse */}
-            {type === "QE" && texteReponse && (
-              <StatusChip size="small" status="validated" label="Répondue" />
+            {afficherType && type && (
+              <StatusChip size="small" label={LIBELLES_TYPE[type] ?? type} />
             )}
           </Stack>
         </Stack>

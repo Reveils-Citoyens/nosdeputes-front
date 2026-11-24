@@ -12,21 +12,35 @@ import { useTabNavigation, type TabNavigateEvent } from "@/components/navigation
  * onglet : MUI avertit alors que la valeur ne correspond à aucun enfant, et
  * n'affiche rien de sélectionné. On le lui dit explicitement avec `false`.
  */
-const ONGLETS = ["activites", "travaux", "amendements", "votes", "qag", "activite"];
+const ONGLETS = [
+  "activites",
+  "travaux",
+  "amendements",
+  "votes",
+  "questions-orales",
+  "questions-ecrites",
+  "activite",
+];
 
-export default function DeputeTabs({ slug }: { slug: string }) {
+/** Onglets propres à un député : sans objet pour qui n'a pas siégé. */
+const ONGLETS_DE_DEPUTE = new Set(["amendements", "votes", "questions-orales", "questions-ecrites", "activite"]);
+
+export default function DeputeTabs({ slug, sansMandat = false }: { slug: string; sansMandat?: boolean }) {
   const { segment, navigate } = useTabNavigation();
   const actif = segment || "activites";
+  const visible = (onglet: string) => !sansMandat || !ONGLETS_DE_DEPUTE.has(onglet);
 
   return (
     <Tabs
-      value={ONGLETS.includes(actif) ? actif : false}
+      value={ONGLETS.includes(actif) && visible(actif) ? actif : false}
       variant="scrollable"
       sx={{
         borderBottom: 1,
         borderColor: "divider",
         "& .MuiTabs-indicator": { display: "none" },
-        "& .MuiTab-root": { borderBottom: "2px solid transparent" },
+        // Sept onglets : marges et espacement des lettres resserrés pour qu'ils
+        // tiennent sur une ligne à 1440 px, comme les six d'avant.
+        "& .MuiTab-root": { borderBottom: "2px solid transparent", px: 2, letterSpacing: "1px" },
         "& .MuiTab-root.Mui-selected": { borderBottomColor: "common.black" },
       }}
     >
@@ -44,34 +58,55 @@ export default function DeputeTabs({ slug }: { slug: string }) {
         href={`/depute/${slug}/travaux`}
         onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/travaux`, "travaux")}
       />
-      <Tab
-        value="amendements"
-        label="Amendements"
-        component={Link}
-        href={`/depute/${slug}/amendements`}
-        onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/amendements`, "amendements")}
-      />
-      <Tab
-        value="votes"
-        label="Votes"
-        component={Link}
-        href={`/depute/${slug}/votes`}
-        onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/votes`, "votes")}
-      />
-      <Tab
-        value="qag"
-        label="Questions"
-        component={Link}
-        href={`/depute/${slug}/qag`}
-        onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/qag`, "qag")}
-      />
-      <Tab
-        value="activite"
-        label="Détail"
-        component={Link}
-        href={`/depute/${slug}/activite`}
-        onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/activite`, "activite")}
-      />
+      {visible("amendements") && (
+        <Tab
+          value="amendements"
+          label="Amendements"
+          component={Link}
+          href={`/depute/${slug}/amendements`}
+          onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/amendements`, "amendements")}
+        />
+      )}
+      {visible("votes") && (
+        <Tab
+          value="votes"
+          label="Votes"
+          component={Link}
+          href={`/depute/${slug}/votes`}
+          onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/votes`, "votes")}
+        />
+      )}
+      {visible("questions-orales") && (
+        <Tab
+          value="questions-orales"
+          label="Questions orales"
+          component={Link}
+          href={`/depute/${slug}/questions-orales`}
+          onNavigate={(event: TabNavigateEvent) =>
+            navigate(event, `/depute/${slug}/questions-orales`, "questions-orales")
+          }
+        />
+      )}
+      {visible("questions-ecrites") && (
+        <Tab
+          value="questions-ecrites"
+          label="Questions écrites"
+          component={Link}
+          href={`/depute/${slug}/questions-ecrites`}
+          onNavigate={(event: TabNavigateEvent) =>
+            navigate(event, `/depute/${slug}/questions-ecrites`, "questions-ecrites")
+          }
+        />
+      )}
+      {visible("activite") && (
+        <Tab
+          value="activite"
+          label="Détail"
+          component={Link}
+          href={`/depute/${slug}/activite`}
+          onNavigate={(event: TabNavigateEvent) => navigate(event, `/depute/${slug}/activite`, "activite")}
+        />
+      )}
     </Tabs>
   );
 }

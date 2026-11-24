@@ -10,6 +10,8 @@ type GetQuestionsParams = {
   page?: number;
   sort?: string;
   search?: string;
+  /** Un seul type (QE, QG, QOSD) : l'API n'en accepte pas plusieurs. */
+  type?: string;
 }
 
 async function getQuestionsUnCached(
@@ -22,6 +24,7 @@ async function getQuestionsUnCached(
     page = 1,
     sort = "dateDepot.desc",
     search,
+    type,
   } = params
   try {
     if (acteurUid === "") {
@@ -37,6 +40,9 @@ async function getQuestionsUnCached(
     });
     if (search) {
       searchParams.set("search", search);
+    }
+    if (type) {
+      searchParams.set("type", type);
     }
 
     const rep = await fetchTricoteuses(
