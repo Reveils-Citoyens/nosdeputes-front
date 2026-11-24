@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import React from "react";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
 import VotesClient from "./VotesClient"; 
@@ -12,7 +13,7 @@ export default async function VotesPage({
   const acteur = await getActeurBySlug(slug);
 
   if (!acteur) {
-    return <p>Député non trouvé</p>;
+    notFound();
   }
 
   return <VotesClient acteur={acteur} />;

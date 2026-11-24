@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import React from "react";
 import type { Metadata } from "next";
 
@@ -66,7 +67,7 @@ export default async function Dossier({
   const dossier = await getDossier(id);
 
   if (dossier == null) {
-    return <p>Dossier not found</p>;
+    notFound();
   }
   const { libelleProcedure, titre, theme, actesLegislatifs, codeProcedure } =
     dossier;
