@@ -97,7 +97,7 @@ export default async function ThemesPage() {
                     {group.label}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {group.count} dossier{group.count > 1 ? "s" : ""} ·{" "}
+                    {group.count.toLocaleString("fr-FR")} dossier{group.count > 1 ? "s" : ""} ·{" "}
                     {group.themes.length} thème{group.themes.length > 1 ? "s" : ""}
                   </Typography>
                 </Box>

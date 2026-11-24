@@ -61,7 +61,7 @@ const HeroFrame = ({ searchContent }: { searchContent: React.ReactNode }) => {
               }}
             >
               Tout comprendre au travail de nos représentants à l&apos;Assemblée
-              Nationale
+              nationale
             </Typography>           
 
             <Typography
@@ -76,7 +76,7 @@ const HeroFrame = ({ searchContent }: { searchContent: React.ReactNode }) => {
               }}
             >
               Nos Députés met en lumière l&apos;activité des députés de
-          l&apos;Assemblée Nationale en synthétisant leurs
+          l&apos;Assemblée nationale en synthétisant leurs
           travaux législatifs et en publiant le contenu des dossiers législatifs sur lesquels ils travaillent.
             </Typography>
 

@@ -16,7 +16,7 @@ export const TextStructureCard = () => {
         <Stack direction="row" alignItems="center" spacing={1}>
           <Image
             src="/icon-assemblee-nationale.jpg"
-            alt="Icône de l'Assemblée Nationale française"
+            alt="Icône de l'Assemblée nationale française"
             width={12}
             height={12}
           />

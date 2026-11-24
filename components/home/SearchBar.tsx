@@ -121,6 +121,9 @@ export default function SearchBar() {
         // flux et l'hydratation, d'où une erreur d'hydratation sur l'`id` de
         // l'input. Même raison que dans NavSearchBar.
         id="recherche-accueil"
+        // Le thème donne un fond gris à tous les Autocomplete (filtres de
+        // /deputes) : derrière ce champ arrondi, il dépassait en carré.
+        sx={{ bgcolor: "transparent" }}
         getOptionLabel={(option) => {
           if (typeof option === "string") return option;
           if (isActeur(option)) return `${option.prenom} ${option.nom}`;

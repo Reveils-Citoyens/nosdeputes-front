@@ -10,6 +10,7 @@ import {
   Stack,
   Paper,
   Divider,
+  Link,
 } from "@mui/material";
 import {
   Balance as NeutralityIcon,
@@ -102,10 +103,34 @@ export default function About() {
         </Stack>
         <Typography paragraph>
           Initié en 2009 par l&apos;association{" "}
-          <strong>Regards Citoyens</strong>, NosDéputés.fr est un projet
-          pionnier de l&apos;ouverture des données publiques en France. Après
-          plus de dix ans d&apos;existence, l&apos;équipe fondatrice a passé le
-          flambeau en 2022 à une nouvelle équipe de citoyens bénévoles.
+          <Link href="https://www.regardscitoyens.org" color="inherit" fontWeight="bold">
+            Regards Citoyens
+          </Link>
+          , NosDéputés.fr est un projet pionnier de l&apos;ouverture des
+          données publiques en France. Après plus de dix ans d&apos;existence,
+          l&apos;équipe fondatrice a passé le flambeau en 2022 à une nouvelle
+          équipe de citoyens bénévoles, réunie au sein de l&apos;association
+          transpartisane{" "}
+          <Link href="https://reveilscitoyens.org" color="inherit" fontWeight="bold">
+            Réveils Citoyens
+          </Link>
+          .
+        </Typography>
+        <Typography paragraph>
+          Les versions historiques du site restent consultables, législature
+          par législature :{" "}
+          <Link href="https://2022-2024.nosdeputes.fr" color="inherit">
+            2022-2024
+          </Link>
+          ,{" "}
+          <Link href="https://2017-2022.nosdeputes.fr" color="inherit">
+            2017-2022
+          </Link>{" "}
+          et{" "}
+          <Link href="https://2012-2017.nosdeputes.fr" color="inherit">
+            2012-2017
+          </Link>
+          .
         </Typography>
         <Typography>
           Notre mission reste inchangée : moderniser l&apos;accès à

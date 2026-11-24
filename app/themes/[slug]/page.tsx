@@ -92,7 +92,7 @@ export default async function ThemeSlugPage({
         </Typography>
         <Stack direction="row" alignItems="center" spacing={2}>
           <Typography variant="body2" color="text.secondary">
-            {total} dossier{total > 1 ? "s" : ""} répertorié{total > 1 ? "s" : ""}
+            {total.toLocaleString("fr-FR")} dossier{total > 1 ? "s" : ""} répertorié{total > 1 ? "s" : ""}
           </Typography>
           <AlerteButton
             subjectType="theme"

@@ -216,6 +216,9 @@ export default function NavSearchBar({ mobile = false }: { mobile?: boolean }) {
       >
         <Autocomplete
           id={ID_RECHERCHE_BUREAU}
+          // Sans le fond gris que le thème donne aux Autocomplete : il dépasserait
+          // en carré autour du champ arrondi.
+          sx={{ bgcolor: "transparent" }}
           getOptionLabel={(option) => {
             if (typeof option === "string") return option;
             if (isActeur(option)) return `${option.prenom} ${option.nom}`;
@@ -411,6 +414,9 @@ function MobileSearch({
   return (
     <Autocomplete
       id={ID_RECHERCHE_MOBILE}
+      // Sans le fond gris que le thème donne aux Autocomplete : il dépasserait
+      // en carré autour du champ arrondi.
+      sx={{ bgcolor: "transparent" }}
       getOptionLabel={(option) => {
         if (typeof option === "string") return option;
         if (isActeur(option)) return `${option.prenom} ${option.nom}`;

@@ -1152,6 +1152,8 @@ export default function LiseuseClient({
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
                       <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: GOV_COLOR }} />
                       <span>Gouvernement</span>
+                      {/* Sépare le libellé du nombre : « Irrecevable 40 | 15 ». */}
+                      <Box component="span" aria-hidden sx={{ opacity: 0.35, fontWeight: 400 }}>|</Box>
                       <Box component="span" sx={{ fontWeight: 700, opacity: 0.7 }}>
                         {govCount}
                       </Box>
@@ -1188,6 +1190,8 @@ export default function LiseuseClient({
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
                     <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: color }} />
                     <span>{status}</span>
+                    {/* Sans séparateur, « Irrecevable 40 15 » se lisait mal. */}
+                    <Box component="span" aria-hidden sx={{ opacity: 0.35, fontWeight: 400 }}>|</Box>
                     <Box component="span" sx={{ fontWeight: 700, opacity: 0.7 }}>
                       {count}
                     </Box>

@@ -6,10 +6,37 @@ export type ChambreImpliquee =
   | "EXECUTIF"
   | "EXECUTIF_OU_PARLEMENTAIRES";
 
+/**
+ * Lecture dont relève une étape. Une lecture n'est pas une séance : c'est
+ * l'examen complet du texte, en commission puis en séance publique, par
+ * chacune des deux chambres.
+ */
+export type Lecture = "premiere" | "suivantes";
+
+export const LECTURES: Record<Lecture, { libelle: string; explication: string }> = {
+  premiere: {
+    libelle: "1re lecture",
+    explication:
+      "Chaque chambre examine le texte, d'abord en commission puis en séance publique.",
+  },
+  suivantes: {
+    libelle: "2e lecture et suivantes",
+    explication:
+      "Même enchaînement, commission puis séance dans chaque chambre, tant que les deux n'ont pas adopté un texte identique.",
+  },
+};
+
+/** Couleur des zones de lecture, distincte de celles des chambres. */
+export const COULEUR_LECTURE = "#2B6CB0";
+
 export type EtapeLegislative = {
   id: string;
   numero: number;
   titre: string;
+  /** Lecture dont l'étape fait partie ; aucune pour le dépôt, la CMP, la promulgation… */
+  lecture?: Lecture;
+  /** Étape qui n'a lieu que dans certains cas (désaccord persistant, saisine…). */
+  selonLesCas?: boolean;
   resume: string;
   description: string;
   chambre: ChambreImpliquee;
@@ -33,6 +60,7 @@ export const ETAPES_LEGISLATIVES: EtapeLegislative[] = [
     id: "commission-1",
     numero: 2,
     titre: "Examen en commission — 1re chambre",
+    lecture: "premiere",
     resume:
       "Dans la chambre saisie en premier, une commission permanente examine le texte en profondeur, désigne un rapporteur et l'amende avant la séance publique.",
     description:
@@ -44,7 +72,8 @@ export const ETAPES_LEGISLATIVES: EtapeLegislative[] = [
   {
     id: "premiere-lecture-1",
     numero: 3,
-    titre: "1re lecture — 1re chambre",
+    titre: "Séance publique — 1re chambre",
+    lecture: "premiere",
     resume:
       "La chambre saisie en premier (Assemblée ou Sénat, selon l'origine du texte) discute en séance publique : discussion générale, examen article par article, amendements, puis vote.",
     description:
@@ -57,6 +86,7 @@ export const ETAPES_LEGISLATIVES: EtapeLegislative[] = [
     id: "commission-2",
     numero: 4,
     titre: "Examen en commission — 2nde chambre",
+    lecture: "premiere",
     resume:
       "Une fois le texte transmis à l'autre chambre, une commission permanente du même domaine reprend le travail d'examen, d'audition et d'amendement.",
     description:
@@ -68,7 +98,8 @@ export const ETAPES_LEGISLATIVES: EtapeLegislative[] = [
   {
     id: "premiere-lecture-2",
     numero: 5,
-    titre: "1re lecture — 2nde chambre",
+    titre: "Séance publique — 2nde chambre",
+    lecture: "premiere",
     resume:
       "La 2nde chambre discute à son tour le texte en séance publique : même procédure de discussion générale, examen des articles, amendements et vote.",
     description:
@@ -80,10 +111,11 @@ export const ETAPES_LEGISLATIVES: EtapeLegislative[] = [
     id: "navette",
     numero: 6,
     titre: "Navette parlementaire",
+    lecture: "suivantes",
     resume:
-      "Tant que les deux chambres ne sont pas d'accord sur un texte identique, il fait des allers-retours entre l'Assemblée et le Sénat.",
+      "Tant que les deux chambres ne sont pas d'accord sur un texte identique, il fait des allers-retours entre l'Assemblée et le Sénat : 2e lecture, puis 3e…",
     description:
-      "À chaque lecture, seuls les articles encore en discussion (non votés conformes) sont rediscutés. La navette peut durer plusieurs mois. En cas de procédure accélérée, le Gouvernement peut convoquer une commission mixte paritaire après une seule lecture par chambre.",
+      "Chaque nouvelle lecture reprend le même enchaînement : examen en commission, puis en séance publique, dans chacune des deux chambres. Seuls les articles encore en discussion (non votés conformes) sont rediscutés. La navette peut durer plusieurs mois. En cas de procédure accélérée, le Gouvernement peut convoquer une commission mixte paritaire après une seule lecture par chambre.",
     chambre: "AN_ET_SENAT",
     acteurs: ["Députés", "Sénateurs"],
     dureeIndicative: "Plusieurs mois",
@@ -92,6 +124,7 @@ export const ETAPES_LEGISLATIVES: EtapeLegislative[] = [
     id: "cmp",
     numero: 7,
     titre: "Commission mixte paritaire (CMP)",
+    selonLesCas: true,
     resume:
       "En cas de désaccord persistant, 7 députés et 7 sénateurs se réunissent pour tenter de trouver un compromis.",
     description:
@@ -113,7 +146,8 @@ export const ETAPES_LEGISLATIVES: EtapeLegislative[] = [
   {
     id: "controle-constitutionnel",
     numero: 9,
-    titre: "Contrôle constitutionnel (facultatif)",
+    titre: "Contrôle constitutionnel",
+    selonLesCas: true,
     resume:
       "Avant la promulgation, le Conseil constitutionnel peut être saisi pour vérifier la conformité du texte à la Constitution.",
     description:

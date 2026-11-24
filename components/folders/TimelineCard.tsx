@@ -343,7 +343,7 @@ const formatDate = (date?: Date | null) => {
 
 function getLogoPathFromCode(code: string) {
   if (code.startsWith("AN")) {
-    return { src: "/LogoAN.svg", alt: "Assemblée Nationale", size: 30 };
+    return { src: "/LogoAN.svg", alt: "Assemblée nationale", size: 30 };
   }
   if (code.startsWith("SN")) {
     return { src: "/LogoSN.svg", alt: "Sénat", size: 44 };

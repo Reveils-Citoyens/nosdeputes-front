@@ -14,7 +14,20 @@ import {
   EtapeLegislative,
 } from "@/data/processusLegislatif";
 
-export default function EtapeCard({ etape }: { etape: EtapeLegislative }) {
+/**
+ * Libellé en capitales : sans jambages, il paraît haut dans la chip. Un
+ * demi-pixel de marge en haut le recentre optiquement.
+ */
+const LIBELLE_CENTRE = { pt: "1px" } as const;
+
+export default function EtapeCard({
+  etape,
+  ligne = true,
+}: {
+  etape: EtapeLegislative;
+  /** Trait vers l'étape suivante ; absent quand il franchirait le bord d'une zone de lecture. */
+  ligne?: boolean;
+}) {
   const [open, setOpen] = React.useState(false);
   const chambreColor = CHAMBRE_COLORS[etape.chambre];
   const chambreLabel = CHAMBRE_LABELS[etape.chambre];
@@ -48,15 +61,17 @@ export default function EtapeCard({ etape }: { etape: EtapeLegislative }) {
         >
           {etape.numero}
         </Box>
-        <Box
-          sx={{
-            flex: 1,
-            width: 2,
-            bgcolor: "grey.200",
-            mt: 1,
-            mb: -1,
-          }}
-        />
+        {ligne ? (
+          <Box
+            sx={{
+              flex: 1,
+              width: 2,
+              bgcolor: "grey.200",
+              mt: 1,
+              mb: -1,
+            }}
+          />
+        ) : null}
       </Box>
 
       {/* Colonne droite : contenu */}
@@ -92,8 +107,26 @@ export default function EtapeCard({ etape }: { etape: EtapeLegislative }) {
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               height: 22,
+              "& .MuiChip-label": LIBELLE_CENTRE,
             }}
           />
+          {etape.selonLesCas && (
+            <Chip
+              label="Selon les cas"
+              size="small"
+              variant="outlined"
+              sx={{
+                color: "text.secondary",
+                borderColor: "grey.300",
+                fontWeight: "bold",
+                fontSize: "0.7rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                height: 22,
+                "& .MuiChip-label": LIBELLE_CENTRE,
+              }}
+            />
+          )}
           {etape.dureeIndicative && (
             <Stack direction="row" alignItems="center" spacing={0.5}>
               <AccessTimeIcon sx={{ fontSize: 14, color: "grey.500" }} />

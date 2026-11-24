@@ -93,7 +93,7 @@ export default async function ThemeGroupPage({
           {group.description}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {total} dossier{total > 1 ? "s" : ""} répertorié{total > 1 ? "s" : ""}
+          {total.toLocaleString("fr-FR")} dossier{total > 1 ? "s" : ""} répertorié{total > 1 ? "s" : ""}
         </Typography>
       </Stack>
 

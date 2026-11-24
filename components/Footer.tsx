@@ -64,8 +64,27 @@ export default function Footer() {
             <Stack spacing={1}>
               <Typography variant="body2" color="text.secondary">
                 NosDéputés.fr est géré par l&apos;association transpartisane Loi
-                1901
-                <strong> Réveils Citoyens</strong>.
+                1901{" "}
+                <Link
+                  href="https://reveilscitoyens.org"
+                  underline="hover"
+                  color="inherit"
+                  fontWeight="bold"
+                >
+                  Réveils Citoyens
+                </Link>
+                .
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Site de l&apos;association :{" "}
+                <Link
+                  href="https://reveilscitoyens.org"
+                  underline="hover"
+                  color="primary"
+                  fontWeight="medium"
+                >
+                  reveilscitoyens.org
+                </Link>
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Contact :{" "}
