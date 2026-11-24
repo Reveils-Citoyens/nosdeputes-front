@@ -2,17 +2,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   deputes: vi.fn(), dossiers: vi.fn(), amendements: vi.fn(), questions: vi.fn(), debats: vi.fn(),
 }));
+// À part : appelé seulement pour un code postal.
+const codePostal = vi.hoisted(() => vi.fn());
 vi.mock("@/data/mongo/searchActeurParNom", () => ({ searchActeurParNom: mocks.deputes }));
 vi.mock("@/data/mongo/searchDossierParTitre", () => ({ searchDossierParTitre: mocks.dossiers }));
 vi.mock("@/data/mongo/searchAmendementMongo", () => ({ searchAmendementMongo: mocks.amendements }));
 vi.mock("@/data/mongo/searchQuestion", () => ({ searchQuestion: mocks.questions }));
 vi.mock("@/data/searchInterventions", () => ({ searchInterventions: mocks.debats }));
+vi.mock("@/data/autocomplet/searchParCodePostal", () => ({
+  CODE_POSTAL_RE: /^\d{5}$/,
+  searchActeurParCodePostalTricoteuses: codePostal,
+}));
 import { searchAll, searchAllSections } from "./searchAll";
 
 describe("recherche progressive", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.deputes.mockResolvedValue([]);
+    codePostal.mockResolvedValue([]);
     for (const key of ["dossiers", "amendements", "questions", "debats"] as const) {
       mocks[key].mockResolvedValue({ items: [], total: 0 });
     }
@@ -20,6 +27,12 @@ describe("recherche progressive", () => {
   it("ne lance aucune recherche en dessous de cinq caractères", async () => {
     await expect(searchAll(" abc ")).resolves.toMatchObject({ dossiersTotal: 0, amendementsTotal: 0 });
     Object.values(mocks).forEach((mock) => expect(mock).not.toHaveBeenCalled());
+  });
+  it("cherche les députés d'un code postal comme l'autocomplétion, pas dans les noms", async () => {
+    codePostal.mockResolvedValue([{ uid: "PA1" }]);
+    await expect(searchAllSections(" 01600 ").deputes).resolves.toEqual([{ uid: "PA1" }]);
+    expect(codePostal).toHaveBeenCalledWith("01600");
+    expect(mocks.deputes).not.toHaveBeenCalled();
   });
   it("rend les dossiers disponibles avant les amendements, sans répéter les recherches", async () => {
     let resolve!: (value: unknown) => void;

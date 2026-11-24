@@ -19,9 +19,7 @@ import {
 import { searchAllSections, type SearchSections } from "@/data/searchAll";
 import type { AmendementSearchResult } from "@/data/mongo/searchAmendementMongo";
 import SearchAmendementCard from "./SearchAmendementCard";
-import SearchQuestionCard from "./SearchQuestionCard";
 import AmendementsLoadMore from "./AmendementsLoadMore";
-import QuestionsLoadMore from "./QuestionsLoadMore";
 import DossiersLoadMore from "./DossiersLoadMore";
 import SearchDebatCard from "./SearchDebatCard";
 import DebatsLoadMore from "./DebatsLoadMore";
@@ -29,9 +27,15 @@ import type { DebatSearchResult } from "@/data/searchInterventions";
 import DossierBadge from "@/components/folders/DossierBadge";
 import type { ActeurSearchResult } from "@/data/mongo/searchActeurParNom";
 import type { DossierSearchResult } from "@/data/mongo/searchDossierParTitre";
-import type { QuestionSearchResult } from "@/data/mongo/searchQuestion";
+import {
+  familleQuestions,
+  type FamilleQuestions,
+  type QuestionSearchResult,
+} from "@/data/mongo/searchQuestion";
 import { FilterContainer } from "@/components/FilterContainer";
 import RechercheFilter from "./Filter";
+import SectionShell, { EmptyRow } from "./SectionShell";
+import QuestionsResultats from "./QuestionsResultats";
 import AlerteButton from "@/components/AlerteButton";
 
 export const metadata = {
@@ -55,58 +59,6 @@ function deputePhotoUrl(uid: string): string {
 
 // ─── Wrappers de section ──────────────────────────────────────────────────────
 
-function SectionShell({
-  icon: Icon,
-  title,
-  count,
-  children,
-}: {
-  icon: React.ElementType;
-  title: string;
-  count?: number | string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Box
-      sx={{
-        bgcolor: "white",
-        border: "1px solid",
-        borderColor: "grey.200",
-        borderRadius: "16px",
-        p: { xs: 2, md: 3 },
-      }}
-    >
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
-        <Icon sx={{ color: "grey.700" }} />
-        <Typography variant="h6" fontWeight="bold" sx={{ color: "#1A1A1B" }}>
-          {title}
-        </Typography>
-        {count !== undefined && (
-          <Chip
-            label={count}
-            size="small"
-            sx={{
-              bgcolor: "grey.100",
-              color: "grey.700",
-              fontWeight: "bold",
-              fontSize: "0.7rem",
-              height: 22,
-            }}
-          />
-        )}
-      </Stack>
-      {children}
-    </Box>
-  );
-}
-
-function EmptyRow({ message }: { message: string }) {
-  return (
-    <Typography variant="body2" color="text.secondary" sx={{ py: 1.5 }}>
-      {message}
-    </Typography>
-  );
-}
 
 // ─── Sections par catégorie ───────────────────────────────────────────────────
 
@@ -321,32 +273,26 @@ function QuestionsSection({
   total,
   query,
   legislature,
+  sort,
+  famille,
 }: {
   items: QuestionSearchResult[];
   total: number;
   query: string;
   legislature: string | null;
+  sort: "relevance" | "date";
+  famille: FamilleQuestions | null;
 }) {
+  // Filtrable sur place (orales / écrites) : composant du navigateur.
   return (
-    <SectionShell icon={QuestionIcon} title="Questions" count={total || undefined}>
-      {items.length === 0 ? (
-        <EmptyRow message="Aucune question trouvée." />
-      ) : (
-        <>
-          <Stack spacing={0}>
-            {items.map((q) => (
-              <SearchQuestionCard key={q.uid} question={q} />
-            ))}
-          </Stack>
-          <QuestionsLoadMore
-            query={query}
-            legislature={legislature}
-            alreadyShown={items.length}
-            total={total}
-          />
-        </>
-      )}
-    </SectionShell>
+    <QuestionsResultats
+      initialItems={items}
+      initialTotal={total}
+      initialFamille={famille}
+      query={query}
+      legislature={legislature}
+      sort={sort}
+    />
   );
 }
 
@@ -383,9 +329,12 @@ function DebatsSection({
 export default async function RecherchePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; legislature?: string; sort?: string }>;
+  searchParams: Promise<{ q?: string; legislature?: string; sort?: string; questions?: string }>;
 }) {
-  const { q = "", legislature, sort } = await searchParams;
+  // Pas de paramètre « legislature » : la base ne couvre que la 17e. Un ancien
+  // lien qui en porterait un (« &legislature=16 ») cherche donc dans la 17e.
+  const { q = "", sort, questions } = await searchParams;
+  const legislature = null;
   const query = q.trim();
   const sortMode = sort === "date" ? "date" : "relevance";
 
@@ -445,6 +394,7 @@ export default async function RecherchePage({
             query={query}
             legislature={legislature ?? null}
             sort={sortMode}
+            famille={familleQuestions(questions)}
           />
         )}
       </Stack>
@@ -456,12 +406,14 @@ function RechercheResults({
   query,
   legislature,
   sort,
+  famille,
 }: {
   query: string;
   legislature: string | null;
   sort: "relevance" | "date";
+  famille: FamilleQuestions | null;
 }) {
-  const sections = searchAllSections(query, { legislature, sort });
+  const sections = searchAllSections(query, { legislature, sort, questions: famille });
 
   return (
     <Stack spacing={3}>
@@ -487,7 +439,14 @@ function RechercheResults({
             </Box>
           </SectionShell>}
         >
-          <SearchCategory category={category} sections={sections} query={query} legislature={legislature} />
+          <SearchCategory
+            category={category}
+            sections={sections}
+            query={query}
+            legislature={legislature}
+            sort={sort}
+            famille={famille}
+          />
         </React.Suspense>
       ))}
     </Stack>
@@ -507,17 +466,28 @@ async function SearchTotal({ sections }: { sections: SearchSections }) {
   </Typography>;
 }
 
-async function SearchCategory({ category, sections, query, legislature }: {
+async function SearchCategory({ category, sections, query, legislature, sort, famille }: {
   category: keyof SearchSections;
   sections: SearchSections;
   query: string;
   legislature: string | null;
+  sort: "relevance" | "date";
+  famille: FamilleQuestions | null;
 }) {
   switch (category) {
     case "deputes": return <DeputesSection items={await sections.deputes} />;
     case "dossiers": return <DossiersSection {...await sections.dossiers} query={query} legislature={legislature} />;
     case "amendements": return <AmendementsSection {...await sections.amendements} query={query} legislature={legislature} />;
-    case "questions": return <QuestionsSection {...await sections.questions} query={query} legislature={legislature} />;
+    case "questions":
+      return (
+        <QuestionsSection
+          {...await sections.questions}
+          query={query}
+          legislature={legislature}
+          sort={sort}
+          famille={famille}
+        />
+      );
     case "debats": return <DebatsSection {...await sections.debats} query={query} />;
   }
 }

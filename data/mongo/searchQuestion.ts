@@ -20,6 +20,18 @@ export type QuestionSearchResult = {
 
 export type SortMode = "relevance" | "date";
 
+/** Questions orales (au Gouvernement, sans débat) ou écrites. */
+export type FamilleQuestions = "orales" | "ecrites";
+export const TYPES_FAMILLE: Record<FamilleQuestions, string[]> = {
+  orales: ["QG", "QOSD"],
+  ecrites: ["QE"],
+};
+
+/** Valeur d'URL (« orales », « ecrites ») → famille ; toutes les questions sinon. */
+export function familleQuestions(valeur: string | null | undefined): FamilleQuestions | null {
+  return valeur === "orales" || valeur === "ecrites" ? valeur : null;
+}
+
 /**
  * Recherche dans la collection `questions` (QG + QE + QOSD).
  *
@@ -36,13 +48,14 @@ export async function searchQuestion(
     skip?: number;
     legislature?: string;
     sort?: SortMode;
+    famille?: FamilleQuestions | null;
   } = {}
 ): Promise<{ items: QuestionSearchResult[]; total: number }> {
   if (!query.trim() || query.trim().length < 5) {
     return { items: [], total: 0 };
   }
 
-  const { limit = 5, skip = 0, legislature = "17", sort = "relevance" } = options;
+  const { limit = 5, skip = 0, legislature = "17", sort = "relevance", famille = null } = options;
 
   try {
   const db = await getParlementDb();
@@ -81,6 +94,7 @@ export async function searchQuestion(
   // pour des requêtes génériques (ex. "retraite" dans chaque réponse gouvernementale).
   const matchStage = {
     "identifiant.legislature": legislature,
+    ...(famille ? { type: { $in: TYPES_FAMILLE[famille] } } : {}),
     $or: [
       { "indexationAN.analyses.analyse": regex },
       { "indexationAN.rubrique": regex },

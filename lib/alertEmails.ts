@@ -1,6 +1,7 @@
 import { resend, FROM, BASE_URL } from "./resend";
 import { subjectTypeEmoji, type AlertSubject } from "./alerts";
 import type { SubjectUpdate } from "@/data/mongo/alertUpdates";
+import { echapperHtml, rendreDigestHtml } from "./alertDigestHtml";
 
 export async function sendConfirmationEmail(
   email: string,
@@ -9,7 +10,7 @@ export async function sendConfirmationEmail(
 ) {
   const confirmUrl = `${BASE_URL}/api/alerts/confirm?token=${confirmToken}`;
   const subjectLines = subjects
-    .map((s) => `<li>${subjectTypeEmoji(s.type)} ${s.label}</li>`)
+    .map((s) => `<li>${subjectTypeEmoji(s.type)} ${echapperHtml(s.label)}</li>`)
     .join("");
 
   const result = await resend.emails.send({
@@ -61,7 +62,7 @@ export async function sendSubjectAddedEmail(
       <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; color: #1A1A1B;">
         <h2>Alerte ajoutée ✓</h2>
         <p>Vous recevrez désormais des alertes hebdomadaires pour :</p>
-        <p style="font-size: 16px; font-weight: bold;">${icon} ${newSubject.label}</p>
+        <p style="font-size: 16px; font-weight: bold;">${icon} ${echapperHtml(newSubject.label)}</p>
         <a href="${manageUrl}"
            style="display:inline-block; background:#1A1A1B; color:#fff;
                   padding: 12px 28px; border-radius: 30px; text-decoration: none;
@@ -95,7 +96,7 @@ export async function sendManageLinkEmail(
 ) {
   const manageUrl = `${BASE_URL}/alertes/gerer?token=${manageToken}`;
   const subjectLines = subjects
-    .map((s) => `<li>${subjectTypeEmoji(s.type)} ${s.label}</li>`)
+    .map((s) => `<li>${subjectTypeEmoji(s.type)} ${echapperHtml(s.label)}</li>`)
     .join("");
 
   const result = await resend.emails.send({
@@ -143,24 +144,6 @@ export async function sendDigestEmail(
   const manageUrl = `${BASE_URL}/alertes/gerer?token=${token}`;
   const unsubUrl = `${BASE_URL}/api/alerts/unsubscribe?token=${token}`;
 
-  const sections = updates
-    .map((u) => {
-      const items = u.lines
-        .map(
-          (l) =>
-            `<li style="margin: 2px 0; color: #444; line-height: 1.5;">${l}</li>`
-        )
-        .join("");
-      return `
-        <div style="margin: 0 0 20px; padding: 16px; border: 1px solid #eee; border-radius: 12px;">
-          <p style="margin: 0 0 8px; font-weight: bold; font-size: 15px;">
-            ${subjectTypeEmoji(u.subject.type)} ${u.subject.label}
-          </p>
-          <ul style="margin: 0; padding-left: 18px;">${items}</ul>
-        </div>`;
-    })
-    .join("");
-
   const result = await resend.emails.send({
     from: FROM,
     to: email,
@@ -170,26 +153,7 @@ export async function sendDigestEmail(
       "List-Unsubscribe": `<${unsubUrl}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     },
-    html: `
-      <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; color: #1A1A1B;">
-        <h2 style="margin-bottom: 4px;">Votre récapitulatif</h2>
-        <p style="color: #666; margin-top: 0;">
-          Voici ce qui a bougé sur les sujets que vous suivez.
-        </p>
-        ${sections}
-        <a href="${manageUrl}"
-           style="display:inline-block; background:#1A1A1B; color:#fff;
-                  padding: 12px 28px; border-radius: 30px; text-decoration: none;
-                  font-weight: bold; margin: 8px 0;">
-          Gérer mes alertes
-        </a>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-        <p style="font-size: 11px; color: #aaa;">
-          NosDéputés.fr — Observatoire citoyen de l'activité parlementaire.
-          <a href="${unsubUrl}" style="color: #aaa;">Se désabonner de toutes les alertes</a>.
-        </p>
-      </div>
-    `,
+    html: rendreDigestHtml(updates, { baseUrl: BASE_URL, manageUrl, unsubUrl }),
   });
 
   console.log("[Resend] sendDigestEmail →", JSON.stringify(result));

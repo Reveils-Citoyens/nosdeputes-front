@@ -74,6 +74,40 @@ describe("searchInterventions", () => {
     expect(r.items[0].texte.endsWith("…")).toBe(true);
   });
 
+  it("cherche une requête de plusieurs mots comme une expression exacte", async () => {
+    const fetchMock = api([]);
+    const { searchInterventions, requeteDebats } = await charger();
+
+    await searchInterventions("  fin   de vie ");
+    expect(new URL(fetchMock.mock.calls[0][0]).searchParams.get("search")).toBe('"fin de vie"');
+    // Un mot seul, ou une requête déjà entre guillemets, part telle quelle.
+    expect(requeteDebats("logement")).toBe("logement");
+    expect(requeteDebats('"aide à mourir" euthanasie')).toBe('"aide à mourir" euthanasie');
+  });
+
+  it("compte interventions et débats jusqu'à la première intervention antérieure", async () => {
+    const fetchMock = api([
+      { uid: "I1", dateSeance: "2026-11-20T14:00:00.000Z", debatRefUid: "CR1" },
+      { uid: "I2", dateSeance: "2026-11-20T10:00:00.000Z", debatRefUid: "CR1" },
+      { uid: "I3", dateSeance: "2026-11-18T15:00:00.000Z", debatRefUid: "CR2" },
+      { uid: "I4", dateSeance: "2026-11-10T15:00:00.000Z", debatRefUid: "CR3" },
+    ]);
+    const { compterDebatsDepuis } = await charger();
+
+    const r = await compterDebatsDepuis("fin de vie", new Date("2026-11-17T00:00:00.000Z"));
+    expect(r).toEqual({ interventions: 3, debats: 2, complet: true });
+    const url = new URL(fetchMock.mock.calls[0][0]);
+    expect(url.searchParams.get("sort")).toBe("dateSeance.desc");
+    expect(url.searchParams.get("search")).toBe('"fin de vie"');
+  });
+
+  it("relie l'intervention elle-même, par son ancre dans la page du débat", async () => {
+    api([{ uid: "I1", texte: "Intervention en séance", debatRefUid: "CRSANR5L17S2026O1N1", dossierRefUid: "DLR5L17N54776", ordreAbsoluSeance: 675 }]);
+    const { searchInterventions } = await charger();
+    const r = await searchInterventions("violences");
+    expect(r.items[0].href).toBe("/17/dossier/DLR5L17N54776/debat/CRSANR5L17S2026O1N1#p-675");
+  });
+
   it("fournit le titre et la page du dossier, en plus du compte rendu", async () => {
     api([
       { uid: "I1", texte: "Intervention en séance", debatRefUid: "CRSANR5L17S2026O1N1", dossierRefUid: "DLR5L17N54776" },

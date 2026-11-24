@@ -30,10 +30,99 @@ const HEAT_BOOST_FACTOR = 4;
  */
 const MIN_SEARCH_SCORE = 1.5;
 
+const CHEMINS_TITRES = ["titreDossier.titre", "titres.titrePrincipal", "titres.titrePrincipalCourt"];
+
+/** Mots sans valeur de recherche : l'analyseur français les ignore aussi. */
+const MOTS_VIDES = new Set([
+  "de", "du", "des", "la", "le", "les", "l", "d", "a", "à", "au", "aux", "et", "ou",
+  "en", "un", "une", "pour", "par", "sur", "dans",
+]);
+
+/** « Réforme des retraites » → ["réforme", "retraites"] ; « l'aide à mourir » → ["aide", "mourir"]. */
+export function motsSignificatifs(query: string): string[] {
+  return query
+    .toLowerCase()
+    .split(/[\s'’]+/)
+    .map((m) => m.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ""))
+    .filter((m) => m && !MOTS_VIDES.has(m));
+}
+
+/**
+ * Clause Atlas Search. Un seul mot : recherche approchée (une faute tolérée)
+ * et par début de mot (« Arcelor » → « ArcelorMittal »).
+ *
+ * Plusieurs mots : chacun est exigé, et l'expression exacte remonte en tête.
+ * Sans cela, `text` renvoyait les titres contenant l'UN des mots : « Mettre
+ * fin au devoir conjugal » sortait pour « fin de vie », « Réformer le
+ * collège » pour « réforme des retraites ».
+ */
+export function clauseRecherche(query: string) {
+  const mots = motsSignificatifs(query);
+  if (mots.length <= 1) {
+    return {
+      compound: {
+        should: [
+          {
+            text: {
+              query,
+              path: CHEMINS_TITRES,
+              fuzzy: { maxEdits: 1, prefixLength: 2 },
+              score: { boost: { value: 2 } },
+            },
+          },
+          {
+            // Match par préfixe : "Arcelor" → "ArcelorMittal". C'est un signal
+            // FORT (l'utilisateur tape le début d'un mot), donc on le booste
+            // pour qu'il passe le seuil MIN_SEARCH_SCORE (sinon score plat ~1.0,
+            // écarté comme du bruit).
+            wildcard: {
+              query: `${query.toLowerCase()}*`,
+              path: CHEMINS_TITRES,
+              allowAnalyzedField: true,
+              score: { boost: { value: 2 } },
+            },
+          },
+        ],
+      },
+    };
+  }
+  const texte = (mot: string) => ({
+    text: {
+      query: mot,
+      path: CHEMINS_TITRES,
+      // Une faute tolérée sur les mots longs seulement : sur un mot court,
+      // elle en change le sens (« vie » → « vote »).
+      ...(mot.length >= 5 ? { fuzzy: { maxEdits: 1, prefixLength: 2 } } : {}),
+    },
+  });
+  return {
+    compound: {
+      must: mots.map((mot, i) =>
+        i < mots.length - 1
+          ? texte(mot)
+          : {
+              // Dernier mot : aussi par son début, pour la recherche pendant la
+              // frappe (« intelligence art » → « intelligence artificielle »).
+              compound: {
+                should: [
+                  texte(mot),
+                  { wildcard: { query: `${mot}*`, path: CHEMINS_TITRES, allowAnalyzedField: true } },
+                ],
+                minimumShouldMatch: 1,
+              },
+            }
+      ),
+      should: [{ phrase: { query, path: CHEMINS_TITRES, slop: 1, score: { boost: { value: 3 } } } }],
+    },
+  };
+}
+
 /**
  * Recherche de dossiers législatifs par titre via Atlas Search.
- * Ne retourne que les dossiers racines (dossierRef: null), donc un seul
- * résultat distinct par dossier.
+ * Les titres des textes d'un dossier (proposition, texte adopté…) sont
+ * cherchés aussi, puis rattachés à leur dossier : le dossier « Fin de vie »
+ * n'était pas trouvé par « aide à mourir », qui ne figure que dans le titre de
+ * ses textes. Un seul résultat par dossier, avec le meilleur score.
  * Filtre optionnel sur la législature (défaut : "17").
  *
  * Le ranking combine :
@@ -80,32 +169,35 @@ export async function searchDossierParTitre(
     {
       $search: {
         index: "dossiers_search",
-        compound: {
-          should: [
-            {
-              text: {
-                query,
-                path: ["titreDossier.titre", "titres.titrePrincipal", "titres.titrePrincipalCourt"],
-                fuzzy: { maxEdits: 1, prefixLength: 2 },
-                score: { boost: { value: 2 } },
-              },
-            },
-            {
-              // Match par préfixe : "Arcelor" → "ArcelorMittal". C'est un signal
-              // FORT (l'utilisateur tape le début d'un mot), donc on le booste
-              // pour qu'il passe le seuil MIN_SEARCH_SCORE (sinon score plat ~1.0,
-              // écarté comme du bruit).
-              wildcard: {
-                query: `${query.toLowerCase()}*`,
-                path: ["titreDossier.titre", "titres.titrePrincipal", "titres.titrePrincipalCourt"],
-                allowAnalyzedField: true,
-                score: { boost: { value: 2 } },
-              },
-            },
-          ],
-        },
+        ...clauseRecherche(query),
       },
     },
+    // Un texte trouvé compte pour son dossier, avec le meilleur score des deux.
+    {
+      $group: {
+        _id: { $ifNull: ["$dossierRef", "$uid"] },
+        _searchScore: { $max: { $meta: "searchScore" } },
+      },
+    },
+    {
+      $lookup: {
+        from: "dossiers",
+        localField: "_id",
+        foreignField: "uid",
+        as: "_dossier",
+        pipeline: [
+          {
+            $project: {
+              uid: 1, "@xsi:type": 1, legislature: 1, dossierRef: 1, chambre: 1,
+              titreDossier: 1, titres: 1, procedureParlementaire: 1, classification: 1,
+              dossierBadge: 1, heatComponents: 1, heatScore: 1, discussionScore: 1, nextAgendaDate: 1,
+            },
+          },
+        ],
+      },
+    },
+    { $unwind: "$_dossier" },
+    { $replaceRoot: { newRoot: { $mergeObjects: ["$_dossier", { _searchScore: "$_searchScore" }] } } },
     {
       $match: {
         // Tous les types de dossier — exclut les documents enfants (texteLoi_Type, etc.)
@@ -153,7 +245,6 @@ export async function searchDossierParTitre(
       // La pertinence textuelle reste prioritaire, mais seuls des signaux de
       // discussion réels peuvent apporter un bonus de popularité.
       $addFields: {
-        _searchScore: { $meta: "searchScore" },
         _discussionScore: {
           $cond: [
             "$_hasDiscussion",

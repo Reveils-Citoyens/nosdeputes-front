@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getParlementDb } from "@/lib/mongodb";
 import type { AlertSubscription } from "@/lib/alerts";
-import { computeSubjectUpdates } from "@/data/mongo/alertUpdates";
+import { computeSubjectUpdates, type AlertLine } from "@/data/mongo/alertUpdates";
 import { sendDigestEmail } from "@/lib/alertEmails";
 
 // Le calcul peut être long (requêtes par sujet) → on autorise jusqu'à 5 min.
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
   let processed = 0;
   let sent = 0;
   let failed = 0;
-  const preview: { email: string; updates: { subject: string; lines: string[] }[] }[] = [];
+  const preview: { email: string; updates: { subject: string; href: string | null; lines: AlertLine[] }[] }[] = [];
 
   for (const sub of subscriptions) {
     processed++;
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       if (dry) {
         preview.push({
           email: sub.email,
-          updates: updates.map((u) => ({ subject: u.subject.label, lines: u.lines })),
+          updates: updates.map((u) => ({ subject: u.subject.label, href: u.href, lines: u.lines })),
         });
         sent++; // nombre d'emails qui *seraient* envoyés
         continue;

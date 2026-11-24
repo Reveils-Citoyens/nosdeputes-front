@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchActeurParNom } from "@/data/mongo/searchActeurParNom";
-import { searchActeurParCodePostalTricoteuses } from "@/data/autocomplet/searchParCodePostal";
-
-const CODE_POSTAL_RE = /^\d{5}$/;
+import {
+  CODE_POSTAL_RE,
+  searchActeurParCodePostalTricoteuses,
+} from "@/data/autocomplet/searchParCodePostal";
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q")?.trim() ?? "";

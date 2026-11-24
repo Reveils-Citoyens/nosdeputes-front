@@ -2,6 +2,7 @@ import { getParlementDb } from "@/lib/mongodb";
 import { unique } from "@/utils/unique";
 import { cacheTricoteuses } from "./cacheTricoteuses";
 import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
+import { urlCompteRendu } from "@/lib/sourcesAN";
 
 /**
  * Recherche plein-texte dans le verbatim des débats (séance + commission),
@@ -34,6 +35,15 @@ export type DebatSearchResult = {
   href: string | null;
   /** Slug du député quand l'orateur est un acteur AN (sinon intervenant extérieur). */
   deputeSlug: string | null;
+  /** Position de l'intervention dans le compte rendu. */
+  ordreAbsoluSeance: number | null;
+  /**
+   * Lieu et sujet du débat quand il ne se rattache à aucun dossier (audition,
+   * table ronde…) : « Commission des affaires étrangères · Table ronde sur… ».
+   */
+  contexte: string | null;
+  /** Compte rendu officiel de l'Assemblée, à défaut de page du débat sur le site. */
+  lienOfficiel: string | null;
 };
 
 /** Slug député — identique au toSlug utilisé dans les liens de l'app. */
@@ -87,6 +97,10 @@ function stripHtml(s: string): string {
 
 type DossierInfo = { uid: string; leg: string | null; code: string | null; titre: string | null };
 
+function avecAncre(href: string | null, ordre: number | null): string | null {
+  return href && ordre != null ? `${href}#p-${ordre}` : href;
+}
+
 function buildHref(
   info: DossierInfo | null,
   debatRefUid: string | null,
@@ -102,7 +116,10 @@ function buildHref(
   return null;
 }
 
-type BaseResult = Omit<DebatSearchResult, "dossierUid" | "dossierTitre" | "dossierHref" | "href" | "deputeSlug">;
+type BaseResult = Omit<
+  DebatSearchResult,
+  "dossierUid" | "dossierTitre" | "dossierHref" | "href" | "deputeSlug" | "contexte" | "lienOfficiel"
+>;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 async function enrichWithHref(
@@ -218,7 +235,7 @@ async function enrichWithHref(
       ])
     );
 
-    return items.map((i) => {
+    const resultats: DebatSearchResult[] = items.map((i) => {
       let info: DossierInfo | null = null;
       const dossierUid = dossierParIntervention.get(i.uid);
       if (dossierUid && directMap.has(dossierUid)) {
@@ -233,18 +250,77 @@ async function enrichWithHref(
         dossierUid: info?.uid ?? null,
         dossierTitre: info?.titre ?? null,
         dossierHref: info?.uid && info.leg ? `/${info.leg}/dossier/${info.uid}` : null,
-        href: buildHref(info, i.debatRefUid, i.type),
+        // Ancre de l'intervention : la page du débat s'y positionne.
+        href: avecAncre(buildHref(info, i.debatRefUid, i.type), i.ordreAbsoluSeance),
         deputeSlug: i.acteurRefUid ? acteurToSlug.get(i.acteurRefUid) ?? null : null,
+        contexte: null,
+        lienOfficiel: null,
       };
     });
+    return await completerSansDossier(resultats);
   } catch (error) {
     console.error("[searchInterventions] enrichissement erreur:", error);
-    return items.map((i) => ({ ...i, dossierUid: null, dossierTitre: null, dossierHref: null, href: null, deputeSlug: null }));
+    return items.map((i) => ({
+      ...i,
+      dossierUid: null,
+      dossierTitre: null,
+      dossierHref: null,
+      href: null,
+      deputeSlug: null,
+      contexte: null,
+      lienOfficiel: urlCompteRendu(i.debatRefUid),
+    }));
+  }
+}
+
+/**
+ * Résultats sans dossier : même résolution que l'onglet Travaux des députés
+ * (numéro du texte cité dans le compte rendu, ordre du jour, titre des
+ * dossiers). S'il n'y a vraiment pas de dossier — audition, table ronde —, le
+ * lieu et le sujet de la réunion, et le compte rendu officiel.
+ */
+async function completerSansDossier(resultats: DebatSearchResult[]): Promise<DebatSearchResult[]> {
+  const aCompleter = resultats.filter((r) => !r.dossierUid && r.debatRefUid && r.type);
+  if (aCompleter.length === 0) return resultats;
+  try {
+    const { resumerDebats } = await import("@/data/mongo/interventionsActeurAN");
+    const debats = await resumerDebats(
+      aCompleter.map((r) => ({
+        compteRenduUid: r.debatRefUid!,
+        date: (r.dateSeance ?? "").slice(0, 10),
+        type: r.type!,
+        paragraphes: r.ordreAbsoluSeance != null ? [{ ordre: r.ordreAbsoluSeance, presidence: false }] : [],
+        reunionRefUid: r.reunionRefUid,
+      }))
+    );
+    const parResultat = new Map(aCompleter.map((r, i) => [r.uid, debats[i]]));
+    return resultats.map((r) => {
+      const debat = parResultat.get(r.uid);
+      if (!debat) return r;
+      if (debat.dossierUid && debat.dossierLegislature && !debat.lienExterne) {
+        return {
+          ...r,
+          dossierUid: debat.dossierUid,
+          dossierTitre: debat.dossierTitre,
+          dossierHref: `/${debat.dossierLegislature}/dossier/${debat.dossierUid}`,
+          href: debat.lien,
+        };
+      }
+      const sujet = debat.sujet && !/^(séance publique|réunion de commission)$/i.test(debat.sujet) ? debat.sujet : null;
+      return {
+        ...r,
+        contexte: [debat.lieu, sujet].filter(Boolean).join(" · ") || null,
+        lienOfficiel: urlCompteRendu(r.debatRefUid),
+      };
+    });
+  } catch (erreur) {
+    console.error("[searchInterventions] résolution des débats sans dossier :", erreur);
+    return resultats.map((r) => (r.dossierUid ? r : { ...r, lienOfficiel: urlCompteRendu(r.debatRefUid) }));
   }
 }
 
 const CHAMPS_INTERVENTION =
-  "uid,texte,orateur,acteurRefUid,dateSeance,debatRefUid,reunionRefUid,dossierRefUid,pointOdjRefUid";
+  "uid,texte,orateur,acteurRefUid,dateSeance,debatRefUid,reunionRefUid,dossierRefUid,pointOdjRefUid,ordreAbsoluSeance";
 
 /**
  * Longueur transmise au navigateur : la carte n'affiche que le début de
@@ -257,24 +333,43 @@ function extrait(texte: string): string {
   return texte.length > LONGUEUR_EXTRAIT ? `${texte.slice(0, LONGUEUR_EXTRAIT).trimEnd()}…` : texte;
 }
 
+/**
+ * Requête transmise à l'API : une requête de plusieurs mots est cherchée comme
+ * une expression exacte. Sans guillemets, l'API cherche chaque mot séparément :
+ * « fin de vie » ramenait toute intervention contenant « fin » et « vie »
+ * (aucune des 61 de la semaine mesurée ne parlait de fin de vie), contre 20 sur
+ * 20 entre guillemets. Une requête déjà entre guillemets est laissée telle quelle.
+ */
+export function requeteDebats(query: string): string {
+  const q = query.trim().replace(/\s+/g, " ");
+  if (!q.includes(" ") || q.includes('"')) return q;
+  return `"${q}"`;
+}
+
 export async function searchInterventions(
   query: string,
-  options: { page?: number; perPage?: number } = {}
+  options: {
+    page?: number;
+    perPage?: number;
+    /** « date » : les plus récentes d'abord (alertes) ; sinon, pertinence. */
+    tri?: "date";
+  } = {}
 ): Promise<{ items: DebatSearchResult[]; total: number }> {
   const q = query.trim();
   if (q.length < 5) return { items: [], total: 0 };
 
-  const { page = 1, perPage = 10 } = options;
+  const { page = 1, perPage = 10, tri } = options;
 
   try {
     const params = new URLSearchParams({
-      search: q,
+      search: requeteDebats(q),
       chambre: "AN",
       perPage: String(perPage),
       page: String(page),
       // Sans sélection, chaque intervention arrive avec son vecteur de
       // recherche interne (~24 Ko) en plus du texte intégral.
       select: CHAMPS_INTERVENTION,
+      ...(tri === "date" ? { sort: "dateSeance.desc" } : {}),
     });
     const rep = await fetchTricoteuses(
       `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/interventions/?${params}`,
@@ -306,6 +401,7 @@ export async function searchInterventions(
         dossierRefUid: (p.dossierRefUid as string) ?? null,
         pointOdjRefUid: (p.pointOdjRefUid as string) ?? null,
         type: debatType(debatRefUid),
+        ordreAbsoluSeance: typeof p.ordreAbsoluSeance === "number" ? p.ordreAbsoluSeance : null,
       });
     }
 
@@ -315,4 +411,52 @@ export async function searchInterventions(
     console.error("[searchInterventions] erreur:", error);
     return { items: [], total: 0 };
   }
+}
+
+/** Au-delà, le compte est donné comme minimum (« plus de 1 000 interventions »). */
+const PAGES_MAX_COMPTAGE = 10;
+
+/**
+ * Interventions et débats (séances, réunions) qui mentionnent la requête
+ * depuis une date : les plus récentes d'abord, page par page, jusqu'à la
+ * première antérieure. `null` si l'API ne répond pas.
+ */
+export async function compterDebatsDepuis(
+  query: string,
+  depuis: Date
+): Promise<{ interventions: number; debats: number; complet: boolean } | null> {
+  const q = query.trim();
+  if (q.length < 5) return { interventions: 0, debats: 0, complet: true };
+  let interventions = 0;
+  const debats = new Set<string>();
+  for (let page = 1; page <= PAGES_MAX_COMPTAGE; page++) {
+    const params = new URLSearchParams({
+      search: requeteDebats(q),
+      chambre: "AN",
+      perPage: "100",
+      page: String(page),
+      sort: "dateSeance.desc",
+      select: "uid,dateSeance,debatRefUid",
+    });
+    try {
+      const rep = await fetchTricoteuses(
+        `${process.env.NEXT_PUBLIC_TRICOTEUSES_API_URL}/interventions/?${params}`,
+        cacheTricoteuses("contenu")
+      );
+      if (!rep.ok) return null;
+      const { data } = await rep.json();
+      if (!Array.isArray(data) || data.length === 0) return { interventions, debats: debats.size, complet: true };
+      for (const p of data as { dateSeance?: string; debatRefUid?: string }[]) {
+        if (!p.dateSeance || new Date(p.dateSeance) <= depuis) {
+          return { interventions, debats: debats.size, complet: true };
+        }
+        interventions++;
+        if (p.debatRefUid) debats.add(p.debatRefUid);
+      }
+    } catch (error) {
+      console.error("[compterDebatsDepuis] erreur:", error);
+      return null;
+    }
+  }
+  return { interventions, debats: debats.size, complet: false };
 }

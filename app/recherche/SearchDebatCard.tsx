@@ -65,11 +65,17 @@ export default function SearchDebatCard({ debat }: { debat: DebatSearchResult })
         )}
       </Stack>
 
+      {/* Débat sans dossier (audition, table ronde…) : où et de quoi il s'agit. */}
+      {!debat.dossierTitre && debat.contexte && (
+        <Typography variant="caption" color="text.secondary" component="p" sx={{ mb: 0.5, fontWeight: 600 }}>
+          {debat.contexte}
+        </Typography>
+      )}
       <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55, fontStyle: "italic" }}>
         « {truncate(debat.texte)} »
       </Typography>
 
-      {(debat.dossierHref || debat.href) && (
+      {(debat.dossierHref || debat.href || debat.lienOfficiel) && (
         <Stack
           direction={{ xs: "column", sm: "row" }}
           spacing={{ xs: 0.5, sm: 2 }}
@@ -103,6 +109,22 @@ export default function SearchDebatCard({ debat }: { debat: DebatSearchResult })
             >
               <DescriptionOutlinedIcon sx={{ fontSize: 15 }} />
               Lire le compte rendu
+            </Typography>
+          )}
+          {/* Sans page du débat sur le site : le compte rendu officiel. */}
+          {!debat.href && debat.lienOfficiel && (
+            <Typography
+              component="a"
+              href={debat.lienOfficiel}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-umami-event="compte-rendu-officiel-ouvert"
+              data-umami-event-source="recherche"
+              variant="caption"
+              sx={{ ...lienSx, flexShrink: 0 }}
+            >
+              <DescriptionOutlinedIcon sx={{ fontSize: 15 }} />
+              Lire le compte rendu (Assemblée nationale) ↗
             </Typography>
           )}
         </Stack>

@@ -1,6 +1,9 @@
 import { getParlementDb } from "@/lib/mongodb";
 import type { ActeurSearchResult } from "@/data/mongo/searchActeurParNom";
 
+/** Code postal français : cinq chiffres. */
+export const CODE_POSTAL_RE = /^\d{5}$/;
+
 const TRICOTEUSES_URL =
   "https://territoires.code4code.eu/circonscriptions_legislatives/autocomplete";
 

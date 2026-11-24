@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchQuestion } from "@/data/mongo/searchQuestion";
+import { familleQuestions, searchQuestion } from "@/data/mongo/searchQuestion";
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q")?.trim() ?? "";
@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     skip: Math.max(skip, 0),
     legislature,
     sort,
+    famille: familleQuestions(request.nextUrl.searchParams.get("questions")),
   });
   return NextResponse.json(result);
 }

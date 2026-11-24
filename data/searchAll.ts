@@ -1,11 +1,19 @@
 import { searchActeurParNom, ActeurSearchResult } from "@/data/mongo/searchActeurParNom";
 import { searchDossierParTitre, DossierSearchResult } from "@/data/mongo/searchDossierParTitre";
-import { searchQuestion, QuestionSearchResult } from "@/data/mongo/searchQuestion";
+import {
+  searchQuestion,
+  QuestionSearchResult,
+  type FamilleQuestions,
+} from "@/data/mongo/searchQuestion";
 import {
   searchAmendementMongo,
   AmendementSearchResult,
 } from "@/data/mongo/searchAmendementMongo";
 import { searchInterventions, DebatSearchResult } from "@/data/searchInterventions";
+import {
+  CODE_POSTAL_RE,
+  searchActeurParCodePostalTricoteuses,
+} from "@/data/autocomplet/searchParCodePostal";
 
 export type SearchAllResults = {
   deputes: ActeurSearchResult[];
@@ -30,7 +38,12 @@ export type SortMode = "relevance" | "date";
 
 export function searchAllSections(
   query: string,
-  options: { legislature?: string | null; sort?: SortMode | null } = {}
+  options: {
+    legislature?: string | null;
+    sort?: SortMode | null;
+    /** Questions orales ou écrites seulement. */
+    questions?: FamilleQuestions | null;
+  } = {}
 ) {
   const q = query.trim();
   if (q.length < 5) {
@@ -49,10 +62,20 @@ export function searchAllSections(
   const sort: SortMode = options.sort === "date" ? "date" : "relevance";
 
   return {
-    deputes: searchActeurParNom(q, PER_SECTION),
+    // Un code postal désigne les députés des circonscriptions qui le couvrent,
+    // comme dans l'autocomplétion ; chercher « 01600 » dans les noms ne
+    // trouverait personne.
+    deputes: CODE_POSTAL_RE.test(q)
+      ? searchActeurParCodePostalTricoteuses(q)
+      : searchActeurParNom(q, PER_SECTION),
     dossiers: searchDossierParTitre(q, { limit: PER_SECTION, legislature, sort }),
     amendements: searchAmendementMongo(q, { limit: PER_SECTION, legislature, sort }),
-    questions: searchQuestion(q, { limit: PER_SECTION, legislature, sort }),
+    questions: searchQuestion(q, {
+      limit: PER_SECTION,
+      legislature,
+      sort,
+      ...(options.questions ? { famille: options.questions } : {}),
+    }),
     debats: searchInterventions(q, { perPage: PER_SECTION }),
   };
 }

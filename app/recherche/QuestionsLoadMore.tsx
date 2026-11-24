@@ -5,7 +5,7 @@ import { Box, Button, CircularProgress, Stack } from "@mui/material";
 import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import { useSearchParams } from "next/navigation";
 import SearchQuestionCard from "./SearchQuestionCard";
-import type { QuestionSearchResult } from "@/data/mongo/searchQuestion";
+import type { FamilleQuestions, QuestionSearchResult } from "@/data/mongo/searchQuestion";
 import { trackEvent } from "@/lib/umami";
 
 // Item tel que renvoyé par l'API (dates en ISO strings après JSON serialization)
@@ -18,11 +18,14 @@ const PAGE_SIZE = 5;
 export default function QuestionsLoadMore({
   query,
   legislature,
+  famille = null,
   alreadyShown,
   total,
 }: {
   query: string;
   legislature: string | null;
+  /** Filtre orales / écrites de la section : les questions suivantes le respectent. */
+  famille?: FamilleQuestions | null;
   alreadyShown: number;
   total: number;
 }) {
@@ -36,7 +39,7 @@ export default function QuestionsLoadMore({
   React.useEffect(() => {
     setItems([]);
     seenUids.current = new Set();
-  }, [query, legislature, sort]);
+  }, [query, legislature, sort, famille]);
 
   const totalShown = alreadyShown + items.length;
   const remaining = Math.max(0, total - totalShown);
@@ -53,6 +56,7 @@ export default function QuestionsLoadMore({
       });
       if (legislature) params.set("legislature", legislature);
       if (sort) params.set("sort", sort);
+      if (famille) params.set("questions", famille);
       const res = await fetch(`/api/search/questions?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { items: ApiItem[]; total: number };
