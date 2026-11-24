@@ -4,6 +4,7 @@ import {
   getStatistiquesHebdomadaires,
   type TypeStatistique,
 } from "@/data/mongo/getStatistiquesHebdomadaires";
+import type { PeriodeMandat } from "@/lib/periodesMandat";
 
 // Les deux indicateurs de présence reposent sur un identifiant fourni par
 // l'Assemblée — prise de parole horodatée en séance publique, relevé nominatif
@@ -14,6 +15,11 @@ const TYPES: TypeStatistique[] = ["presenceSeancePublique", "presenceCommission"
 
 export default async function WeeklyActivitySection(props: {
   acteurUid: string;
+  /** Périodes de mandat : les semaines hors mandat sont hachurées. */
+  periodes: PeriodeMandat[];
+  mandatAcheve: boolean;
+  /** Mandat interrompu par l'entrée au Gouvernement. */
+  motifFin?: "gouvernement";
 }) {
   const statistiques = await getStatistiquesHebdomadaires(props.acteurUid, TYPES);
 
@@ -29,6 +35,9 @@ export default async function WeeklyActivitySection(props: {
     <WeeklyActivitySectionClient
       acteurUid={props.acteurUid}
       statistiques={statistiques}
+      periodes={props.periodes}
+      mandatAcheve={props.mandatAcheve}
+      motifFin={props.motifFin}
     />
   );
 }

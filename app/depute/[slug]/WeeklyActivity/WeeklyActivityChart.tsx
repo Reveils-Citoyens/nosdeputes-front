@@ -9,6 +9,8 @@ import {
   ChartDataProvider,
   ChartsSurface,
   useAxesTooltip,
+  useDrawingArea,
+  useXScale,
 } from "@mui/x-charts";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
@@ -41,6 +43,56 @@ const INCONNU = "#E4E4E7";
 // noir pour se lire comme une présence, assez distinct pour ne pas se confondre
 // avec une prise de parole.
 const VOTE = "#52525B";
+
+/** Trait des hachures « hors mandat » : discret, sous les barres. */
+export const HACHURE = "#D4D4D8";
+
+/**
+ * Semaines hors du mandat du député, hachurées : sans elles, les semaines
+ * suivant un départ (démission, entrée au Gouvernement, élection au Sénat)
+ * ou précédant une arrivée en cours de législature se liraient comme des
+ * absences.
+ */
+function ZonesHorsMandat(props: { dataset: SemaineActivite[] }) {
+  const echelle = useXScale<"band">();
+  const { top, height } = useDrawingArea();
+  const motif = `hors-mandat-${React.useId().replace(/[^a-zA-Z0-9-]/g, "")}`;
+
+  // Suites de semaines hors mandat consécutives, en indices du jeu de données.
+  const suites: [number, number][] = [];
+  props.dataset.forEach((semaine, index) => {
+    if (!semaine.horsMandat) return;
+    const derniere = suites.at(-1);
+    if (derniere && derniere[1] === index - 1) derniere[1] = index;
+    else suites.push([index, index]);
+  });
+  if (suites.length === 0) return null;
+
+  const pas = echelle.step();
+  const marge = (pas - echelle.bandwidth()) / 2;
+  return (
+    <g aria-hidden>
+      <defs>
+        <pattern id={motif} patternUnits="userSpaceOnUse" width={6} height={6} patternTransform="rotate(45)">
+          <line x1={0} y1={0} x2={0} y2={6} stroke={HACHURE} strokeWidth={2} />
+        </pattern>
+      </defs>
+      {suites.map(([debut, fin]) => {
+        const x = (echelle(props.dataset[debut].date) ?? 0) - marge;
+        return (
+          <rect
+            key={debut}
+            x={x}
+            y={top}
+            width={pas * (fin - debut + 1)}
+            height={height}
+            fill={`url(#${motif})`}
+          />
+        );
+      })}
+    </g>
+  );
+}
 
 type Segment = {
   clef: keyof SemaineActivite;
@@ -124,6 +176,7 @@ export default function WeeklyActivityChart(props: {
     >
       <Box sx={{ width: "100%" }}>
         <ChartsSurface>
+          <ZonesHorsMandat dataset={props.dataset} />
           <BarPlot borderRadius={2} />
           <ChartsAxis />
           <ChartsAxisHighlight x="band" />
@@ -155,7 +208,11 @@ function TooltipContent(props: {
   return (
     <Paper sx={{ py: 1, px: 2 }}>
       <Typography variant="body2">{tooltipData.axisFormattedValue}</Typography>
-      {total === 0 ? (
+      {semaine.horsMandat ? (
+        <Typography variant="body2" color="text.secondary">
+          Hors mandat de député
+        </Typography>
+      ) : total === 0 ? (
         <Typography variant="body2" color="text.secondary">
           {hemicycle
             ? "Pas de séance publique cette semaine"

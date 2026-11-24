@@ -4,6 +4,7 @@ import { getOrgane } from "./getOrgane";
 import { resolveAuGouvernement } from "./helpers/resolveAuGouvernement";
 import { cacheTricoteuses } from "./cacheTricoteuses";
 import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
+import { lireActeurNavigateur } from "@/lib/lireActeurNavigateur";
 
 async function getActeurBySlugUnCached(slug: string): Promise<
   | (Acteur & {
@@ -21,15 +22,7 @@ async function getActeurBySlugUnCached(slug: string): Promise<
     const acteur = await getActeurParSlugAN(slug);
     if (acteur) return acteur as unknown as ReturnedActeur;
   } else {
-    try {
-      const rep = await fetch(`/api/acteurs?slug=${encodeURIComponent(slug)}`);
-      if (!rep.ok) return null;
-      const { data } = await rep.json();
-      return data ?? null;
-    } catch (error) {
-      console.error("Error fetching acteur:", error);
-      return null;
-    }
+    return lireActeurNavigateur<ReturnedActeur>("slug", slug);
   }
   try {
     const rep = await fetchTricoteuses(

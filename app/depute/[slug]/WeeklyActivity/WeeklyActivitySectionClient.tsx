@@ -7,9 +7,11 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
 import WeeklyActivityChart, {
+  HACHURE,
   SEGMENTS,
   type VarianteActivite,
 } from "./WeeklyActivityChart";
+import { dateLongue, type PeriodeMandat } from "@/lib/periodesMandat";
 import {
   FENETRES,
   useAgregateWeeklyStats,
@@ -45,9 +47,18 @@ const FENETRES_ORDONNEES = Object.keys(FENETRES) as FenetreActivite[];
 export default function WeeklyActivitySectionClient(props: {
   acteurUid: string;
   statistiques: StatistiqueHebdomadaire[];
+  periodes?: PeriodeMandat[];
+  mandatAcheve?: boolean;
+  motifFin?: "gouvernement";
 }) {
-  const [fenetre, setFenetre] = React.useState<FenetreActivite>("LAST_YEAR");
+  // Mandat achevé : les 12 derniers mois peuvent tomber entièrement après son
+  // départ ; toute la législature montre son mandat en entier.
+  const [fenetre, setFenetre] = React.useState<FenetreActivite>(
+    props.mandatAcheve ? "LEGISLATURE" : "LAST_YEAR"
+  );
   const { dataset } = useAgregateWeeklyStats(props, fenetre);
+  const avecHorsMandat = dataset.some((semaine) => semaine.horsMandat);
+  const finMandat = props.mandatAcheve ? props.periodes?.at(-1)?.fin : null;
 
   return (
     <Box sx={{ mt: 1 }}>
@@ -87,6 +98,15 @@ export default function WeeklyActivitySectionClient(props: {
         </Select>
       </Stack>
 
+      {finMandat ? (
+        <Typography variant="caption" color="text.secondary" component="p" sx={{ mb: 1 }}>
+          {props.motifFin === "gouvernement"
+            ? `Mandat de député interrompu le ${dateLongue(finMandat)} par l’entrée au Gouvernement`
+            : `Mandat achevé le ${dateLongue(finMandat)}`}
+          {" "}: les semaines suivantes sont hachurées.
+        </Typography>
+      ) : null}
+
       <Stack spacing={1.5}>
         {BANDES.map((bande) => (
           <Box key={bande.variante}>
@@ -124,6 +144,22 @@ export default function WeeklyActivitySectionClient(props: {
                   </Typography>
                 </Stack>
               ))}
+              {avecHorsMandat ? (
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <Box
+                    sx={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "2px",
+                      flexShrink: 0,
+                      background: `repeating-linear-gradient(45deg, ${HACHURE} 0 2px, transparent 2px 4px)`,
+                    }}
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Hors mandat
+                  </Typography>
+                </Stack>
+              ) : null}
             </Stack>
 
             <WeeklyActivityChart dataset={dataset} variante={bande.variante} />

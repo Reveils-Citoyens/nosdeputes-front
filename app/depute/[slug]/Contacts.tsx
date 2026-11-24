@@ -72,8 +72,16 @@ export default async function Contacts({ acteurUid }: { acteurUid: string }) {
         )
   );
 
+  // Rien à montrer (membre du Gouvernement, ancien député…) : pas d'encart vide.
+  if (
+    postalAdresses.length + mailAdresses.length + phoneAdresses.length + internetAdresses.length ===
+    0
+  ) {
+    return null;
+  }
+
   return (
-    <Paper sx={{ p: 2, bgcolor: "grey.100", width: 300, borderRadius: "16px" }} elevation={0}>
+    <Paper id="contacts" sx={{ p: 2, bgcolor: "grey.100", width: 300, borderRadius: "16px" }} elevation={0}>
       <Stack direction="column" spacing={1}>
         <Typography variant="subtitle1" fontWeight="bold">Contacts</Typography>
 

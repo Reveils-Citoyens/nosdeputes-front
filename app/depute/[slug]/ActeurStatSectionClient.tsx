@@ -20,6 +20,7 @@ import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
 import { infoDialogContents } from "@/components/contents";
 import Link from "next/link";
 import { LIBELLES_TRANCHES } from "@/data/methodeStatistiques";
+import { dateLongue } from "@/lib/periodesMandat";
 
 const DEPUTE_STATS_METRICS = [
   "interventions",
@@ -28,7 +29,10 @@ const DEPUTE_STATS_METRICS = [
   "documents-publies",
   "questions-ecrites",
   "questions-orales",
+  "participation-votes-solennels",
 ];
+/** Affichée à part : un écart à la médiane, pas un classement en tranches. */
+const MESURE_DISSIDENCE = "dissidence-votes-solennels";
 const periodes: PeriodeStatistique[] = [
   "LEGISLATURE",
   "LAST_YEAR",
@@ -46,12 +50,23 @@ const baselineTypeToInfo: Record<string, string> = {
   amendements: "nb_amendements",
   "presence-commission": "presences_commission",
   "documents-publies": "nb_documents_publie",
+  "participation-votes-solennels": "participation_votes_solennels",
+  [MESURE_DISSIDENCE]: "dissidence_votes",
 };
 
+/** « 96 % », « 1,3 % » ; un taux non défini s'affiche « — ». */
+function formaterValeur(valeur: number | null, unite: string, decimales = 0): string {
+  if (valeur == null) return "—";
+  if (unite !== "pourcentage") return String(valeur);
+  return `${valeur.toLocaleString("fr-FR", { maximumFractionDigits: decimales })}\u00a0%`;
+}
+
 type CarteMetrique = DistributionMesure & {
-  valeurDepute: number;
+  valeurDepute: number | null;
   /** Prises de parole écartées parce que faites en présidant la séance. */
   interventionsPresidence?: number;
+  /** Métrique complète du député : dénominateurs des taux. */
+  metrique?: MetriqueActeur;
 };
 
 /**
@@ -91,10 +106,13 @@ const MetriqueCard = (props: CarteMetrique) => {
   const quantiles = [props.q20, props.q40, props.q60, props.q80, props.q100];
   const libelle = useLibelleSurPlusieursLignes();
 
-  const quantileIndex = Math.min(
-    4,
-    quantiles.findLastIndex((v) => props.valeurDepute > v) + 1
-  );
+  const valeur = props.valeurDepute;
+  // Taux non défini (aucun scrutin sur la période) : aucune tranche.
+  const quantileIndex =
+    valeur == null
+      ? -1
+      : Math.min(4, quantiles.findLastIndex((v) => valeur > v) + 1);
+  const participation = props.mesure === "participation-votes-solennels" ? props.metrique : undefined;
 
   return (
     <Card
@@ -109,6 +127,21 @@ const MetriqueCard = (props: CarteMetrique) => {
           justifyContent="flex-end"
           spacing={1}
         >
+          {participation?.scrutins ? (
+            <Tooltip
+              title={`${participation.votes ?? 0} scrutins solennels votés sur ${participation.scrutins}${
+                participation.votesDelegation ? `, dont ${participation.votesDelegation} par délégation` : ""
+              }`}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ cursor: "help", whiteSpace: "nowrap" }}
+              >
+                {participation.votes ?? 0}/{participation.scrutins}
+              </Typography>
+            </Tooltip>
+          ) : null}
           {props.interventionsPresidence ? (
             // Sur la même ligne que le nombre : placé en dessous, ce complément
             // décalait le libellé et désalignait la grille de cartes.
@@ -127,7 +160,7 @@ const MetriqueCard = (props: CarteMetrique) => {
             fontWeight="medium"
             sx={{ textAlign: "right", lineHeight: 1, mb: 0 }}
           >
-            {props.valeurDepute}
+            {formaterValeur(valeur, props.unite)}
           </Typography>
         </Stack>
         <Stack
@@ -167,7 +200,7 @@ const MetriqueCard = (props: CarteMetrique) => {
             return (
               <Tooltip
                 key={index}
-                title={`Entre ${index == 0 ? 0 : quantiles[index - 1]} et ${q}`}
+                title={`Entre ${formaterValeur(index == 0 ? 0 : quantiles[index - 1], props.unite)} et ${formaterValeur(q, props.unite)}`}
               >
                 <Box
                   sx={{
@@ -203,10 +236,131 @@ const MetriqueCard = (props: CarteMetrique) => {
         </Box>
         <Stack direction="row" alignItems="center" spacing={0.25}>
           <Typography variant="caption">
-            {quantilesSentences[quantileIndex]}
+            {quantileIndex < 0
+              ? "Aucun scrutin solennel sur la période"
+              : quantilesSentences[quantileIndex]}
           </Typography>
           <InfoDialogIcon category="depute" item="classement" sx={{ p: 0.25, fontSize: "0.85rem" }} />
         </Stack>
+      </CardContent>
+    </Card>
+  );
+};
+
+/**
+ * Votes dissidents : part des votes du député, lors des scrutins solennels,
+ * différents de la position la plus suivie dans son groupe. Rapprochée de la
+ * médiane de l'Assemblée plutôt que classée en tranches : 4 députés sur 10
+ * n'ont aucun vote dissident, des tranches n'auraient rien distingué.
+ */
+const DissidenceCard = ({
+  distribution,
+  dissidence,
+  participation,
+}: {
+  distribution: DistributionMesure;
+  dissidence?: MetriqueActeur;
+  participation?: MetriqueActeur;
+}) => {
+  const libelle = useLibelleSurPlusieursLignes();
+  const valeur = dissidence?.valeur ?? null;
+  const mediane = distribution.mediane ?? 0;
+  // Échelle de la jauge : assez large pour situer la médiane et le député,
+  // arrondie aux 5 % supérieurs.
+  const echelle = Math.min(
+    100,
+    Math.max(5, Math.ceil(Math.max(2 * distribution.q80, valeur ?? 0, mediane) / 5) * 5)
+  );
+  const position = (v: number) => `${Math.min(100, (100 * v) / echelle)}%`;
+
+  let lecture: string;
+  if (valeur == null) {
+    lecture = participation?.votes
+      ? "Non applicable : député non inscrit"
+      : "Aucun vote solennel sur la période";
+  } else if (valeur > mediane) {
+    lecture = `Au-dessus de la médiane de l’Assemblée (${formaterValeur(mediane, "pourcentage", 1)})`;
+  } else if (valeur < mediane) {
+    lecture = `En dessous de la médiane de l’Assemblée (${formaterValeur(mediane, "pourcentage", 1)})`;
+  } else {
+    lecture = `Égal à la médiane de l’Assemblée (${formaterValeur(mediane, "pourcentage", 1)})`;
+  }
+
+  return (
+    <Card variant="outlined" sx={{ borderRadius: 3, borderColor: "#e0e0e0", boxShadow: "none" }}>
+      <CardContent>
+        <Stack direction="row" alignItems="baseline" justifyContent="flex-end" spacing={1}>
+          {dissidence?.votesExprimes ? (
+            <Tooltip
+              title={`${dissidence.votesDissidents ?? 0} vote${(dissidence.votesDissidents ?? 0) > 1 ? "s" : ""} sur ${dissidence.votesExprimes} différent${(dissidence.votesDissidents ?? 0) > 1 ? "s" : ""} de la majorité de son groupe`}
+            >
+              <Typography variant="caption" color="text.secondary" sx={{ cursor: "help", whiteSpace: "nowrap" }}>
+                {dissidence.votesDissidents ?? 0}/{dissidence.votesExprimes}
+              </Typography>
+            </Tooltip>
+          ) : null}
+          <Typography variant="h1" fontWeight="medium" sx={{ textAlign: "right", lineHeight: 1, mb: 0 }}>
+            {formaterValeur(valeur, "pourcentage", 1)}
+          </Typography>
+        </Stack>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          justifyContent="flex-end"
+          sx={{ mb: 1.5, pt: libelle.surPlusieursLignes ? 0.5 : 0 }}
+        >
+          <Box sx={{ display: "flex", flexShrink: 0 }}>
+            <InfoDialogIcon category="depute" item="dissidence_votes" />
+          </Box>
+          <Typography ref={libelle.ref} variant="caption" sx={{ textAlign: "right", lineHeight: "1rem" }}>
+            {infoDialogContents.depute.dissidence_votes?.translation}
+          </Typography>
+        </Stack>
+        {/* Même hauteur que les barres des autres cartes, pour aligner la grille. */}
+        <Box sx={{ height: 48, mb: 0.5, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+          <Box sx={{ position: "relative", height: 12, borderRadius: 1, bgcolor: "#E4E4E7" }}>
+            {valeur != null ? (
+              <Tooltip title={`Ce député : ${formaterValeur(valeur, "pourcentage", 1)}`}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: position(valeur),
+                    minWidth: valeur > 0 ? 4 : 0,
+                    bgcolor: "black",
+                    borderRadius: 1,
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+            <Tooltip title={`Médiane de l’Assemblée : ${formaterValeur(mediane, "pourcentage", 1)}`}>
+              <Box
+                sx={{
+                  position: "absolute",
+                  left: position(mediane),
+                  top: -6,
+                  bottom: -6,
+                  width: 2,
+                  ml: "-1px",
+                  bgcolor: "#868E96",
+                  cursor: "help",
+                }}
+              />
+            </Tooltip>
+          </Box>
+          <Stack direction="row" justifyContent="space-between" sx={{ mt: 0.75 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
+              0 %
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
+              {echelle} %
+            </Typography>
+          </Stack>
+        </Box>
+        <Typography variant="caption">{lecture}</Typography>
       </CardContent>
     </Card>
   );
@@ -231,6 +385,7 @@ export function ActeurStatSectionClient({
       LEGISLATURE: {},
       LAST_YEAR: {},
       LAST_SIX_MONTHS: {},
+      MANDAT: {},
     };
 
     for (const metrique of metriques) {
@@ -246,15 +401,23 @@ export function ActeurStatSectionClient({
       ?.forEach((item) => {
         metricToStats[item.mesure] = {
           ...item,
-          valeurDepute: metriquesValues[item.periode][item.mesure]?.valeur ?? 0,
+          valeurDepute:
+            item.unite === "pourcentage"
+              ? metriquesValues[item.periode][item.mesure]?.valeur ?? null
+              : metriquesValues[item.periode][item.mesure]?.valeur ?? 0,
           interventionsPresidence:
             metriquesValues[item.periode][item.mesure]?.interventionsPresidence,
+          metrique: metriquesValues[item.periode][item.mesure],
         };
       });
     return DEPUTE_STATS_METRICS.map((mesure) => metricToStats[mesure]).filter(
       (value) => value != null
     );
   }, [distributions, metriquesValues, periode]);
+
+  const distributionDissidence = distributions.find(
+    (item) => item.periode === periode && item.mesure === MESURE_DISSIDENCE
+  );
 
   return (
     <div>
@@ -347,6 +510,151 @@ export function ActeurStatSectionClient({
       >
         {statsWithMetrique.map((item) => (
           <MetriqueCard key={item.mesure} {...item} />
+        ))}
+        {distributionDissidence ? (
+          <DissidenceCard
+            distribution={distributionDissidence}
+            dissidence={metriquesValues[periode][MESURE_DISSIDENCE]}
+            participation={metriquesValues[periode]["participation-votes-solennels"]}
+          />
+        ) : null}
+      </Box>
+    </div>
+  );
+}
+
+/**
+ * Carte d'un député dont le mandat est achevé : son total sur la durée du
+ * mandat, sans barres de classement. Le comparer aux députés en exercice,
+ * dont le mandat court encore et dure plus longtemps, n'aurait pas de sens.
+ */
+const CarteMandat = ({ mesure, metrique }: { mesure: string; metrique?: MetriqueActeur }) => {
+  const libelle = useLibelleSurPlusieursLignes();
+  const info = baselineTypeToInfo[mesure];
+  const pourcentage = metrique?.unite === "pourcentage";
+  const valeur = metrique?.valeur ?? (pourcentage ? null : 0);
+
+  let complement: { court: string; long: string } | null = null;
+  if (mesure === "participation-votes-solennels" && metrique?.scrutins) {
+    complement = {
+      court: `${metrique.votes ?? 0}/${metrique.scrutins}`,
+      long: `${metrique.votes ?? 0} scrutins solennels votés sur ${metrique.scrutins}${
+        metrique.votesDelegation ? `, dont ${metrique.votesDelegation} par délégation` : ""
+      }`,
+    };
+  } else if (mesure === MESURE_DISSIDENCE && metrique?.votesExprimes) {
+    const n = metrique.votesDissidents ?? 0;
+    complement = {
+      court: `${n}/${metrique.votesExprimes}`,
+      long: `${n} vote${n > 1 ? "s" : ""} sur ${metrique.votesExprimes} différent${n > 1 ? "s" : ""} de la majorité de son groupe`,
+    };
+  } else if (metrique?.interventionsPresidence) {
+    complement = {
+      court: `+${metrique.interventionsPresidence}`,
+      long: "Interventions faites en présidant les débats",
+    };
+  }
+
+  let precision: string | null = null;
+  if (valeur == null) {
+    precision =
+      mesure === MESURE_DISSIDENCE
+        ? "Non applicable : non inscrit, ou aucun vote solennel"
+        : "Aucun scrutin solennel pendant son mandat";
+  }
+
+  return (
+    <Card variant="outlined" sx={{ borderRadius: 3, borderColor: "#e0e0e0", boxShadow: "none" }}>
+      <CardContent>
+        <Stack direction="row" alignItems="baseline" justifyContent="flex-end" spacing={1}>
+          {complement ? (
+            <Tooltip title={complement.long}>
+              <Typography variant="caption" color="text.secondary" sx={{ cursor: "help", whiteSpace: "nowrap" }}>
+                {complement.court}
+              </Typography>
+            </Tooltip>
+          ) : null}
+          <Typography variant="h1" fontWeight="medium" sx={{ textAlign: "right", lineHeight: 1, mb: 0 }}>
+            {formaterValeur(valeur, metrique?.unite ?? "", mesure === MESURE_DISSIDENCE ? 1 : 0)}
+          </Typography>
+        </Stack>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          justifyContent="flex-end"
+          sx={{ pt: libelle.surPlusieursLignes ? 0.5 : 0 }}
+        >
+          <Box sx={{ display: "flex", flexShrink: 0 }}>
+            <InfoDialogIcon category="depute" item={info} />
+          </Box>
+          <Typography ref={libelle.ref} variant="caption" sx={{ textAlign: "right", lineHeight: "1rem" }}>
+            {infoDialogContents.depute[info]?.translation ?? mesure}
+          </Typography>
+        </Stack>
+        {precision ? (
+          <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 1, textAlign: "right" }}>
+            {precision}
+          </Typography>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+};
+
+/** Statistiques d'un député dont le mandat est achevé : totaux sur son mandat. */
+export function ActeurStatMandatClient({
+  metriques,
+  mandat,
+  motifFin,
+  dateCalcul,
+}: {
+  /** Métriques de la période « MANDAT ». */
+  metriques: MetriqueActeur[];
+  mandat: { debut: string | null; fin: string | null };
+  /** Mandat interrompu par l'entrée au Gouvernement. */
+  motifFin?: "gouvernement";
+  dateCalcul?: string | null;
+}) {
+  const parMesure = Object.fromEntries(metriques.map((metrique) => [metrique.mesure, metrique]));
+  const periode =
+    mandat.debut && mandat.fin
+      ? `du ${dateLongue(mandat.debut)} au ${dateLongue(mandat.fin)}`
+      : mandat.fin
+        ? `jusqu’au ${dateLongue(mandat.fin)}`
+        : null;
+
+  return (
+    <div>
+      <Box sx={{ mb: 3, mt: 5 }}>
+        <Typography variant="subtitle1" fontWeight="bold" component="h2">
+          Statistiques d&apos;activité sur l&apos;ensemble du mandat
+        </Typography>
+      </Box>
+      <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: -2 }}>
+        {motifFin === "gouvernement"
+          ? `Mandat de député interrompu par l’entrée au Gouvernement${periode ? `, ${periode}` : ""}. `
+          : periode
+            ? `Mandat achevé, ${periode}. `
+            : "Mandat achevé. "}
+        Pas de comparaison avec les députés en exercice : leur mandat se poursuit.
+        {dateCalcul
+          ? ` Calculé le ${new Date(dateCalcul).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" })} · `
+          : " · "}
+        <Box component={Link} href="/methodologie#classement" sx={{ color: "inherit", textDecoration: "underline" }}>
+          Méthodologie
+        </Box>
+      </Typography>
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          mt: 2,
+        }}
+      >
+        {[...DEPUTE_STATS_METRICS, MESURE_DISSIDENCE].map((mesure) => (
+          <CarteMandat key={mesure} mesure={mesure} metrique={parMesure[mesure]} />
         ))}
       </Box>
     </div>

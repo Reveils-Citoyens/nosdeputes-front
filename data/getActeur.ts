@@ -3,6 +3,7 @@ import { getOrgane } from "./getOrgane";
 import { resolveAuGouvernement } from "./helpers/resolveAuGouvernement";
 import { cacheTricoteuses } from "./cacheTricoteuses";
 import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
+import { lireActeurNavigateur } from "@/lib/lireActeurNavigateur";
 
 export type ReturnedActeur = Acteur & {
   groupeParlementaire: Organe | null;
@@ -18,15 +19,7 @@ async function fetchActeur(uid: string): Promise<ReturnedActeur | null> {
     const acteur = await getActeurAN(uid);
     if (acteur) return acteur as unknown as ReturnedActeur;
   } else {
-    try {
-      const rep = await fetch(`/api/acteurs?uid=${encodeURIComponent(uid)}`);
-      if (!rep.ok) return null;
-      const { data } = await rep.json();
-      return data ?? null;
-    } catch (error) {
-      console.warn("getActeur: échec de récupération", uid, error);
-      return null;
-    }
+    return lireActeurNavigateur<ReturnedActeur>("uid", uid);
   }
   try {
     const rep = await fetchTricoteuses(

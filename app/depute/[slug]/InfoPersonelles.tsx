@@ -4,6 +4,8 @@ import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
 import { Acteur } from "@prisma/client";
 import { getActeurMandats } from "@/data/getActeurMandats";
 import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
+import { getPeriodesMandat } from "@/data/getPeriodesMandat";
+import { dateLongue } from "@/lib/periodesMandat";
 
 export default async function InfoPersonelles({
   acteurUid,
@@ -12,7 +14,10 @@ export default async function InfoPersonelles({
   acteurUid: string;
   depute: Acteur;
 }) {
-  const mandats = await getActeurMandats(acteurUid);
+  const [mandats, periodes] = await Promise.all([
+    getActeurMandats(acteurUid),
+    getPeriodesMandat(acteurUid),
+  ]);
 
   const sortedMandats = mandats.sort((a, b) =>
     a.dateDebut < b.dateDebut ? 1 : -1
@@ -47,13 +52,25 @@ export default async function InfoPersonelles({
           Fiche d&apos;identité
         </Typography>
         {dernierMandatDepute === undefined ? (
+          // Plus de mandat en cours : seuls les mandats actifs sont lus plus
+          // haut, d'où ses périodes de député dans la législature.
           <div>
-            <Typography variant="body2" fontWeight="light">
-              Début de mandat
+            <Typography variant="body2" fontWeight="light" color="grey.600">
+              {periodes.length > 1 ? "Mandats de député" : "Mandat de député"}
             </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              Pas de mandat de député·e
-            </Typography>
+            {periodes.length === 0 ? (
+              <Typography variant="body2" fontWeight="medium">
+                Aucun pendant la législature en cours
+              </Typography>
+            ) : (
+              periodes.map((periode) => (
+                <Typography key={periode.debut} variant="body2" fontWeight="medium">
+                  {periode.fin
+                    ? `Du ${dateLongue(periode.debut)} au ${dateLongue(periode.fin)}`
+                    : `Depuis le ${dateLongue(periode.debut)}`}
+                </Typography>
+              ))
+            )}
           </div>
         ) : (
           <React.Fragment>
@@ -152,7 +169,7 @@ export default async function InfoPersonelles({
               alignItems: "center",
             }}
           >
-            Parti politique
+            Parti de rattachement
             <Box
               component="span"
               sx={{
@@ -187,43 +204,45 @@ export default async function InfoPersonelles({
           </Typography>
           <Typography variant="body2" fontWeight="medium">
             Le {dateNais && new Date(dateNais).toLocaleDateString("fr-FR")} (
-            {age} ans) à {villeNais}
+            {age} ans){villeNais ? ` à ${villeNais}` : null}
           </Typography>
         </div>
 
-        <div>
-          <Typography
-            variant="body2"
-            fontWeight="light"
-            color="grey.600"
-            sx={{ lineHeight: 1, display: "flex", alignItems: "center" }}
-          >
-            Profession
-            <Box
-              component="span"
-              sx={{
-                display: "inline-flex",
-                ml: 0.5,
-                verticalAlign: "text-bottom",
-                "& button": {
-                  p: 0,
-                  minWidth: 0,
-                  height: "auto",
-                  lineHeight: 0,
-                },
-                "& svg": {
-                  fontSize: "1rem",
-                  color: "grey.400",
-                },
-              }}
+        {profession ? (
+          <div>
+            <Typography
+              variant="body2"
+              fontWeight="light"
+              color="grey.600"
+              sx={{ lineHeight: 1, display: "flex", alignItems: "center" }}
             >
-              <InfoDialogIcon category="depute" item="profession" />
-            </Box>
-          </Typography>
-          <Typography variant="body2" fontWeight="medium">
-            {profession}
-          </Typography>
-        </div>
+              Profession
+              <Box
+                component="span"
+                sx={{
+                  display: "inline-flex",
+                  ml: 0.5,
+                  verticalAlign: "text-bottom",
+                  "& button": {
+                    p: 0,
+                    minWidth: 0,
+                    height: "auto",
+                    lineHeight: 0,
+                  },
+                  "& svg": {
+                    fontSize: "1rem",
+                    color: "grey.400",
+                  },
+                }}
+              >
+                <InfoDialogIcon category="depute" item="profession" />
+              </Box>
+            </Typography>
+            <Typography variant="body2" fontWeight="medium">
+              {profession}
+            </Typography>
+          </div>
+        ) : null}
       </Stack>
     </Paper>
   );

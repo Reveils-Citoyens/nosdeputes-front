@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import React from "react";
 import type { Metadata } from "next";
 import { Avatar, Box, Chip, Container, Stack, Tooltip, Typography } from "@mui/material";
@@ -14,9 +15,10 @@ import Contacts from "./Contacts";
 import Tabs from "./Tabs";
 import InfoPersonelles from "./InfoPersonelles";
 import AlerteButton from "@/components/AlerteButton";
+import { LecteurPersistantProvider } from "@/components/LecteurPersistant";
 import MonDeputeButton from "@/components/MonDepute/MonDeputeButton";
 import { getActeurBySlug } from "@/data/getActeurBySlug";
-import { getActeurAdressesElectroniques } from "@/data/getActeurContacts";
+import { getActeurAdressesElectroniques, getActeurAdressesPostales } from "@/data/getActeurContacts";
 import { getActeurCollaborateurs } from "@/data/getActeurCollaborateurs";
 import CollaborateursSection from "./CollaborateursSection";
 import { formatCirco } from "@/utils/formatCirco";
@@ -26,6 +28,8 @@ import { alternateRss } from "@/lib/rss";
 import { TabNavigationProvider, TabNavigationContent } from "@/components/navigation/TabNavigation";
 import TabRouteSkeleton from "@/components/navigation/TabRouteSkeleton";
 import { urlDepute } from "@/lib/sourcesAN";
+import { getSituationActeur } from "@/data/getSituationActeur";
+import { horsAssemblee } from "@/lib/situationActeur";
 
 export async function generateMetadata({
   params,
@@ -49,15 +53,22 @@ export async function generateMetadata({
       )
     : null;
 
-  // Description : « <Nom>, député·e [de la <circo>] [(<groupe>)]. Activité… »
-  const qualite =
-    depute.chambre === "AN" ? "député" : "parlementaire";
+  // Description : « <Nom>, député [de la <circo>] [(<groupe>)]. Activité… »
+  // Membre du Gouvernement qui n'a pas siégé : sa fonction, pas « député ».
+  const situation = depute.chambre === "AN" ? await getSituationActeur(depute.uid) : null;
+  const fonction =
+    situation && horsAssemblee(situation) && situation.gouvernement
+      ? situation.gouvernement.intitule
+      : null;
+  const qualite = fonction ?? (depute.chambre === "AN" ? "député" : "parlementaire");
   const segments = [`${nomComplet}, ${qualite}`];
   if (circo) segments.push(circo);
   const intro = segments.join(" ");
-  const description = `${intro}${groupe ? ` (${groupe})` : ""}. Activité parlementaire à l'Assemblée nationale : votes, amendements, interventions, présence en commission et travaux.`;
+  const description = fonction
+    ? `${intro}. Interventions à l'Assemblée nationale au nom du Gouvernement.`
+    : `${intro}${groupe ? ` (${groupe})` : ""}. Activité parlementaire à l'Assemblée nationale : votes, amendements, interventions, présence en commission et travaux.`;
 
-  const title = `${nomComplet}${circo ? ` — ${qualite} ${circo}` : ""} — NosDéputés.fr`;
+  const title = `${nomComplet}${circo ? ` — ${qualite} ${circo}` : fonction ? ` — ${fonction}` : ""} — NosDéputés.fr`;
 
   return {
     title,
@@ -149,18 +160,23 @@ export default async function Page({
   const depute = await getActeurBySlug(slug);
 
   if (depute === null) {
-    return <p>Deputé non trouvé</p>;
+    notFound();
   }
 
-  const [adressesElectroniques, collaborateurs] = await Promise.all([
+  const [adressesElectroniques, adressesPostales, collaborateurs, situation] = await Promise.all([
     getActeurAdressesElectroniques(depute.uid),
+    getActeurAdressesPostales(depute.uid),
     getActeurCollaborateurs(depute.uid),
+    getSituationActeur(depute.uid),
   ]);
 
   // Mandat de député achevé : signal canonique = `actif: false` sur l'acteur
   // (démissionnaires, défunts, fin de législature, etc.).
   const mandatAcheve = depute.chambre === "AN" && depute.actif === false;
-  const auGouvernement = depute.auGouvernement === true;
+  const gouvernement = situation.gouvernement;
+  // Jamais député de la législature (ministre venu du Sénat, par exemple) :
+  // ni circonscription, ni votes, ni amendements, ni questions.
+  const sansMandat = depute.chambre === "AN" && horsAssemblee(situation);
   const ficheOfficielle = urlDepute(depute.uid);
 
   const twitter = adressesElectroniques.find(
@@ -184,6 +200,15 @@ export default async function Page({
     e.valElec?.includes("assemblee-nationale.fr")
   )?.valElec;
   const email = emailAN || emails[0]?.valElec;
+  // Mêmes rubriques que l'encart Contacts : sans aucune, l'encart est masqué
+  // et le bouton « Contacter » ne mènerait nulle part.
+  const aDesContacts =
+    adressesPostales.some((a) => a.typeLibelle.startsWith("Adresse ")) ||
+    adressesElectroniques.some((a) =>
+      ["Mèl", "Téléphone", "Site internet", "Twitter", "Facebook", "Instagram", "Linkedin"].includes(
+        a.typeLibelle
+      )
+    );
 
   const circonscription = depute.mandatPrincipal;
 
@@ -242,12 +267,23 @@ export default async function Page({
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
                     height: 22,
+                    // Centrée sur le corps du nom (surtout des minuscules),
+                    // non sur ses capitales : sans ce décalage, elle paraît haute.
+                    transform: "translateY(2px)",
                     "& .MuiChip-label": { px: 1 },
                   }}
                 />
               )}
-              {auGouvernement && (
-                <Tooltip title="Membre du gouvernement (mandat de député suspendu)">
+              {gouvernement && (
+                <Tooltip
+                  title={
+                    situation.enExercice
+                      ? "Membre du Gouvernement"
+                      : sansMandat
+                        ? "Membre du Gouvernement, sans mandat de député pendant la législature"
+                        : "Membre du Gouvernement (mandat de député suspendu)"
+                  }
+                >
                   <Chip
                     label="Gouv."
                     size="small"
@@ -259,6 +295,7 @@ export default async function Page({
                       textTransform: "uppercase",
                       letterSpacing: "0.05em",
                       height: 22,
+                      transform: "translateY(2px)",
                       "& .MuiChip-label": { px: 1 },
                     }}
                   />
@@ -266,7 +303,11 @@ export default async function Page({
               )}
             </Stack>
 
-            {circonscription && (
+            {gouvernement && !situation.enExercice ? (
+              <Typography variant="body1" fontWeight="light" color="text.secondary">
+                {gouvernement.intitule}
+              </Typography>
+            ) : circonscription && (
               <Typography
                 variant="body1"
                 fontWeight="light"
@@ -342,7 +383,7 @@ export default async function Page({
             >
               Contacter
             </Box>
-          ) : (
+          ) : aDesContacts ? (
             <Link
               href="#contacts"
               style={{ textDecoration: "none", marginLeft: 8 }}
@@ -350,14 +391,17 @@ export default async function Page({
             >
               <Box sx={contactButtonStyle}>Contacter</Box>
             </Link>
-          )}
+          ) : null}
 
-          <MonDeputeButton
-            uid={depute.uid}
-            slug={slug}
-            prenom={depute.prenom}
-            nom={depute.nom}
-          />
+          {/* « Député de ma circo » n'a de sens que pour un député en exercice. */}
+          {situation.enExercice && (
+            <MonDeputeButton
+              uid={depute.uid}
+              slug={slug}
+              prenom={depute.prenom}
+              nom={depute.nom}
+            />
+          )}
 
           <AlerteButton
             subjectType="depute"
@@ -396,10 +440,14 @@ export default async function Page({
 
         {/* Tabs + contenu — 2e sur mobile */}
         <Stack spacing={3} flex={5} sx={{ minWidth: 0, order: { xs: 1, md: 0 } }}>
-          <TabNavigationProvider fallback={<TabRouteSkeleton kind="depute" />}>
-            <Tabs slug={slug} />
-            <TabNavigationContent>{children}</TabNavigationContent>
-          </TabNavigationProvider>
+          {/* Le lecteur vidéo vit ici, au-dessus des onglets : une vidéo lancée
+              continue quand on passe d'Activités à Travaux ou Amendements. */}
+          <LecteurPersistantProvider>
+            <TabNavigationProvider fallback={<TabRouteSkeleton kind="depute" />}>
+              <Tabs slug={slug} sansMandat={sansMandat} />
+              <TabNavigationContent>{children}</TabNavigationContent>
+            </TabNavigationProvider>
+          </LecteurPersistantProvider>
         </Stack>
 
         {/* Colonne latérale complète (desktop) / reste des infos en bas (mobile) */}

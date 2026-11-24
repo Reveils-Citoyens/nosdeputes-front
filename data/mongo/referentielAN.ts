@@ -1,6 +1,7 @@
 import type { AdresseElectronique, AdressePostale, Mandat, Organe } from "@prisma/client";
 import { getParlementDb } from "@/lib/mongodb";
 import couleursGroupes from "@/config/couleursGroupes.json";
+import { fusionnerPeriodes, type PeriodeMandat } from "@/lib/periodesMandat";
 import {
   acteurDepuisAN,
   adressesElectroniquesDepuisAN,
@@ -165,6 +166,34 @@ export async function getMandatsActifsAN(
       .map((m) => ({ ...m, organeRef: m.organeRefUid ? organes.get(m.organeRefUid) ?? null : null }));
   } catch (erreur) {
     console.warn("getMandatsActifsAN: lecture impossible", acteurUid, erreur);
+    return null;
+  }
+}
+
+/**
+ * Périodes de mandat de député d'un acteur pendant la législature, fusionnées.
+ * `null` si l'acteur est absent de la base.
+ */
+export async function getPeriodesMandatAN(
+  acteurUid: string,
+  legislature = 17
+): Promise<PeriodeMandat[] | null> {
+  try {
+    const [brut] = await acteursBruts([acteurUid]);
+    if (!brut) return null;
+    const jour = (valeur: unknown) =>
+      typeof valeur === "string" && /^\d{4}-\d{2}-\d{2}/.test(valeur) ? valeur.slice(0, 10) : null;
+    const mandats = [brut.mandats?.mandat].flat().filter(Boolean) as Record<string, unknown>[];
+    return fusionnerPeriodes(
+      mandats
+        .filter((m) => m.typeOrgane === "ASSEMBLEE" && String(m.legislature) === String(legislature))
+        .flatMap((m) => {
+          const debut = jour(m.dateDebut);
+          return debut ? [{ debut, fin: jour(m.dateFin) }] : [];
+        })
+    );
+  } catch (erreur) {
+    console.warn("getPeriodesMandatAN: lecture impossible", acteurUid, erreur);
     return null;
   }
 }
