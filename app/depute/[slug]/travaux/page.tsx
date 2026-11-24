@@ -25,54 +25,9 @@ import { lireJson } from "@/lib/lireJson";
 import ErreurChargement from "@/components/ErreurChargement";
 import { DeputeTravauxSkeleton } from "@/components/navigation/DeputeTabSkeleton";
 import LienSource from "@/components/LienSource";
+import SectionShell from "./SectionShell";
+import InterventionsSection from "./InterventionsSection";
 import { urlTexte } from "@/lib/sourcesAN";
-
-// ─── Section shell (identique à /recherche pour cohérence) ────────────────────
-
-function SectionShell({
-  icon: Icon,
-  title,
-  count,
-  children,
-}: {
-  icon: React.ElementType;
-  title: string;
-  count?: number;
-  children: React.ReactNode;
-}) {
-  return (
-    <Box
-      sx={{
-        bgcolor: "white",
-        border: "1px solid",
-        borderColor: "grey.200",
-        borderRadius: "16px",
-        p: { xs: 2, md: 3 },
-      }}
-    >
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
-        <Icon sx={{ color: "grey.700" }} />
-        <Typography variant="h6" fontWeight="bold" sx={{ color: "#1A1A1B" }}>
-          {title}
-        </Typography>
-        {count !== undefined && count > 0 && (
-          <Chip
-            label={count}
-            size="small"
-            sx={{
-              bgcolor: "grey.100",
-              color: "grey.700",
-              fontWeight: "bold",
-              fontSize: "0.7rem",
-              height: 22,
-            }}
-          />
-        )}
-      </Stack>
-      {children}
-    </Box>
-  );
-}
 
 function EmptyRow({ message }: { message: string }) {
   return (
@@ -278,123 +233,117 @@ export default function Travaux() {
 
   const isLoading = acteurIsPending || (travauxIsPending && !isError);
 
+  // Membre du Gouvernement sans siège : propositions de loi, rapports et
+  // résolutions sont des travaux de député, qu'il n'a pas. Les rubriques vides
+  // ne s'affichent pas, plutôt qu'une série de « Aucun… » sans objet.
+  const sansSiege =
+    acteur?.auGouvernement === true && acteur.mandatPrincipal?.typeOrgane !== "ASSEMBLEE";
+  const rubrique = (nombre: number) => !sansSiege || nombre > 0;
+
   return (
     <Container sx={{ pt: 3, pb: 6 }}>
-      <Stack spacing={0.5} sx={{ mb: 3 }}>
-        <Typography
-          variant="overline"
-          sx={{
-            fontWeight: "bold",
-            letterSpacing: "0.15em",
-            color: "grey.600",
-          }}
-        >
-          Activité parlementaire
-        </Typography>
-        <Typography
-          component="h1"
-          sx={{
-            fontSize: { xs: "1.5rem", md: "2rem" },
-            fontWeight: "bold",
-            color: "#1A1A1B",
-          }}
-        >
-          Travaux législatifs
-        </Typography>
-      </Stack>
-
       {isError ? (
         <ErreurChargement onRetry={() => refetch()} />
       ) : isLoading ? (
         <DeputeTravauxSkeleton contentOnly />
       ) : (
         <Stack spacing={3}>
-          <SectionShell
-            icon={EditIcon}
-            title="Propositions de loi"
-            count={propositionsDeLoi.length}
-          >
-            {propositionsDeLoi.length === 0 ? (
-              <EmptyRow message="Aucune proposition de loi trouvée." />
-            ) : (
-              <Stack spacing={0.5}>
-                {propositionsDeLoi.map((doc) => (
-                  <DocumentRow
-                    key={doc.uid}
-                    titre={doc.titrePrincipalCourt}
-                    date={doc.dateCreation}
-                    pdfUrl={doc.pdfUrl}
-                    uid={doc.uid}
-                  />
-                ))}
-              </Stack>
-            )}
-          </SectionShell>
+          {/* En tête : les interventions sont l'activité la plus fréquente. */}
+          {acteur?.uid ? <InterventionsSection acteurUid={acteur.uid} /> : null}
+          {rubrique(propositionsDeLoi.length) && (
+            <SectionShell
+              icon={EditIcon}
+              title="Propositions de loi"
+              count={propositionsDeLoi.length}
+            >
+              {propositionsDeLoi.length === 0 ? (
+                <EmptyRow message="Aucune proposition de loi trouvée." />
+              ) : (
+                <Stack spacing={0.5}>
+                  {propositionsDeLoi.map((doc) => (
+                    <DocumentRow
+                      key={doc.uid}
+                      titre={doc.titrePrincipalCourt}
+                      date={doc.dateCreation}
+                      pdfUrl={doc.pdfUrl}
+                      uid={doc.uid}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </SectionShell>
+          )}
 
-          <SectionShell
-            icon={DescriptionIcon}
-            title="Rapports"
-            count={rapports.length}
-          >
-            {rapports.length === 0 ? (
-              <EmptyRow message="Aucun rapport trouvé." />
-            ) : (
-              <Stack spacing={0.5}>
-                {rapports.map((doc) => (
-                  <DocumentRow
-                    key={doc.uid}
-                    titre={doc.titrePrincipalCourt}
-                    date={doc.dateCreation}
-                    pdfUrl={doc.pdfUrl}
-                    uid={doc.uid}
-                  />
-                ))}
-              </Stack>
-            )}
-          </SectionShell>
+          {rubrique(rapports.length) && (
+            <SectionShell
+              icon={DescriptionIcon}
+              title="Rapports"
+              count={rapports.length}
+            >
+              {rapports.length === 0 ? (
+                <EmptyRow message="Aucun rapport trouvé." />
+              ) : (
+                <Stack spacing={0.5}>
+                  {rapports.map((doc) => (
+                    <DocumentRow
+                      key={doc.uid}
+                      titre={doc.titrePrincipalCourt}
+                      date={doc.dateCreation}
+                      pdfUrl={doc.pdfUrl}
+                      uid={doc.uid}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </SectionShell>
+          )}
 
-          <SectionShell
-            icon={CampaignIcon}
-            title="Résolutions"
-            count={resolutions.length}
-          >
-            {resolutions.length === 0 ? (
-              <EmptyRow message="Aucune résolution trouvée." />
-            ) : (
-              <Stack spacing={0.5}>
-                {resolutions.map((doc) => (
-                  <DocumentRow
-                    key={doc.uid}
-                    titre={doc.titrePrincipalCourt}
-                    date={doc.dateCreation}
-                    pdfUrl={doc.pdfUrl}
-                    uid={doc.uid}
-                  />
-                ))}
-              </Stack>
-            )}
-          </SectionShell>
+          {rubrique(resolutions.length) && (
+            <SectionShell
+              icon={CampaignIcon}
+              title="Résolutions"
+              count={resolutions.length}
+            >
+              {resolutions.length === 0 ? (
+                <EmptyRow message="Aucune résolution trouvée." />
+              ) : (
+                <Stack spacing={0.5}>
+                  {resolutions.map((doc) => (
+                    <DocumentRow
+                      key={doc.uid}
+                      titre={doc.titrePrincipalCourt}
+                      date={doc.dateCreation}
+                      pdfUrl={doc.pdfUrl}
+                      uid={doc.uid}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </SectionShell>
+          )}
 
-          <SectionShell
-            icon={FolderIcon}
-            title="Dossiers législatifs initiés"
-            count={dossiers.length}
-          >
-            {dossiers.length === 0 ? (
-              <EmptyRow message="Aucun dossier législatif initié." />
-            ) : (
-              <Stack spacing={0.5}>
-                {dossiers.map((dossier) => (
-                  <DossierRow
-                    key={dossier.uid}
-                    uid={dossier.uid}
-                    legislature={dossier.legislature}
-                    titre={dossier.titre}
-                  />
-                ))}
-              </Stack>
-            )}
-          </SectionShell>
+          {rubrique(dossiers.length) && (
+            <SectionShell
+              icon={FolderIcon}
+              title="Dossiers législatifs initiés"
+              count={dossiers.length}
+            >
+              {dossiers.length === 0 ? (
+                <EmptyRow message="Aucun dossier législatif initié." />
+              ) : (
+                <Stack spacing={0.5}>
+                  {dossiers.map((dossier) => (
+                    <DossierRow
+                      key={dossier.uid}
+                      uid={dossier.uid}
+                      legislature={dossier.legislature}
+                      titre={dossier.titre}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </SectionShell>
+          )}
         </Stack>
       )}
     </Container>

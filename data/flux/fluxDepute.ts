@@ -1,20 +1,20 @@
 import { getParlementDb } from "@/lib/mongodb";
 import { cacheTricoteuses } from "@/data/cacheTricoteuses";
-import { COLLECTION_PRISES_DE_PAROLE } from "@/data/getDernieresPrisesDeParole";
 import type { Flux } from "@/lib/rss";
 import {
   elementsAmendementsDepute,
   elementsInterventions,
   elementsQuestions,
   type AmendementsGroupe,
-  type InterventionVideo,
   type QuestionBrute,
 } from "./elementsDepute";
 import { fetchTricoteuses } from "@/lib/fetchTricoteuses";
+import { getInterventionsActeurAN } from "@/data/mongo/interventionsActeurAN";
 
 const GROUPES_AMENDEMENTS = 30;
 const QUESTIONS = 20;
-const LEGISLATURE = 17;
+/** Débats où le député est intervenu, en séance ou en commission. */
+const DEBATS = 15;
 
 /**
  * Amendements dont le député est l'auteur (pas les cosignatures), groupés par
@@ -103,19 +103,6 @@ async function lireQuestions(acteurUid: string): Promise<QuestionBrute[]> {
 }
 
 /**
- * Dernières interventions filmées, précalculées chaque nuit. Pas de calcul à
- * la demande ici (une quinzaine d'appels externes) : un député absent du
- * précalcul n'a simplement pas d'interventions dans le flux ce jour-là.
- */
-async function lireInterventions(acteurUid: string): Promise<InterventionVideo[]> {
-  const db = await getParlementDb();
-  const entree = await db
-    .collection<{ _id: string; prises?: InterventionVideo[] }>(COLLECTION_PRISES_DE_PAROLE)
-    .findOne({ _id: acteurUid }, { projection: { prises: 1 } });
-  return entree?.prises ?? [];
-}
-
-/**
  * getActeurBySlug renvoie null aussi quand l'API est en panne : le flux
  * répondrait 404, mis en cache une heure. Ici, une panne lève une erreur
  * (réponse 500, l'ancienne version reste servie) ; seul un slug inconnu
@@ -135,10 +122,10 @@ export async function getFluxDepute(slug: string): Promise<Flux | null> {
   const acteur = await lireActeur(slug);
   if (!acteur) return null;
 
-  const [amendements, questions, interventions] = await Promise.all([
+  const [amendements, questions, { debats }] = await Promise.all([
     lireAmendements(acteur.uid),
     lireQuestions(acteur.uid),
-    lireInterventions(acteur.uid),
+    getInterventionsActeurAN(acteur.uid, { limite: DEBATS }),
   ]);
 
   const nom = `${acteur.prenom} ${acteur.nom}`;
@@ -147,11 +134,11 @@ export async function getFluxDepute(slug: string): Promise<Flux | null> {
     titre: `${nom} — NosDéputés.fr`,
     lien,
     chemin: `${lien}/rss.xml`,
-    description: `Activité parlementaire de ${nom} : amendements déposés, questions au Gouvernement et interventions en séance.`,
+    description: `Activité parlementaire de ${nom} : amendements déposés, questions au Gouvernement et interventions en séance et en commission.`,
     elements: [
       ...elementsAmendementsDepute(amendements, { slug, acteurUid: acteur.uid }),
       ...elementsQuestions(questions, { slug }),
-      ...elementsInterventions(interventions, { slug, legislature: LEGISLATURE }),
+      ...elementsInterventions(debats, { slug }),
     ],
   };
 }

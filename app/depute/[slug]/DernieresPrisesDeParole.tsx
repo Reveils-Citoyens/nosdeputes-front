@@ -8,7 +8,7 @@ import CardContent from "@mui/material/CardContent";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
-import LecteurSeance from "@/components/LecteurSeance";
+import { useLecteur } from "@/components/LecteurPersistant";
 import LienSource from "@/components/LienSource";
 import { urlCompteRendu } from "@/lib/sourcesAN";
 import type { PriseDeParole } from "@/data/getDernieresPrisesDeParole";
@@ -38,7 +38,10 @@ export default function DernieresPrisesDeParole(props: {
   legislature?: number;
 }) {
   const legislature = props.legislature ?? 17;
-  const [lecture, setLecture] = React.useState<PriseDeParole | null>(null);
+  // La vidéo continue quand on change d'onglet (lecteur porté par le layout).
+  const { lire, lecteurLocal } = useLecteur();
+  const setLecture = (prise: PriseDeParole) =>
+    lire({ video: prise.video, seconde: prise.seconde, legende: `Séance du ${formatDate(prise.dateSeance)}` });
 
   if (props.prises.length === 0) return null;
 
@@ -158,7 +161,11 @@ export default function DernieresPrisesDeParole(props: {
                 « {extrait(prise.extrait)} »
               </Typography>
 
-              <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ gap: 1 }}>
+              {/* Deux rangées fixes, identiques d'une carte à l'autre : les
+                  actions, puis les sources officielles. Mêlées dans une seule
+                  rangée, leur retour à la ligne variait selon la largeur et la
+                  présence de « Voir le débat ». */}
+              <Stack direction="row" alignItems="center" sx={{ gap: 1 }}>
                 <Button
                   size="small"
                   variant="outlined"
@@ -178,20 +185,33 @@ export default function DernieresPrisesDeParole(props: {
                     variant="text"
                     color="inherit"
                     component={Link}
-                    href={`/${legislature}/dossier/${prise.dossierUid}/debat/${prise.compteRenduUid}`}
+                    href={`/${legislature}/dossier/${prise.dossierUid}/debat/${prise.compteRenduUid}${
+                      prise.ordre != null ? `#p-${prise.ordre}` : ""
+                    }`}
                     sx={{ textTransform: "none" }}
                   >
                     Voir le débat
                   </Button>
                 ) : null}
-                <LienSource
-                  href={urlCompteRendu(prise.compteRenduUid)}
-                  type="compte-rendu-seance"
-                  sx={{ alignSelf: "center" }}
-                >
+              </Stack>
+
+              <Stack
+                direction="row"
+                alignItems="center"
+                flexWrap="wrap"
+                sx={{
+                  columnGap: 2,
+                  rowGap: 0.5,
+                  mt: 1.5,
+                  pt: 1.5,
+                  borderTop: 1,
+                  borderColor: "divider",
+                }}
+              >
+                <LienSource href={urlCompteRendu(prise.compteRenduUid)} type="compte-rendu-seance">
                   Compte rendu officiel
                 </LienSource>
-                <LienSource href={prise.video.page} type="video" sx={{ alignSelf: "center" }}>
+                <LienSource href={prise.video.page} type="video">
                   Vidéo officielle
                 </LienSource>
               </Stack>
@@ -213,14 +233,7 @@ export default function DernieresPrisesDeParole(props: {
         </Typography>
       ) : null}
 
-      {lecture ? (
-        <LecteurSeance
-          video={lecture.video}
-          seconde={lecture.seconde}
-          legende={`Séance du ${formatDate(lecture.dateSeance)}`}
-          onFermer={() => setLecture(null)}
-        />
-      ) : null}
+      {lecteurLocal}
     </Box>
   );
 }

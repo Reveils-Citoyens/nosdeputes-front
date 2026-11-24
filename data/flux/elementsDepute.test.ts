@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { elementsAmendementsDepute, elementsInterventions, elementsQuestions, type QuestionBrute } from "./elementsDepute";
+import type { DebatActeur } from "@/data/mongo/interventionsActeurAN";
 
 const question = (extra: Partial<QuestionBrute>): QuestionBrute => ({
   uid: "QANR5L17QE17785",
@@ -17,7 +18,7 @@ describe("elementsQuestions", () => {
     expect(q).toMatchObject({
       guid: "QANR5L17QE17785",
       titre: "Question écrite : Facturation électronique",
-      lien: "/depute/francois-ruffin/qag",
+      lien: "/depute/francois-ruffin/questions-ecrites",
     });
     expect(q.description).toBe("Adressée au ministère de l’économie. M. Ruffin interroge M. le ministre");
   });
@@ -38,6 +39,8 @@ describe("elementsQuestions", () => {
       { slug: "s" },
     );
     expect(elements).toHaveLength(1);
+    // Question orale : lien vers l'onglet des questions orales.
+    expect(elements[0].lien).toBe("/depute/s/questions-orales");
     expect(elements[0].titre).toBe("Question au Gouvernement : Facturation électronique");
   });
 
@@ -84,28 +87,56 @@ describe("elementsAmendementsDepute", () => {
 });
 
 describe("elementsInterventions", () => {
-  it("lie au débat du dossier, sinon à la fiche, et garde l'heure de la séance", () => {
-    const [avec, sans] = elementsInterventions(
-      [
-        {
-          dateSeance: "2026-02-12T21:30:00.000Z",
-          extrait: "Le contrôle de l’information",
-          seconde: 120,
-          compteRenduUid: "CR1",
-          dossierUid: "D1",
-          dossierTitre: "Médias",
-        },
-        { dateSeance: "2026-01-13T15:00:00.000Z", extrait: "", seconde: 5, compteRenduUid: "CR2", dossierUid: null, dossierTitre: null },
-      ],
-      { slug: "s", legislature: 17 },
-    );
-    expect(avec).toMatchObject({
-      guid: "intervention-CR1-120",
-      titre: "Intervention en séance : Médias",
-      description: "« Le contrôle de l’information »",
-      lien: "/17/dossier/D1/debat/CR1",
+  const debat = (extra: Partial<DebatActeur>): DebatActeur => ({
+    compteRenduUid: "CRSANR5L17S2027O1N069",
+    date: "2026-11-18",
+    type: "seance",
+    lieu: "Séance publique",
+    sujet: "Rapports locatifs",
+    interventions: 1,
+    aPreside: false,
+    extrait: "Que prévoit l’article 1er bis A ?",
+    lien: "/17/dossier/D1/debat/CRSANR5L17S2027O1N069#p-675",
+    lienExterne: false,
+    dossierUid: "D1",
+    dossierTitre: "Rapports locatifs",
+    dossierLegislature: "17",
+    ...extra,
+  });
+
+  it("mène à l'intervention elle-même, par l'ancre du compte rendu", () => {
+    const [e] = elementsInterventions([debat({})], { slug: "s" });
+    expect(e).toMatchObject({
+      guid: "intervention-CRSANR5L17S2027O1N069",
+      titre: "Intervention en séance : Rapports locatifs",
+      description: "« Que prévoit l’article 1er bis A ? »",
+      lien: "/17/dossier/D1/debat/CRSANR5L17S2027O1N069#p-675",
     });
-    expect(avec.date.toISOString()).toBe("2026-02-12T21:30:00.000Z");
-    expect(sans).toMatchObject({ titre: "Intervention en séance", lien: "/depute/s", description: undefined });
+    expect(e.date.toISOString()).toBe("2026-11-18T10:00:00.000Z");
+  });
+
+  it("compte les interventions, nomme la commission, garde le lien externe", () => {
+    const [e] = elementsInterventions(
+      [
+        debat({
+          type: "commission",
+          lieu: "Commission des finances",
+          interventions: 3,
+          lien: "https://www.assemblee-nationale.fr/dyn/opendata/CRC.html",
+          lienExterne: true,
+        }),
+      ],
+      { slug: "s" },
+    );
+    expect(e.titre).toBe("3 interventions en commission : Rapports locatifs");
+    expect(e.description).toBe("Commission des finances. « Que prévoit l’article 1er bis A ? »");
+    expect(e.lien).toBe("https://www.assemblee-nationale.fr/dyn/opendata/CRC.html");
+  });
+
+  it("signale une présidence sans intervention de fond", () => {
+    const [e] = elementsInterventions([debat({ interventions: 0, aPreside: true, extrait: null, sujet: null })], {
+      slug: "s",
+    });
+    expect(e).toMatchObject({ titre: "Présidence de la séance", description: undefined });
   });
 });

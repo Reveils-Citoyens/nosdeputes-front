@@ -9,39 +9,55 @@ import { Typography } from "@mui/material";
 import { cleanText } from "@/components/folders/DebatTab/cleanText";
 import { Paragraphe } from "@prisma/client";
 import { SUMMARY_CODES } from "@/components/const";
+import { estPriseDeParole } from "@/components/folders/DebatTab/estPriseDeParole";
 
 type DebateTimelineProps = {
   paragraphes: Paragraphe[];
   /** Absent quand la séance n'a pas de vidéo : aucun bouton ne s'affiche alors. */
   onLire?: (seconde: number) => void;
 };
-export const DebateTimeline = React.memo(function DebateTimeline({ paragraphes, onLire }: DebateTimelineProps) {
+export const DebateTimeline = React.memo(function DebateTimeline({
+  paragraphes,
+  onLire,
+}: DebateTimelineProps) {
   return (
-  <Timeline
-    sx={{
-      [`& .${timelineItemClasses.root}:before`]: {
-        flex: 0,
-        padding: 0,
-      },
-    }}
-  >
-    {paragraphes.map(
-      ({ uid, codeGrammaire, acteurRefUid, roleDebat, texte, stime }, index) => {
+    <Timeline
+      sx={{
+        [`& .${timelineItemClasses.root}:before`]: {
+          flex: 0,
+          padding: 0,
+        },
+      }}
+    >
+      {paragraphes.map((paragraphe, index) => {
+        const {
+          uid,
+          codeGrammaire,
+          acteurRefUid,
+          orateur,
+          roleDebat,
+          texte,
+          stime,
+          ordreAbsoluSeance,
+        } = paragraphe;
+        if (estPriseDeParole(paragraphe)) {
+          return (
+            <ParoleItem
+              key={uid}
+              id={
+                ordreAbsoluSeance != null ? `p-${ordreAbsoluSeance}` : undefined
+              }
+              acteurUid={acteurRefUid}
+              orateur={orateur}
+              roleDebat={roleDebat}
+              texte={texte}
+              isFirst={index === 0}
+              seconde={stime != null ? Number(stime) : null}
+              onLire={onLire}
+            />
+          );
+        }
         switch (codeGrammaire) {
-          case "PAROLE_GENERIQUE":
-          case "INTERRUPTION_1_10":
-            return (
-              <ParoleItem
-                key={uid}
-                acteurUid={acteurRefUid}
-                roleDebat={roleDebat}
-                texte={texte}
-                isFirst={index === 0}
-                seconde={stime != null ? Number(stime) : null}
-                onLire={onLire}
-              />
-            );
-
           case "TITRE_TEXTE_DISCUSSION":
             return (
               <Typography
@@ -77,7 +93,9 @@ export const DebateTimeline = React.memo(function DebateTimeline({ paragraphes, 
             );
           default:
             if (SUMMARY_CODES.has(codeGrammaire!)) {
-              return <SectionItem key={uid} id={uid.toString()} title={texte} />;
+              return (
+                <SectionItem key={uid} id={uid.toString()} title={texte} />
+              );
             }
             return texte ? (
               <SubSectionItem
@@ -99,8 +117,7 @@ export const DebateTimeline = React.memo(function DebateTimeline({ paragraphes, 
           //   </div>
           // );
         }
-      }
-    )}
-  </Timeline>
+      })}
+    </Timeline>
   );
 });

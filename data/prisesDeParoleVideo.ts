@@ -74,6 +74,11 @@ export type PriseDeParole = {
   seconde: number;
   video: Video;
   compteRenduUid: string;
+  /**
+   * Rang de l'intervention dans le compte rendu : la page du débat y place une
+   * ancre (« #p-679 »). Absent des précalculs antérieurs à ce champ.
+   */
+  ordre?: number | null;
   /** Dossier législatif discuté, s'il est rattaché : permet le lien vers le débat. */
   dossierUid: string | null;
   /** Intitulé du texte débattu, plus parlant qu'un identifiant de dossier. */
@@ -110,6 +115,7 @@ type Candidate = {
   debatRefUid: string;
   dossierRefUid?: string | null;
   stime: string | number;
+  ordreAbsoluSeance?: number | null;
   texte: string;
   longueur: number;
 };
@@ -213,6 +219,7 @@ export async function calculerPrisesDeParole(
         seconde: Number(candidate.stime),
         video,
         compteRenduUid: candidate.debatRefUid,
+        ordre: typeof candidate.ordreAbsoluSeance === "number" ? candidate.ordreAbsoluSeance : null,
         dossierUid: candidate.dossierRefUid ?? null,
         dossierTitre,
         vignette,
@@ -251,7 +258,7 @@ export function creerSourcesHttp({
         codeGrammaire: "PAROLE_GENERIQUE",
         sort: "dateSeance.desc",
         perPage: "200",
-        select: "uid,dateSeance,debatRefUid,dossierRefUid,stime,texte",
+        select: "uid,dateSeance,debatRefUid,dossierRefUid,stime,ordreAbsoluSeance,texte",
       });
       try {
         const reponse = await fetchImpl(`${api}/interventions/?${parametres}`, options(3600));

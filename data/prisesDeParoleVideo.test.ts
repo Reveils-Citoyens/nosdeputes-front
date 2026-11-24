@@ -14,6 +14,7 @@ function intervention(n: number, extra: Record<string, unknown> = {}) {
     debatRefUid: `CRSANR5L17S2026O1N${n}`,
     dossierRefUid: `DLR${n}`,
     stime: String(100 + n),
+    ordreAbsoluSeance: 500 + n,
     texte: long(`texte${n}`),
     ...extra,
   };
@@ -76,6 +77,8 @@ describe("calculerPrisesDeParole", () => {
     ]);
     expect(resultat?.prises[0]).toMatchObject({
       seconde: 101,
+      // Ancre de l'intervention dans la page du débat.
+      ordre: 501,
       dossierUid: "DLR1",
       dossierTitre: "Titre DLR1",
       vignette: "https://page/RU-CRSANR5L17S2026O1N1.jpg",

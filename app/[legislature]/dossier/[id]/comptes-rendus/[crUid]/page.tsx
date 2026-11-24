@@ -1,4 +1,5 @@
 import * as React from "react";
+import { estPriseDeParole } from "@/components/folders/DebatTab/estPriseDeParole";
 import { getInterventions } from "@/data/getInterventions";
 import { SUMMARY_CODES } from "@/components/const";
 import { DebateTranscript } from "../../debat/[debatUid]/DebateTranscript";
@@ -45,7 +46,7 @@ export default async function CompteRenduPage({
         lastId = p.uid.toString();
         return { ...acc, [lastId]: 0 };
       }
-      if (["PAROLE_GENERIQUE", "INTERRUPTION_1_10"].includes(codeGrammaire!)) {
+      if (estPriseDeParole(p)) {
         const len = texte ? texte.split(" ").length : 0;
         return { ...acc, [lastId]: (acc[lastId] ?? 0) + len };
       }

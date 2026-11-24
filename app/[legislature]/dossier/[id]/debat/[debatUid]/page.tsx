@@ -1,4 +1,5 @@
 import * as React from "react";
+import { estPriseDeParole } from "@/components/folders/DebatTab/estPriseDeParole";
 import { DebateSummary } from "./DebateSummary";
 import { SUMMARY_CODES } from "@/components/const";
 import { DebateTranscript } from "./DebateTranscript";
@@ -45,7 +46,7 @@ export default async function Page({
         return { ...acc, [lastId]: 0 };
       }
 
-      if (["PAROLE_GENERIQUE", "INTERRUPTION_1_10"].includes(codeGrammaire!)) {
+      if (estPriseDeParole(paragraphe)) {
         const texteLength = texte ? texte.split(" ").length : 0;
         return {
           ...acc,

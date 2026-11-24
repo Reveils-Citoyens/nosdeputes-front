@@ -9,7 +9,7 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import Verbatim from "@/components/Verbatim";
-import LecteurSeance from "@/components/LecteurSeance";
+import { useLecteur } from "@/components/LecteurPersistant";
 import BoutonVideoReunion from "@/components/BoutonVideoReunion";
 import LienSource from "@/components/LienSource";
 import parametres from "@/config/statistiques.json";
@@ -46,7 +46,12 @@ const MOTIFS: Record<MotifExclusion, { label: string; explication: string }> = {
   procedure: {
     label: "intervention de procédure",
     explication:
-      "Rappel au règlement, demande de suspension, annonce de vote : le compte rendu les classe hors « parole générique ». Elles portent sur le déroulement de la séance, pas sur le fond du texte. Elles comptent en revanche pour la présence du jour.",
+      "Rappel au règlement, interruption lancée depuis les bancs, formule de séance : elles portent sur le déroulement de la séance, pas sur le fond du texte. Elles comptent en revanche pour la présence du jour.",
+  },
+  suite: {
+    label: "suite de la même prise de parole",
+    explication:
+      "Le compte rendu découpe un discours en paragraphes, et une interruption depuis les bancs ne retire pas la parole à l’orateur. Une prise de parole compte pour une intervention, quel que soit le nombre de ses paragraphes : elle est comptée sur son premier paragraphe.",
   },
 };
 
@@ -74,7 +79,9 @@ export default function JourneeClient({
   // ancré en bas de fenêtre, deux se superposeraient. L'état porte donc la
   // vidéo elle-même plutôt que l'identifiant d'une séance — les réunions de
   // commission n'en ont pas, et la séance n'a pas à être le cas particulier.
-  const [lecture, setLecture] = React.useState<Lecture | null>(null);
+  // Lecteur porté par le layout de la fiche : la vidéo continue quand on
+  // change d'onglet.
+  const { lire: setLecture, lecteurLocal } = useLecteur();
 
   // Interventions comptées en commission, rangées sous la réunion dont elles
   // viennent ; un compte rendu sans réunion listée ce jour-là reste affiché à
@@ -192,14 +199,7 @@ export default function JourneeClient({
 
       <Depots detail={detail} />
 
-      {lecture ? (
-        <LecteurSeance
-          video={lecture.video}
-          seconde={lecture.seconde}
-          legende={lecture.legende}
-          onFermer={() => setLecture(null)}
-        />
-      ) : null}
+      {lecteurLocal}
     </Stack>
   );
 }

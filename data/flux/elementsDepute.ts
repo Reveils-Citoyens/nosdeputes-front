@@ -1,5 +1,6 @@
 import { htmlToPreview } from "@/lib/htmlPreview";
 import { dateDuJour, formatJour, type ElementFlux } from "@/lib/rss";
+import type { DebatActeur } from "@/data/mongo/interventionsActeurAN";
 
 /**
  * Activité d'un député convertie en éléments de flux. Fonctions pures.
@@ -87,8 +88,9 @@ function sujetQuestion(q: QuestionBrute): string {
 }
 
 export function elementsQuestions(questions: QuestionBrute[], contexte: { slug: string }): ElementFlux[] {
-  const lien = `/depute/${contexte.slug}/qag`;
   return questions.flatMap((q) => {
+    const onglet = q.type === "QE" ? "questions-ecrites" : "questions-orales";
+    const lien = `/depute/${contexte.slug}/${onglet}`;
     const question = premier(q.textesQuestion?.texteQuestion);
     const date = dateDuJour(question?.infoJO?.dateJO);
     if (!date) return [];
@@ -133,30 +135,42 @@ export function elementsQuestions(questions: QuestionBrute[], contexte: { slug: 
   });
 }
 
-export type InterventionVideo = {
-  dateSeance: string;
-  extrait: string;
-  seconde: number;
-  compteRenduUid: string;
-  dossierUid: string | null;
-  dossierTitre: string | null;
-};
+/**
+ * Un élément par débat : un député prend la parole plusieurs fois dans une
+ * même séance, un élément par prise de parole noierait le flux. Le lien mène
+ * à sa première intervention de fond dans le compte rendu (ancre « #p-675 »),
+ * à défaut au compte rendu officiel.
+ */
+/** « 3 interventions en séance : Projet de loi de finances pour 2027 ». Partagé avec les alertes. */
+export function titreDebat(d: DebatActeur): string {
+  const ou = d.type === "seance" ? "en séance" : "en commission";
+  const quoi =
+    d.interventions > 1
+      ? `${d.interventions} interventions ${ou}`
+      : d.interventions === 1
+        ? `Intervention ${ou}`
+        : d.type === "seance"
+          ? "Présidence de la séance"
+          : "Présidence de la réunion";
+  return `${quoi}${d.sujet ? ` : ${d.sujet}` : ""}`;
+}
 
 export function elementsInterventions(
-  interventions: InterventionVideo[],
-  contexte: { slug: string; legislature: number },
+  debats: DebatActeur[],
+  contexte: { slug: string },
 ): ElementFlux[] {
-  return interventions.flatMap((i) => {
-    const date = new Date(i.dateSeance);
-    if (Number.isNaN(date.getTime())) return [];
+  return debats.flatMap((d) => {
+    const date = dateDuJour(d.date);
+    if (!date) return [];
     return [
       {
-        guid: `intervention-${i.compteRenduUid}-${i.seconde}`,
-        titre: `Intervention en séance${i.dossierTitre ? ` : ${i.dossierTitre}` : ""}`,
-        description: i.extrait ? `« ${htmlToPreview(i.extrait, 400)} »` : undefined,
-        lien: i.dossierUid
-          ? `/${contexte.legislature}/dossier/${i.dossierUid}/debat/${i.compteRenduUid}`
-          : `/depute/${contexte.slug}`,
+        guid: `intervention-${d.compteRenduUid}`,
+        titre: titreDebat(d),
+        description:
+          [d.type === "commission" ? `${d.lieu}.` : null, d.extrait ? `« ${d.extrait} »` : null]
+            .filter(Boolean)
+            .join(" ") || undefined,
+        lien: d.lien ?? `/depute/${contexte.slug}/travaux`,
         date,
       },
     ];

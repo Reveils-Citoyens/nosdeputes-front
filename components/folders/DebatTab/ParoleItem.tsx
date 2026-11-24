@@ -11,13 +11,57 @@ import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
 import MicIcon from "@mui/icons-material/Mic";
+import GroupsIcon from "@mui/icons-material/Groups";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import IconButton from "@mui/material/IconButton";
 import Link from "@/components/navigation/NavigationLink";
-import { useDebateActeur } from "./DebateActeursProvider";
+import { useDebateActeur, useDebateActeurs } from "./DebateActeursProvider";
+
+/**
+ * Interruption collective : l'Assemblée ne nomme personne (« Plusieurs députés
+ * des groupes LFI-NFP et SOC », identifiant « 0 »), seulement les groupes.
+ */
+const COLLECTIF = /^(?:un|une|plusieurs|des|de nombreux)\s+(?:députée?s?|membres?)\s.*?\bgroupes?\s+(.+)$/i;
+
+export function groupesCites(orateur: string | null | undefined): string[] {
+  const m = orateur?.trim().match(COLLECTIF);
+  if (!m) return [];
+  return m[1]
+    .split(/\s*,\s*|\s+et\s+/)
+    .map((g) => g.trim().replace(/[.\s]+$/, ""))
+    .filter(Boolean);
+}
+
+/** Pastille d'un groupe, à la couleur du groupe quand elle est connue. */
+function PuceGroupe({ abrev, libelle, couleur }: { abrev: string; libelle?: string | null; couleur?: string | null }) {
+  const puce = (
+    <Chip
+      label={abrev}
+      size="small"
+      sx={{
+        backgroundColor: couleur || "#e0e0e0",
+        color: couleur ? "#fff" : "rgba(0, 0, 0, 0.87)",
+        fontWeight: 600,
+        fontSize: "0.8rem",
+        height: "30px",
+        mt: 0.7,
+        "& .MuiChip-label": { paddingLeft: 1.5, paddingRight: 1.5 },
+      }}
+    />
+  );
+  return libelle ? (
+    <Tooltip placement="top" title={libelle}>
+      {puce}
+    </Tooltip>
+  ) : (
+    puce
+  );
+}
 
 interface ParoleItemProps {
   acteurUid: string | null;
+  /** Nom de l'orateur tel que l'imprime le compte rendu (« Plusieurs députés du groupe SOC »). */
+  orateur?: string | null;
   roleDebat: string | null;
   texte: string | null;
   isFirst?: boolean;
@@ -25,14 +69,40 @@ interface ParoleItemProps {
   seconde?: number | null;
   /** Fourni seulement si la séance a une vidéo consultable. */
   onLire?: (seconde: number) => void;
+  /** Ancre de cette prise de parole (« p-167 ») : les liens de la fiche député y mènent. */
+  id?: string;
 }
 function ParoleItem(props: ParoleItemProps) {
-  const { acteurUid, roleDebat, texte, isFirst = false, seconde, onLire } = props;
+  const { acteurUid, orateur, roleDebat, texte, isFirst = false, seconde, onLire, id } = props;
 
   const { data: acteur, isPending } = useDebateActeur(acteurUid);
+  const debat = useDebateActeurs();
+  const groupes = acteurUid ? [] : groupesCites(orateur);
+  // Couleur d'un groupe : celle de ses membres intervenus dans ce débat.
+  const groupeDe = (abrev: string) =>
+    Object.values(debat?.items ?? {}).find((a) => a.groupeParlementaire?.libelleAbrev === abrev)
+      ?.groupeParlementaire;
 
   return (
-    <TimelineItem>
+    // scroll-margin : l'en-tête fixe ne doit pas masquer l'intervention visée.
+    // data-cible : posé par useDefilementVersAncre sur l'intervention visée.
+    <TimelineItem
+      id={id}
+      sx={{
+        scrollMarginTop: 120,
+        // Toute la prise de parole, photo comprise. Les marges négatives
+        // élargissent le fond sans décaler le texte par rapport aux voisines.
+        "&[data-cible]": {
+          bgcolor: "#FFF8E1",
+          borderRadius: 3,
+          boxShadow: "inset 3px 0 0 #F2B705",
+          ml: -1.5,
+          pl: 1.5,
+          mr: -1.5,
+          pr: 1.5,
+        },
+      }}
+    >
       <TimelineSeparator sx={{ minWidth: 50 }}>
         {!isFirst ? (
           <TimelineConnector
@@ -84,6 +154,8 @@ function ParoleItem(props: ParoleItemProps) {
               ) : (
                 <MicIcon sx={{ fontSize: 22, color: "grey.500" }} />
               )
+            ) : groupes.length > 0 ? (
+              <GroupsIcon sx={{ fontSize: 24, color: "grey.600" }} />
             ) : acteurUid !== null && isPending ? null : (
               <MicIcon sx={{ fontSize: 22, color: "grey.500" }} />
             )}
@@ -118,37 +190,22 @@ function ParoleItem(props: ParoleItemProps) {
               </Typography>
             ) : (
               <Typography variant="body1" fontWeight="bold">
-                Intervenant
+                {(!acteurUid || !isPending) && orateur?.trim() ? orateur.trim() : "Intervenant"}
               </Typography>
             )}
-            {acteur?.groupeParlementaire?.libelle &&
-              acteur?.groupeParlementaire?.couleurAssociee && (
-                <Tooltip
-                  placement="top"
-                  title={`${acteur?.groupeParlementaire?.libelle}`}
-                >
-                  <Chip
-                    label={`${acteur?.groupeParlementaire?.libelleAbrev}`}
-                    size="small"
-                    sx={{
-                      backgroundColor:
-                        acteur?.groupeParlementaire?.couleurAssociee ||
-                        "#e0e0e0",
-                      color: acteur?.groupeParlementaire?.couleurAssociee
-                        ? "#fff"
-                        : "rgba(0, 0, 0, 0.87)",
-                      fontWeight: 600,
-                      fontSize: "0.8rem",
-                      height: "30px",
-                      mt: 0.7,
-                      "& .MuiChip-label": {
-                        paddingLeft: 1.5,
-                        paddingRight: 1.5,
-                      },
-                    }}
-                  />
-                </Tooltip>
-              )}
+            {groupes.map((abrev) => {
+              const groupe = groupeDe(abrev);
+              return (
+                <PuceGroupe key={abrev} abrev={abrev} libelle={groupe?.libelle} couleur={groupe?.couleurAssociee} />
+              );
+            })}
+            {acteur?.groupeParlementaire?.libelle && acteur.groupeParlementaire.couleurAssociee && (
+              <PuceGroupe
+                abrev={`${acteur.groupeParlementaire.libelleAbrev}`}
+                libelle={acteur.groupeParlementaire.libelle}
+                couleur={acteur.groupeParlementaire.couleurAssociee}
+              />
+            )}
             {roleDebat && <Typography>{roleDebat}</Typography>}
 
             {onLire && seconde != null ? (

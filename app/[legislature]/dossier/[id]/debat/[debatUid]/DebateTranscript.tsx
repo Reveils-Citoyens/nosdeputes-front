@@ -19,18 +19,15 @@ import { Paragraphe } from "@prisma/client";
 import LecteurSeance from "@/components/LecteurSeance";
 import type { Video } from "@/data/getVideoReunion";
 import { DebateActeursProvider } from "@/components/folders/DebatTab/DebateActeursProvider";
+import { estPriseDeParole } from "@/components/folders/DebatTab/estPriseDeParole";
+import { useDefilementVersAncre } from "@/components/folders/DebatTab/useDefilementVersAncre";
 
 function getWordsPerActeur(paragraphes: Paragraphe[]) {
   const wordsPerActeur: Record<string, number> = {};
   paragraphes.forEach((paragraphe) => {
-    const { codeGrammaire, acteurRefUid, texte } = paragraphe;
+    const { acteurRefUid, texte } = paragraphe;
 
-    if (
-      !codeGrammaire ||
-      !["INTERRUPTION_1_10", "PAROLE_GENERIQUE"].includes(codeGrammaire) ||
-      !acteurRefUid ||
-      !texte
-    ) {
+    if (!estPriseDeParole(paragraphe) || !acteurRefUid || !texte) {
       return;
     }
 
@@ -59,6 +56,8 @@ export const DebateTranscript = (props: DebateTranscriptProps) => {
   // compte rendu se parcourt sur des dizaines d'écrans, un lecteur posé dans le
   // fil disparaîtrait au premier défilement.
   const [seconde, setSeconde] = React.useState<number | null>(null);
+
+  useDefilementVersAncre();
 
   const wordsPerActeur = React.useMemo(
     () => getWordsPerActeur(paragraphes),
