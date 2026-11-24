@@ -70,7 +70,7 @@ export default function DernieresPrisesDeParole(props: {
       >
         {props.prises.map((prise) => (
           <Card
-            key={prise.compteRenduUid}
+            key={`${prise.compteRenduUid}-${prise.seconde}`}
             variant="outlined"
             sx={{
               borderRadius: 3,

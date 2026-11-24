@@ -80,7 +80,9 @@ export default async function InfoPersonelles({
               </Typography>
               <Typography variant="body2" fontWeight="medium">
                 Le{" "}
-                {new Date(dernierMandatDepute?.dateDebut).toLocaleDateString(
+                {/* Prise de fonction : pour un suppléant, `dateDebut` est la
+                    date de l'élection, parfois deux ans plus tôt. */}
+                {new Date(dernierMandatDepute?.datePriseFonction ?? dernierMandatDepute?.dateDebut).toLocaleDateString(
                   "fr-FR",
                   { day: "numeric", month: "long", year: "numeric" }
                 )}{" "}

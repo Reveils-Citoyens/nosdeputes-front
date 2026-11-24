@@ -188,7 +188,10 @@ export async function getPeriodesMandatAN(
       mandats
         .filter((m) => m.typeOrgane === "ASSEMBLEE" && String(m.legislature) === String(legislature))
         .flatMap((m) => {
-          const debut = jour(m.dateDebut);
+          // Prise de fonction, et non `dateDebut` (date de l'élection) : un
+          // suppléant arrive des mois, voire deux ans, après l'élection.
+          const mandature = (m.mandature ?? {}) as Record<string, unknown>;
+          const debut = jour(mandature.datePriseFonction) ?? jour(m.dateDebut);
           return debut ? [{ debut, fin: jour(m.dateFin) }] : [];
         })
     );
