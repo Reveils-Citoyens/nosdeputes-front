@@ -11,16 +11,20 @@ import {
   Card,
   CardContent,
   Chip,
+  IconButton,
   MenuItem,
   Stack,
   Tooltip,
   Typography,
 } from "@mui/material";
 import InfoDialogIcon from "@/components/InfoDialog/InfoDialogIcon";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { infoDialogContents } from "@/components/contents";
 import Link from "next/link";
 import { LIBELLES_TRANCHES } from "@/data/methodeStatistiques";
 import { dateLongue } from "@/lib/periodesMandat";
+import { classerProximites, formaterTaux, MESURE_PROXIMITE } from "@/lib/proximite";
+import { useParams } from "next/navigation";
 
 const DEPUTE_STATS_METRICS = [
   "interventions",
@@ -60,6 +64,10 @@ function formaterValeur(valeur: number | null, unite: string, decimales = 0): st
   if (unite !== "pourcentage") return String(valeur);
   return `${valeur.toLocaleString("fr-FR", { maximumFractionDigits: decimales })}\u00a0%`;
 }
+
+/** Infobulle du complément « +N QAG » de la carte des questions orales. */
+const TITRE_QUESTIONS_GOUVERNEMENT = (n: number) =>
+  `Et ${n} question${n > 1 ? "s" : ""} au Gouvernement, hors du compteur : elles sont réparties entre les députés par leur groupe, selon un contingent hebdomadaire.`;
 
 type CarteMetrique = DistributionMesure & {
   valeurDepute: number | null;
@@ -107,9 +115,12 @@ const MetriqueCard = (props: CarteMetrique) => {
   const libelle = useLibelleSurPlusieursLignes();
 
   const valeur = props.valeurDepute;
+  // En fonction moins de la moitié de la période : total affiché, sans rang
+  // (le calcul l'a écarté de la distribution).
+  const nonClasse = !!props.metrique?.nonClasse;
   // Taux non défini (aucun scrutin sur la période) : aucune tranche.
   const quantileIndex =
-    valeur == null
+    valeur == null || nonClasse
       ? -1
       : Math.min(4, quantiles.findLastIndex((v) => valeur > v) + 1);
   const participation = props.mesure === "participation-votes-solennels" ? props.metrique : undefined;
@@ -152,6 +163,17 @@ const MetriqueCard = (props: CarteMetrique) => {
                 sx={{ cursor: "help", whiteSpace: "nowrap" }}
               >
                 +{props.interventionsPresidence}
+              </Typography>
+            </Tooltip>
+          ) : null}
+          {props.metrique?.questionsGouvernement ? (
+            <Tooltip title={TITRE_QUESTIONS_GOUVERNEMENT(props.metrique.questionsGouvernement)}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ cursor: "help", whiteSpace: "nowrap" }}
+              >
+                +{props.metrique.questionsGouvernement} QAG
               </Typography>
             </Tooltip>
           ) : null}
@@ -236,9 +258,13 @@ const MetriqueCard = (props: CarteMetrique) => {
         </Box>
         <Stack direction="row" alignItems="center" spacing={0.25}>
           <Typography variant="caption">
-            {quantileIndex < 0
-              ? "Aucun scrutin solennel sur la période"
-              : quantilesSentences[quantileIndex]}
+            {nonClasse
+              ? `En fonction ${
+                  props.metrique?.enFonctionDepuis ? `depuis le ${dateLongue(props.metrique.enFonctionDepuis)}` : "depuis peu"
+                } : trop peu de temps sur la période pour le comparer`
+              : quantileIndex < 0
+                ? "Aucun scrutin solennel sur la période"
+                : quantilesSentences[quantileIndex]}
           </Typography>
           <InfoDialogIcon category="depute" item="classement" sx={{ p: 0.25, fontSize: "0.85rem" }} />
         </Stack>
@@ -247,24 +273,56 @@ const MetriqueCard = (props: CarteMetrique) => {
   );
 };
 
+/** Votes comptés dans le taux : avec une ligne de groupe, ou tous pour les anciens chiffres. */
+const baseDissidence = (m?: MetriqueActeur) => m?.votesLigneGroupe ?? m?.votesExprimes ?? 0;
+
+/** « 8 votes sur 51 contraires à la ligne de son groupe ». */
+function detailDissidence(m: MetriqueActeur): { court: string; long: string } {
+  const n = m.votesDissidents ?? 0;
+  const base = baseDissidence(m);
+  return {
+    court: `${n}/${base}`,
+    long:
+      m.votesLigneGroupe != null
+        ? `${n} vote${n > 1 ? "s" : ""} sur ${base} contraire${n > 1 ? "s" : ""} à la ligne de son groupe (scrutins où au moins deux tiers du groupe ont voté de même)`
+        : `${n} vote${n > 1 ? "s" : ""} sur ${base} différent${n > 1 ? "s" : ""} de la majorité de son groupe`,
+  };
+}
+
 /**
- * Votes dissidents : part des votes du député, lors des scrutins solennels,
- * différents de la position la plus suivie dans son groupe. Rapprochée de la
- * médiane de l'Assemblée plutôt que classée en tranches : 4 députés sur 10
- * n'ont aucun vote dissident, des tranches n'auraient rien distingué.
+ * Votes contre la ligne de son groupe, lors des scrutins solennels. Seuls
+ * comptent les scrutins où le groupe avait une ligne (deux tiers de ses
+ * votants dans le même sens) : s'écarter d'un groupe partagé n'est pas une
+ * dissidence. Le taux est rapproché de la médiane du groupe du député — un
+ * député de LIOT n'a pas à être mesuré à l'aune de la discipline du RN —, et
+ * la cohésion du groupe est rappelée pour situer le chiffre.
  */
 const DissidenceCard = ({
   distribution,
   dissidence,
   participation,
+  proximite,
 }: {
   distribution: DistributionMesure;
   dissidence?: MetriqueActeur;
   participation?: MetriqueActeur;
+  /** Proximité avec les groupes : résumée ici, détaillée dans l'onglet Votes. */
+  proximite?: MetriqueActeur;
 }) => {
+  const { slug } = useParams<{ slug: string }>();
+  const plusProche = proximite?.groupes
+    ? classerProximites(proximite.groupes, "tous", proximite.groupeAbrev).autres[0]
+    : undefined;
   const libelle = useLibelleSurPlusieursLignes();
   const valeur = dissidence?.valeur ?? null;
-  const mediane = distribution.mediane ?? 0;
+  // Médiane de son groupe quand elle est connue, sinon celle de l'Assemblée.
+  const duGroupe = dissidence?.medianeGroupe != null;
+  const mediane = dissidence?.medianeGroupe ?? distribution.mediane ?? 0;
+  const reference = duGroupe
+    ? dissidence?.groupeAbrev
+      ? `la médiane du groupe ${dissidence.groupeAbrev}`
+      : "la médiane de son groupe"
+    : "la médiane de l’Assemblée";
   // Échelle de la jauge : assez large pour situer la médiane et le député,
   // arrondie aux 5 % supérieurs.
   const echelle = Math.min(
@@ -275,31 +333,56 @@ const DissidenceCard = ({
 
   let lecture: string;
   if (valeur == null) {
-    lecture = participation?.votes
-      ? "Non applicable : député non inscrit"
-      : "Aucun vote solennel sur la période";
-  } else if (valeur > mediane) {
-    lecture = `Au-dessus de la médiane de l’Assemblée (${formaterValeur(mediane, "pourcentage", 1)})`;
-  } else if (valeur < mediane) {
-    lecture = `En dessous de la médiane de l’Assemblée (${formaterValeur(mediane, "pourcentage", 1)})`;
+    lecture = !participation?.votes
+      ? "Aucun vote solennel sur la période"
+      : dissidence?.votesExprimes
+        ? "Son groupe n’avait de ligne sur aucun de ses votes"
+        : "Non applicable : député non inscrit";
+  } else if (dissidence?.echantillonInsuffisant) {
+    const base = baseDissidence(dissidence);
+    lecture = `Trop peu de votes pour un taux significatif (${base} vote${base > 1 ? "s" : ""})`;
   } else {
-    lecture = `Égal à la médiane de l’Assemblée (${formaterValeur(mediane, "pourcentage", 1)})`;
+    // Une ligne, comme sous les autres cartes : le repère gris de la jauge
+    // montre déjà de quel côté de la médiane se trouve le député.
+    lecture = `Médiane ${duGroupe && dissidence?.groupeAbrev ? dissidence.groupeAbrev : "de l’Assemblée"} : ${formaterValeur(mediane, "pourcentage", 1)}`;
   }
+  const situation =
+    valeur == null || dissidence?.echantillonInsuffisant
+      ? null
+      : `${valeur > mediane ? "Au-dessus de" : valeur < mediane ? "En dessous de" : "Égal à"} ${reference} (${formaterValeur(mediane, "pourcentage", 1)}).`;
+  // Cohésion du groupe : ce que vaut le chiffre. Un groupe de coalition
+  // (LIOT, GDR) n'a de ligne que sur une partie des scrutins.
+  const cohesion =
+    dissidence?.ligneGroupe != null && dissidence.groupeAbrev
+      ? `Groupe ${dissidence.groupeAbrev} uni (deux tiers au moins dans le même sens) dans ${formaterValeur(dissidence.ligneGroupe, "pourcentage")} des scrutins solennels de la période ; les autres ne comptent pas dans le taux.`
+      : null;
+  const proximiteTexte = plusProche
+    ? `Hors de son groupe, vote le plus souvent comme ${plusProche.groupe} (${formaterTaux(plusProche.taux)}) : détail dans l’onglet Votes.`
+    : null;
+  const detail = [situation, cohesion, proximiteTexte].filter((ligne): ligne is string => !!ligne);
 
   return (
     <Card variant="outlined" sx={{ borderRadius: 3, borderColor: "#e0e0e0", boxShadow: "none" }}>
       <CardContent>
         <Stack direction="row" alignItems="baseline" justifyContent="flex-end" spacing={1}>
-          {dissidence?.votesExprimes ? (
-            <Tooltip
-              title={`${dissidence.votesDissidents ?? 0} vote${(dissidence.votesDissidents ?? 0) > 1 ? "s" : ""} sur ${dissidence.votesExprimes} différent${(dissidence.votesDissidents ?? 0) > 1 ? "s" : ""} de la majorité de son groupe`}
-            >
+          {dissidence && baseDissidence(dissidence) ? (
+            <Tooltip title={detailDissidence(dissidence).long}>
               <Typography variant="caption" color="text.secondary" sx={{ cursor: "help", whiteSpace: "nowrap" }}>
-                {dissidence.votesDissidents ?? 0}/{dissidence.votesExprimes}
+                {detailDissidence(dissidence).court}
               </Typography>
             </Tooltip>
           ) : null}
-          <Typography variant="h1" fontWeight="medium" sx={{ textAlign: "right", lineHeight: 1, mb: 0 }}>
+          <Typography
+            variant="h1"
+            fontWeight="medium"
+            sx={{
+              textAlign: "right",
+              lineHeight: 1,
+              mb: 0,
+              // Taux sur trop peu de votes : affiché, mais en retrait.
+              color: dissidence?.echantillonInsuffisant ? "text.disabled" : undefined,
+            }}
+          >
             {formaterValeur(valeur, "pourcentage", 1)}
           </Typography>
         </Stack>
@@ -336,7 +419,7 @@ const DissidenceCard = ({
                 />
               </Tooltip>
             ) : null}
-            <Tooltip title={`Médiane de l’Assemblée : ${formaterValeur(mediane, "pourcentage", 1)}`}>
+            <Tooltip title={`${reference.charAt(0).toUpperCase()}${reference.slice(1)} : ${formaterValeur(mediane, "pourcentage", 1)}`}>
               <Box
                 sx={{
                   position: "absolute",
@@ -360,7 +443,32 @@ const DissidenceCard = ({
             </Typography>
           </Stack>
         </Box>
-        <Typography variant="caption">{lecture}</Typography>
+        {/* Une ligne et une icône, comme les autres cartes : le détail
+            (position, cohésion du groupe, proximité) est dans l'infobulle. */}
+        <Stack direction="row" alignItems="center" spacing={0.25}>
+          <Typography variant="caption">{lecture}</Typography>
+          {detail.length ? (
+            <Tooltip
+              enterTouchDelay={0}
+              leaveTouchDelay={6000}
+              title={
+                <Stack spacing={0.75}>
+                  {detail.map((ligne) => (
+                    <span key={ligne}>{ligne}</span>
+                  ))}
+                </Stack>
+              }
+            >
+              <IconButton
+                size="small"
+                aria-label="Détail de la lecture"
+                sx={{ p: 0.25, color: "grey.500" }}
+              >
+                <InfoOutlinedIcon sx={{ fontSize: "0.95rem" }} />
+              </IconButton>
+            </Tooltip>
+          ) : null}
+        </Stack>
       </CardContent>
     </Card>
   );
@@ -378,7 +486,11 @@ export function ActeurStatSectionClient({
   /** Date ISO du dernier calcul des statistiques. */
   dateCalcul?: string | null;
 }) {
-  const [periode, setPeriode] = React.useState<PeriodeStatistique>("LAST_YEAR");
+  // Député arrivé en cours d'année, non classé sur 12 mois : les 6 derniers
+  // mois d'abord, où il a le plus de chances d'être comparé.
+  const [periode, setPeriode] = React.useState<PeriodeStatistique>(() =>
+    metriques.some((m) => m.periode === "LAST_YEAR" && m.nonClasse) ? "LAST_SIX_MONTHS" : "LAST_YEAR"
+  );
 
   const metriquesValues = React.useMemo(() => {
     const rep: Record<PeriodeStatistique, Record<string, MetriqueActeur>> = {
@@ -516,6 +628,7 @@ export function ActeurStatSectionClient({
             distribution={distributionDissidence}
             dissidence={metriquesValues[periode][MESURE_DISSIDENCE]}
             participation={metriquesValues[periode]["participation-votes-solennels"]}
+            proximite={metriquesValues[periode][MESURE_PROXIMITE]}
           />
         ) : null}
       </Box>
@@ -542,16 +655,17 @@ const CarteMandat = ({ mesure, metrique }: { mesure: string; metrique?: Metrique
         metrique.votesDelegation ? `, dont ${metrique.votesDelegation} par délégation` : ""
       }`,
     };
-  } else if (mesure === MESURE_DISSIDENCE && metrique?.votesExprimes) {
-    const n = metrique.votesDissidents ?? 0;
-    complement = {
-      court: `${n}/${metrique.votesExprimes}`,
-      long: `${n} vote${n > 1 ? "s" : ""} sur ${metrique.votesExprimes} différent${n > 1 ? "s" : ""} de la majorité de son groupe`,
-    };
+  } else if (mesure === MESURE_DISSIDENCE && metrique && baseDissidence(metrique)) {
+    complement = detailDissidence(metrique);
   } else if (metrique?.interventionsPresidence) {
     complement = {
       court: `+${metrique.interventionsPresidence}`,
       long: "Interventions faites en présidant les débats",
+    };
+  } else if (metrique?.questionsGouvernement) {
+    complement = {
+      court: `+${metrique.questionsGouvernement} QAG`,
+      long: TITRE_QUESTIONS_GOUVERNEMENT(metrique.questionsGouvernement),
     };
   }
 

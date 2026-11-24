@@ -233,7 +233,8 @@ Cette information aide à comprendre la diversité des origines socioprofessionn
         nb_questions_ecrite: { translation: `Questions écrites`, methode: "questions-ecrites" },
         nb_questions_orale: { translation: `Questions orales sans débat`, methode: "questions-orales" },
         participation_votes_solennels: { translation: `Participation aux scrutins solennels`, methode: "votes-solennels" },
-        dissidence_votes: { translation: `Votes dissidents (scrutins solennels)`, methode: "dissidence" },
+        dissidence_votes: { translation: `Votes contre la ligne de son groupe`, methode: "dissidence" },
+        proximite_groupes: { translation: `Avec qui vote-t-il ?`, methode: "proximite" },
         interventions_presidence: {
             translation: `Interventions en présidant les débats`,
             tooltip: `Pourquoi ces interventions sont comptées à part`,

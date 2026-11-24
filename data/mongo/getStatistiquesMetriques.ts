@@ -1,4 +1,5 @@
 import { cache } from "react";
+import type { ProximiteGroupe } from "@/lib/proximite";
 import { getParlementDb } from "@/lib/mongodb";
 import type { AttributionStatistique } from "./getStatistiquesHebdomadaires";
 
@@ -45,6 +46,20 @@ export type MetriqueActeur = {
    * un président de séance apparaîtrait à zéro.
    */
   interventionsPresidence?: number;
+  /**
+   * Questions au Gouvernement, hors du compteur des questions orales : leur
+   * répartition est décidée par les groupes. Affichées à côté.
+   */
+  questionsGouvernement?: number;
+  /**
+   * En fonction moins de la moitié de la période (suppléant, arrivée récente) :
+   * total publié, sans rang ni place dans la distribution.
+   */
+  nonClasse?: boolean;
+  joursEnFonction?: number;
+  joursPeriode?: number;
+  /** Début du dernier mandat, AAAA-MM-JJ. */
+  enFonctionDepuis?: string | null;
   /** Participation aux scrutins solennels : scrutins où il pouvait voter. */
   scrutins?: number;
   /** … ceux où il a voté (pour, contre, abstention). */
@@ -53,9 +68,30 @@ export type MetriqueActeur = {
   votesDelegation?: number;
   /** Votes dissidents : votes émis au sein d'un groupe politique. */
   votesExprimes?: number;
-  /** … différents de la position la plus suivie dans son groupe. */
+  /**
+   * … dont ceux où son groupe avait une ligne (deux tiers de ses votants dans
+   * le même sens), base du taux. Absent des chiffres calculés avant cette règle.
+   */
+  votesLigneGroupe?: number;
+  /** … qui s'écartent de cette ligne. */
   votesDissidents?: number;
+  /** Groupe de son dernier vote compté (abréviation, « LIOT »). */
+  groupeAbrev?: string | null;
+  /** Part des scrutins de la période où ce groupe avait une ligne, en %. */
+  ligneGroupe?: number | null;
+  /** Médiane de dissidence des membres de son groupe, et leur nombre. */
+  medianeGroupe?: number;
+  effectifGroupe?: number;
+  /** Trop peu de votes pour un taux significatif : signalé, hors médianes. */
+  echantillonInsuffisant?: boolean;
+  /**
+   * Proximité de vote (mesure « proximite-groupes ») : pour chaque groupe,
+   * [votes comme sa ligne, scrutins où il avait une ligne et où le député a
+   * voté], tous scrutins publics et scrutins solennels.
+   */
+  groupes?: ProximiteGroupe[];
 };
+
 
 export type DistributionMesure = {
   mesure: string;
@@ -107,11 +143,23 @@ export const getMetriquesActeur = cache(
               excusees: 1,
               absences: 1,
               interventionsPresidence: 1,
+              questionsGouvernement: 1,
+              nonClasse: 1,
+              joursEnFonction: 1,
+              joursPeriode: 1,
+              enFonctionDepuis: 1,
               scrutins: 1,
               votes: 1,
               votesDelegation: 1,
               votesExprimes: 1,
+              votesLigneGroupe: 1,
               votesDissidents: 1,
+              groupeAbrev: 1,
+              ligneGroupe: 1,
+              medianeGroupe: 1,
+              effectifGroupe: 1,
+              echantillonInsuffisant: 1,
+              groupes: 1,
             },
           }
         )

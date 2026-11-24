@@ -137,6 +137,9 @@ ETATS_PRESENCE = {"présent", "excusé", "absent"}
 # c'est ce qui évite qu'un président de séance apparaisse à zéro.
 CHAMPS_ANNEXES = (
     "convocations", "excusees", "absences", "interventionsPresidence",
+    # Questions au Gouvernement : hors du compteur des questions orales (leur
+    # répartition est décidée par les groupes), mais affichées à côté.
+    "questionsGouvernement",
     # Jours de séance où la présence n'est établie que par un vote : le graphe
     # les distingue des jours où le député a pris la parole.
     "joursVoteSeul",
@@ -151,6 +154,7 @@ COLLECTION_HEBDOMADAIRE = "statistiques_hebdomadaires"
 COLLECTION_QUALITE = "statistiques_qualite"
 COLLECTION_METRIQUES = "statistiques_metriques"
 COLLECTION_DISTRIBUTIONS = "statistiques_distributions"
+COLLECTION_GROUPES = "statistiques_groupes"
 
 
 # ---------------------------------------------------------------------------
@@ -194,6 +198,10 @@ def parse_date_seance(valeur: Any) -> datetime | None:
     if len(texte) < 8 or not texte[:8].isdigit():
         return None
     annee, mois, jour = int(texte[:4]), int(texte[4:6]), int(texte[6:8])
+    # Date manifestement erronée à la source (« 00250326… » pour le 26 mars
+    # 2025) : rejetée, l'appelant se rabat sur la date de la réunion.
+    if annee < 2000:
+        return None
     heure = int(texte[8:10]) if len(texte) >= 10 and texte[8:10].isdigit() else 0
     minute = int(texte[10:12]) if len(texte) >= 12 and texte[10:12].isdigit() else 0
     try:
@@ -299,7 +307,7 @@ def population_par_semaine(db: Any, legislature: int) -> dict[int, set[str]]:
             if str(mandat.get("legislature") or "") != str(legislature):
                 continue
 
-            debut = _parse_jour(mandat.get("dateDebut"))
+            debut = debut_mandat(mandat)
             if debut is None:
                 continue
             fin = _parse_jour(mandat.get("dateFin")) or fin_legislature
@@ -1121,29 +1129,79 @@ def calculer_questions(db: Any, legislature: int) -> list[dict]:
     """
     Questions écrites et orales sans débat, comptées à leur auteur.
 
-    Les questions au gouvernement (QG) sont exclues : leur attribution passe par
-    les groupes, qui répartissent un contingent hebdomadaire — le compteur
-    mesurerait un tour de rôle plutôt qu'une initiative.
+    Les questions au gouvernement (QG) sont exclues du compteur : leur
+    attribution passe par les groupes, qui répartissent un contingent
+    hebdomadaire — le compteur mesurerait un tour de rôle plutôt qu'une
+    initiative. Elles sont portées à part, sur les lignes des questions orales
+    (`questionsGouvernement`), comme les interventions en présidant : l'onglet
+    « Questions orales » les liste, la carte doit pouvoir en rendre compte.
     """
     par_type = {"QE": TYPE_QUESTION_ECRITE, "QOSD": TYPE_QUESTION_ORALE}
     lignes: dict[str, list] = {type_cible: [] for type_cible in par_type.values()}
+    gouvernement: list[tuple[str, date, str]] = []
 
     for question in db.questions.find(
-        {}, {"uid": 1, "type": 1, "auteur.identite.acteurRef": 1, "textesQuestion": 1}
+        {},
+        {"uid": 1, "type": 1, "auteur.identite.acteurRef": 1, "textesQuestion": 1,
+         "textesReponse.texteReponse.infoJO.dateJO": 1, "cloture.dateCloture": 1},
     ):
         type_cible = par_type.get(question.get("type"))
-        if type_cible is None:
+        if type_cible is None and question.get("type") != "QG":
             continue
         acteur_uid = uid_acteur(
             ((question.get("auteur") or {}).get("identite") or {}).get("acteurRef")
         )
         jour = _parse_jour(_date_publication_question(question))
-        if acteur_uid and jour:
+        if jour is None and question.get("type") == "QG":
+            # Question et réponse sont publiées ensemble, au compte rendu de la
+            # séance : la question n'a pas de publication propre.
+            jour = _parse_jour(_date_reponse_question(question))
+        if not (acteur_uid and jour):
+            continue
+        if type_cible is None:
+            gouvernement.append((acteur_uid, jour, question["uid"]))
+        else:
             lignes[type_cible].append((acteur_uid, jour, question["uid"]))
 
+    documents = _documents_depots(lignes[TYPE_QUESTION_ECRITE], legislature, TYPE_QUESTION_ECRITE)
+    documents += _documents_questions_orales(
+        lignes[TYPE_QUESTION_ORALE], gouvernement, legislature
+    )
+    return documents
+
+
+def _documents_questions_orales(
+    sans_debat: list[tuple[str, date, str]],
+    gouvernement: list[tuple[str, date, str]],
+    legislature: int,
+) -> list[dict]:
+    """
+    Lignes quotidiennes des questions orales : la valeur compte les questions
+    orales sans débat ; `questionsGouvernement`, les questions au Gouvernement
+    du même jour. Un jour sans question orale sans débat a une valeur nulle.
+    """
+    debut = LEGISLATURE_DATE_DEBUT[legislature]
+    par_jour: dict[tuple[str, date], dict[str, list[str]]] = defaultdict(
+        lambda: {"QOSD": [], "QG": []}
+    )
+    for cle, valeurs in (("QOSD", sans_debat), ("QG", gouvernement)):
+        for acteur_uid, jour, uid in valeurs:
+            if jour >= debut:
+                par_jour[(acteur_uid, jour)][cle].append(uid)
+
     documents = []
-    for type_cible, valeurs in lignes.items():
-        documents += _documents_depots(valeurs, legislature, type_cible)
+    for (acteur_uid, jour), uids in par_jour.items():
+        document = _document_quotidien(
+            legislature=legislature,
+            type_statistique=TYPE_QUESTION_ORALE,
+            acteur_uid=acteur_uid,
+            jour=jour,
+            valeur=len(uids["QOSD"]),
+            details=[{"uid": uid} for uid in sorted(uids["QOSD"] + uids["QG"])],
+        )
+        if uids["QG"]:
+            document["questionsGouvernement"] = len(uids["QG"])
+        documents.append(document)
     return documents
 
 
@@ -1156,6 +1214,30 @@ def _date_publication_question(question: dict) -> str | None:
             if date_jo:
                 return date_jo
     return None
+
+
+def _date_reponse_question(question: dict) -> str | None:
+    """Date de publication de la réponse, à défaut celle de clôture."""
+    for texte in liste((question.get("textesReponse") or {}).get("texteReponse")):
+        if isinstance(texte, dict):
+            date_jo = (texte.get("infoJO") or {}).get("dateJO")
+            if date_jo:
+                return date_jo
+    return (question.get("cloture") or {}).get("dateCloture")
+
+
+def debut_mandat(mandat: dict) -> date | None:
+    """
+    Début effectif d'un mandat de député : la prise de fonction.
+
+    `dateDebut` est la date de l'élection. Pour un suppléant ou un élu d'une
+    législative partielle, elle précède de plusieurs mois, voire de deux ans,
+    son arrivée dans l'hémicycle (17e législature : 98 mandats sur 685). La
+    prendre comptait comme absences les scrutins tenus avant son arrivée.
+    """
+    return _parse_jour(((mandat.get("mandature") or {}).get("datePriseFonction"))) or _parse_jour(
+        mandat.get("dateDebut")
+    )
 
 
 def uid_acteur(valeur: Any) -> str | None:
@@ -1247,7 +1329,7 @@ def population_actuelle(db: Any, legislature: int) -> set[str]:
                 continue
             if str(mandat.get("legislature") or "") != str(legislature):
                 continue
-            debut = _parse_jour(mandat.get("dateDebut"))
+            debut = debut_mandat(mandat)
             fin = _parse_jour(mandat.get("dateFin"))
             if debut and debut <= aujourdhui and (fin is None or fin >= aujourdhui):
                 membres.add(uid)
@@ -1256,8 +1338,53 @@ def population_actuelle(db: Any, legislature: int) -> set[str]:
     return membres
 
 
+# Part de la période qu'un député doit avoir passée en fonction pour être
+# classé. En deçà (arrivé en cours de période, suppléant), son total est
+# affiché mais non comparé : face à des députés présents toute la période, il
+# tomberait mécaniquement parmi les moins actifs.
+PART_MINIMUM_CLASSEMENT = 0.5
+
+
+def temps_en_fonction(
+    periodes: list[tuple[date, date | None]], depuis: date, jusqua: date
+) -> tuple[int, int, date | None]:
+    """(jours en fonction sur la période, jours de la période, début du dernier mandat)."""
+    jours = 0
+    for debut, fin in periodes:
+        a, b = max(debut, depuis), min(fin or jusqua, jusqua)
+        if b >= a:
+            jours += (b - a).days + 1
+    dernier = max((debut for debut, _ in periodes), default=None)
+    return jours, (jusqua - depuis).days + 1, dernier
+
+
+def non_classes(
+    population: set[str],
+    mandats: dict[str, list[tuple[date, date | None]]] | None,
+    depuis: date,
+) -> dict[str, dict]:
+    """Députés en fonction moins de la moitié de la période, avec de quoi l'expliquer."""
+    if mandats is None:
+        return {}
+    aujourdhui = date.today()
+    exclus: dict[str, dict] = {}
+    for acteur_uid in population:
+        jours, total, dernier = temps_en_fonction(mandats.get(acteur_uid, []), depuis, aujourdhui)
+        if total > 0 and jours < PART_MINIMUM_CLASSEMENT * total:
+            exclus[acteur_uid] = {
+                "nonClasse": True,
+                "joursEnFonction": jours,
+                "joursPeriode": total,
+                "enFonctionDepuis": dernier.isoformat() if dernier else None,
+            }
+    return exclus
+
+
 def calculer_metriques(
-    quotidiennes: list[dict], legislature: int, population: set[str]
+    quotidiennes: list[dict],
+    legislature: int,
+    population: set[str],
+    mandats: dict[str, list[tuple[date, date | None]]] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """
     Totaux par député et distribution de l'Assemblée, pour chaque mesure et
@@ -1267,9 +1394,16 @@ def calculer_metriques(
     C'est indispensable : les exclure revient à décrire les seuls députés actifs
     sur un indicateur donné, et à placer mécaniquement tout le monde plus haut
     dans le classement.
+
+    En revanche, un député en fonction moins de la moitié de la période
+    (`non_classes`) n'y entre pas : son total est publié, signalé, sans rang.
     """
     metriques: list[dict] = []
     distributions: list[dict] = []
+    exclus_par_periode = {
+        periode: non_classes(population, mandats, debut_periode(periode, legislature))
+        for periode in PERIODES
+    }
 
     par_type: dict[str, list[dict]] = defaultdict(list)
     for ligne in quotidiennes:
@@ -1289,6 +1423,7 @@ def calculer_metriques(
                             if champ in ligne:
                                 annexes[ligne["acteurUid"]][champ] += ligne[champ]
 
+            exclus = exclus_par_periode[periode]
             for acteur_uid in population:
                 valeur = totaux.get(acteur_uid, 0)
                 metriques.append({
@@ -1303,12 +1438,13 @@ def calculer_metriques(
                     # Le dénominateur suit la valeur jusque sur la carte :
                     # « 286 réunions » se lit « sur 390 convocations ».
                     **annexes.get(acteur_uid, {}),
+                    **exclus.get(acteur_uid, {}),
                 })
 
             distributions.append(
                 _distribution(
                     legislature, mesure, periode, types,
-                    sorted(totaux.get(uid, 0) for uid in population),
+                    sorted(totaux.get(uid, 0) for uid in population if uid not in exclus),
                 )
             )
 
@@ -1446,7 +1582,7 @@ def mandats_assemblee(db: Any, legislature: int) -> dict[str, list[tuple[date, d
                 continue
             if str(mandat.get("legislature") or "") != str(legislature):
                 continue
-            debut = _parse_jour(mandat.get("dateDebut"))
+            debut = debut_mandat(mandat)
             if uid and debut:
                 periodes[uid].append((debut, _parse_jour(mandat.get("dateFin"))))
     return periodes
@@ -1454,6 +1590,31 @@ def mandats_assemblee(db: Any, legislature: int) -> dict[str, list[tuple[date, d
 
 def _en_mandat(periodes: list[tuple[date, date | None]], jour: date) -> bool:
     return any(debut <= jour and (fin is None or jour <= fin) for debut, fin in periodes)
+
+
+def pendant_le_mandat(
+    quotidiennes: list[dict], mandats: dict[str, list[tuple[date, date | None]]]
+) -> list[dict]:
+    """
+    Ne garde, pour chaque député de la législature, que l'activité tenue
+    pendant un de ses mandats.
+
+    Les prises de parole sont attribuées à la personne, quelle que soit sa
+    fonction : un député redevenu député après un passage au Gouvernement se
+    voyait compter ses interventions de ministre (Marc Ferracci : 402 en séance),
+    et un ancien Premier ministre les projets de loi qu'il avait signés. Les
+    acteurs sans mandat de député dans la législature (ministres non élus,
+    personnes auditionnées) ne sont pas concernés : ils n'ont pas de fiche.
+    """
+    retenues = []
+    for ligne in quotidiennes:
+        periodes = mandats.get(ligne["acteurUid"])
+        if periodes is None or _en_mandat(periodes, date.fromisoformat(ligne["date"][:10])):
+            retenues.append(ligne)
+    ecartees = len(quotidiennes) - len(retenues)
+    if ecartees:
+        log.info("%d lignes d'activité hors mandat écartées", ecartees)
+    return retenues
 
 
 def groupes_non_inscrits(db: Any, legislature: int) -> set[str]:
@@ -1495,11 +1656,43 @@ def position_majoritaire(decompte: dict) -> str | None:
     return gagnantes[0] if maximum and len(gagnantes) == 1 else None
 
 
+# Part des votants d'un groupe qui doit suivre une même position pour qu'on
+# parle d'une ligne de groupe. En deçà, le groupe est partagé : voter
+# autrement qu'une courte majorité n'est pas une dissidence. Mesuré sur les
+# scrutins solennels de la 17e législature : LIOT n'a une telle ligne que dans
+# 74 % des scrutins, GDR dans 82 %, les autres groupes dans 94 à 100 %.
+SEUIL_LIGNE_GROUPE = 2 / 3
+
+# En deçà de ce nombre de votes avec une ligne de groupe, le taux de
+# dissidence est affiché mais signalé, et n'entre ni dans les médianes ni dans
+# les distributions : un seul vote suffisait à afficher « 100 % ».
+VOTES_MINIMUM_DISSIDENCE = 10
+
+
+def ligne_du_groupe(decompte: dict) -> str | None:
+    """
+    Position suivie par au moins deux tiers des votants du groupe (pour,
+    contre ou abstention), ou `None` si le groupe est partagé.
+    """
+    comptes = {
+        position: len([v for v in liste((decompte.get(rubrique) or {}).get("votant")) if isinstance(v, dict)])
+        for rubrique, position in RUBRIQUES_VOTE.items()
+        if position != "nonVotant"
+    }
+    total = sum(comptes.values())
+    if not total:
+        return None
+    position, nombre = max(comptes.items(), key=lambda item: item[1])
+    return position if nombre / total >= SEUIL_LIGNE_GROUPE else None
+
+
 def lire_scrutins_solennels(db: Any, legislature: int) -> list[dict]:
     """
     Les scrutins solennels de la législature et, pour chacun, la position de
     chaque député : position, vote par délégation, cause d'un non-vote, groupe
-    sous lequel il a voté et position la plus suivie dans ce groupe.
+    sous lequel il a voté, position la plus suivie dans ce groupe et ligne du
+    groupe (`None` s'il était partagé). Pour chaque groupe ayant voté, `groupes`
+    indique s'il avait une ligne.
     """
     debut = LEGISLATURE_DATE_DEBUT[legislature]
     scrutins: list[dict] = []
@@ -1514,6 +1707,7 @@ def lire_scrutins_solennels(db: Any, legislature: int) -> list[dict]:
         if jour is None or jour < debut:
             continue
         votes: dict[str, dict] = {}
+        groupes: dict[str, bool] = {}
         organe = (scrutin.get("ventilationVotes") or {}).get("organe") or {}
         for groupe in liste((organe.get("groupes") or {}).get("groupe")):
             if not isinstance(groupe, dict):
@@ -1521,6 +1715,11 @@ def lire_scrutins_solennels(db: Any, legislature: int) -> list[dict]:
             vote = groupe.get("vote") or {}
             decompte = vote.get("decompteNominatif") or {}
             majoritaire = position_majoritaire(decompte)
+            ligne = ligne_du_groupe(decompte)
+            if groupe.get("organeRef") and any(
+                liste((decompte.get(r) or {}).get("votant")) for r, p in RUBRIQUES_VOTE.items() if p != "nonVotant"
+            ):
+                groupes[groupe["organeRef"]] = ligne is not None
             for rubrique, position in RUBRIQUES_VOTE.items():
                 for votant in liste((decompte.get(rubrique) or {}).get("votant")):
                     if not isinstance(votant, dict):
@@ -1534,8 +1733,9 @@ def lire_scrutins_solennels(db: Any, legislature: int) -> list[dict]:
                         "cause": votant.get("causePositionVote"),
                         "groupe": groupe.get("organeRef"),
                         "majoritaire": majoritaire,
+                        "ligne": ligne,
                     }
-        scrutins.append({"uid": scrutin["uid"], "jour": jour, "votes": votes})
+        scrutins.append({"uid": scrutin["uid"], "jour": jour, "votes": votes, "groupes": groupes})
     log.info("Scrutins solennels : %d", len(scrutins))
     return scrutins
 
@@ -1555,13 +1755,18 @@ def compter_votes_solennels(
       par délégation — un vote confié à un collègue est un vote émis ;
     - `votesDelegation` : la part de ces votes émis par délégation ;
     - `votesExprimes` : ses votes émis au sein d'un groupe politique (hors
-      non-inscrits), base de la dissidence ;
-    - `votesDissidents` : ceux qui diffèrent de la position la plus suivie au
-      sein de son groupe (cf. `position_majoritaire`). S'abstenir quand son
-      groupe vote pour est une dissidence. Un scrutin où le groupe est partagé
-      à égalité n'entre pas dans le calcul.
+      non-inscrits) ;
+    - `votesLigneGroupe` : parmi eux, ceux où son groupe avait une ligne
+      (cf. `ligne_du_groupe`), base de la dissidence ;
+    - `votesDissidents` : ceux qui s'écartent de cette ligne. S'abstenir quand
+      son groupe vote pour est une dissidence. Un scrutin où le groupe est
+      partagé n'entre pas dans le calcul ;
+    - `groupe` : le groupe de son dernier vote compté.
     """
-    compteurs = Counter(scrutins=0, votes=0, votesDelegation=0, votesExprimes=0, votesDissidents=0)
+    compteurs: dict = Counter(
+        scrutins=0, votes=0, votesDelegation=0, votesExprimes=0, votesLigneGroupe=0, votesDissidents=0
+    )
+    groupe = None
     for scrutin in scrutins:
         if not _en_mandat(periodes_mandat, scrutin["jour"]):
             continue
@@ -1573,11 +1778,49 @@ def compter_votes_solennels(
             continue
         compteurs["votes"] += 1
         compteurs["votesDelegation"] += int(vote["delegation"])
-        if vote["groupe"] in non_inscrits or not vote["majoritaire"]:
+        if vote["groupe"] in non_inscrits or not vote["groupe"]:
             continue
         compteurs["votesExprimes"] += 1
-        compteurs["votesDissidents"] += int(vote["position"] != vote["majoritaire"])
-    return dict(compteurs)
+        groupe = vote["groupe"]
+        if not vote.get("ligne"):
+            continue
+        compteurs["votesLigneGroupe"] += 1
+        compteurs["votesDissidents"] += int(vote["position"] != vote["ligne"])
+    return {**compteurs, "groupe": groupe}
+
+
+def lignes_des_groupes(scrutins: list[dict]) -> dict[str, tuple[int, int]]:
+    """Pour chaque groupe : (scrutins où il avait une ligne, scrutins où il a voté)."""
+    comptes: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    for scrutin in scrutins:
+        for groupe, nette in scrutin.get("groupes", {}).items():
+            comptes[groupe][0] += int(nette)
+            comptes[groupe][1] += 1
+    return {groupe: (n[0], n[1]) for groupe, n in comptes.items()}
+
+
+def libelles_groupes(db: Any) -> dict[str, str]:
+    return {
+        organe["uid"]: organe.get("libelleAbrev") or organe.get("libelle") or ""
+        for organe in db.organes.find({"codeType": "GP"}, {"uid": 1, "libelleAbrev": 1, "libelle": 1})
+        if organe.get("uid")
+    }
+
+
+def _contexte_groupe(
+    compteurs: dict, lignes: dict[str, tuple[int, int]], libelles: dict[str, str]
+) -> dict:
+    """Groupe du député et part des scrutins où ce groupe avait une ligne."""
+    groupe = compteurs.get("groupe")
+    if not groupe:
+        return {}
+    avec_ligne, votes = lignes.get(groupe, (0, 0))
+    return {
+        "groupe": groupe,
+        "groupeAbrev": libelles.get(groupe) or None,
+        "ligneGroupe": _taux(avec_ligne, votes),
+        "scrutinsGroupe": votes,
+    }
 
 
 def _taux(numerateur: int, denominateur: int) -> float | None:
@@ -1625,20 +1868,27 @@ def calculer_votes_solennels(
     scrutins = lire_scrutins_solennels(db, legislature)
     mandats = mandats_assemblee(db, legislature)
     non_inscrits = groupes_non_inscrits(db, legislature)
+    libelles = libelles_groupes(db)
 
     metriques: list[dict] = []
     distributions: list[dict] = []
     for periode in PERIODES:
         depuis = debut_periode(periode, legislature)
         retenus = [scrutin for scrutin in scrutins if scrutin["jour"] >= depuis]
+        lignes = lignes_des_groupes(retenus)
         participations: list[float] = []
         dissidences: list[float] = []
+        # Dissidence de chaque député, par groupe : un député est comparé aux
+        # membres de son propre groupe (médiane posée après la boucle).
+        par_groupe: dict[str, list[float]] = defaultdict(list)
+        metriques_dissidence: list[dict] = []
         for acteur_uid in sorted(population):
             compteurs = compter_votes_solennels(
                 retenus, mandats.get(acteur_uid, []), acteur_uid, non_inscrits
             )
             participation = _taux(compteurs["votes"], compteurs["scrutins"])
-            dissidence = _taux(compteurs["votesDissidents"], compteurs["votesExprimes"])
+            dissidence = _taux(compteurs["votesDissidents"], compteurs["votesLigneGroupe"])
+            significatif = compteurs["votesLigneGroupe"] >= VOTES_MINIMUM_DISSIDENCE
             commun = {
                 "legislature": legislature,
                 "periode": periode,
@@ -1655,18 +1905,31 @@ def calculer_votes_solennels(
                 "votes": compteurs["votes"],
                 "votesDelegation": compteurs["votesDelegation"],
             })
-            metriques.append({
+            metrique_dissidence = {
                 **commun,
                 "uid": f"{legislature}-{MESURE_DISSIDENCE}-{acteur_uid}-{periode}".upper(),
                 "mesure": MESURE_DISSIDENCE,
                 "valeur": dissidence,
                 "votesExprimes": compteurs["votesExprimes"],
+                "votesLigneGroupe": compteurs["votesLigneGroupe"],
                 "votesDissidents": compteurs["votesDissidents"],
-            })
+                **_contexte_groupe(compteurs, lignes, libelles),
+                **({} if significatif or dissidence is None else {"echantillonInsuffisant": True}),
+            }
+            metriques.append(metrique_dissidence)
+            metriques_dissidence.append(metrique_dissidence)
             if participation is not None:
                 participations.append(participation)
-            if dissidence is not None:
+            if dissidence is not None and significatif:
                 dissidences.append(dissidence)
+                if compteurs["groupe"]:
+                    par_groupe[compteurs["groupe"]].append(dissidence)
+
+        for metrique in metriques_dissidence:
+            membres = sorted(par_groupe.get(metrique.get("groupe") or "", []))
+            if membres:
+                metrique["medianeGroupe"] = _quantile(membres, 0.5)
+                metrique["effectifGroupe"] = len(membres)
 
         distributions.append(
             _distribution_taux(legislature, MESURE_PARTICIPATION, periode, sorted(participations))
@@ -1677,10 +1940,11 @@ def calculer_votes_solennels(
 
     for acteur_uid in sorted(anciens):
         # Tous les scrutins : compter_votes_solennels ne retient que ceux tenus
-        # pendant le mandat.
+        # pendant le mandat. La ligne du groupe, sur ces mêmes scrutins.
         compteurs = compter_votes_solennels(
             scrutins, mandats.get(acteur_uid, []), acteur_uid, non_inscrits
         )
+        pendant = [s for s in scrutins if _en_mandat(mandats.get(acteur_uid, []), s["jour"])]
         commun = {
             "legislature": legislature,
             "periode": PERIODE_MANDAT,
@@ -1701,11 +1965,236 @@ def calculer_votes_solennels(
             **commun,
             "uid": f"{legislature}-{MESURE_DISSIDENCE}-{acteur_uid}-{PERIODE_MANDAT}".upper(),
             "mesure": MESURE_DISSIDENCE,
-            "valeur": _taux(compteurs["votesDissidents"], compteurs["votesExprimes"]),
+            "valeur": _taux(compteurs["votesDissidents"], compteurs["votesLigneGroupe"]),
             "votesExprimes": compteurs["votesExprimes"],
+            "votesLigneGroupe": compteurs["votesLigneGroupe"],
             "votesDissidents": compteurs["votesDissidents"],
+            **_contexte_groupe(compteurs, lignes_des_groupes(pendant), libelles),
+            **(
+                {"echantillonInsuffisant": True}
+                if 0 < compteurs["votesLigneGroupe"] < VOTES_MINIMUM_DISSIDENCE
+                else {}
+            ),
         })
     return metriques, distributions
+
+
+# ---------------------------------------------------------------------------
+# Indicateur : proximité de vote avec les groupes
+# ---------------------------------------------------------------------------
+
+MESURE_PROXIMITE = "proximite-groupes"
+# En deçà de ce nombre de scrutins en commun, un groupe n'est pas affiché.
+SCRUTINS_MINIMUM_PROXIMITE = 10
+PERIMETRES_PROXIMITE = ("tous", "solennels")
+POSITIONS_EXPRIMEES = {"pour": 0, "contre": 1, "abstention": 2}
+
+COULEURS_GROUPES: dict[str, str] = {
+    cle: valeur
+    for cle, valeur in json.loads(
+        (Path(__file__).resolve().parent / "config" / "couleursGroupes.json").read_text(encoding="utf-8")
+    ).items()
+    if not cle.startswith("_")
+}
+
+
+def lire_scrutins_publics(
+    db: Any, legislature: int, non_inscrits: set[str], groupes_connus: set[str]
+) -> list[dict]:
+    """
+    Tous les scrutins publics de la législature, sous une forme compacte : la
+    ligne de chaque groupe qui en avait une (`ligne_du_groupe`, non-inscrits
+    exclus), les groupes ayant voté, et la position exprimée de chaque député
+    avec le groupe sous lequel il a voté. Un organe qui n'est pas un groupe
+    politique connu (« PO0 » dans quelques ventilations) n'a pas de ligne, et
+    ne devient le groupe de personne.
+    """
+    debut = LEGISLATURE_DATE_DEBUT[legislature]
+    scrutins: list[dict] = []
+    for scrutin in db.scrutins.find(
+        {"legislature": str(legislature)},
+        {"uid": 1, "dateScrutin": 1, "typeVote.codeTypeVote": 1, "ventilationVotes": 1},
+    ):
+        jour = _parse_jour(scrutin.get("dateScrutin"))
+        if jour is None or jour < debut:
+            continue
+        lignes: dict[str, int] = {}
+        votants: set[str] = set()
+        votes: list[tuple[str, int, str | None]] = []
+        organe = (scrutin.get("ventilationVotes") or {}).get("organe") or {}
+        for groupe in liste((organe.get("groupes") or {}).get("groupe")):
+            if not isinstance(groupe, dict) or not groupe.get("organeRef"):
+                continue
+            organe_ref = groupe["organeRef"] if groupe["organeRef"] in groupes_connus else None
+            decompte = (groupe.get("vote") or {}).get("decompteNominatif") or {}
+            for rubrique, position in RUBRIQUES_VOTE.items():
+                if position not in POSITIONS_EXPRIMEES:
+                    continue
+                for votant in liste((decompte.get(rubrique) or {}).get("votant")):
+                    acteur_uid = uid_acteur(votant.get("acteurRef")) if isinstance(votant, dict) else None
+                    if acteur_uid:
+                        votes.append((acteur_uid, POSITIONS_EXPRIMEES[position], organe_ref))
+                        if organe_ref:
+                            votants.add(organe_ref)
+            if organe_ref is None or organe_ref in non_inscrits:
+                continue
+            ligne = ligne_du_groupe(decompte)
+            if ligne:
+                lignes[organe_ref] = POSITIONS_EXPRIMEES[ligne]
+        scrutins.append({
+            "jour": jour,
+            "solennel": ((scrutin.get("typeVote") or {}).get("codeTypeVote")) == CODE_SCRUTIN_SOLENNEL,
+            "lignes": lignes,
+            "votants": votants - non_inscrits,
+            "votes": votes,
+        })
+    log.info("Scrutins publics : %d", len(scrutins))
+    return scrutins
+
+
+def _abreviations(libelles: dict[str, str]) -> Callable[[str], str]:
+    return lambda organe_uid: libelles.get(organe_uid) or organe_uid
+
+
+def _couleurs_par_abreviation(libelles: dict[str, str]) -> dict[str, str]:
+    """Couleur affichée par le site pour chaque abréviation de groupe."""
+    couleurs: dict[str, str] = {}
+    for organe_uid, couleur in COULEURS_GROUPES.items():
+        abreviation = libelles.get(organe_uid)
+        if abreviation:
+            couleurs[abreviation] = couleur
+    return couleurs
+
+
+def compter_proximites(scrutins: list[dict], abreviation: Callable[[str], str]) -> dict:
+    """
+    Sur une liste de scrutins, pour chaque député et chaque groupe : les
+    scrutins où le député a voté et où ce groupe avait une ligne (`base`), et
+    ceux où il a voté comme cette ligne (`accords`), tous scrutins publics et
+    scrutins solennels séparément. Aussi, de groupe à groupe, les scrutins où
+    les deux avaient une ligne et ceux où elle était la même ; et par groupe,
+    les scrutins où il a voté et ceux où il avait une ligne (cohésion).
+
+    Les groupes sont désignés par leur abréviation : un groupe recréé sous un
+    nouvel identifiant (UDR) reste le même groupe pour le lecteur.
+    """
+    deputes: dict[str, dict] = defaultdict(lambda: {p: defaultdict(lambda: [0, 0]) for p in PERIMETRES_PROXIMITE})
+    dernier_groupe: dict[str, tuple[date, str]] = {}
+    paires: dict[tuple[str, str], dict] = defaultdict(lambda: {p: [0, 0] for p in PERIMETRES_PROXIMITE})
+    cohesion: dict[str, dict] = defaultdict(lambda: {p: [0, 0] for p in PERIMETRES_PROXIMITE})
+
+    for scrutin in scrutins:
+        perimetres = PERIMETRES_PROXIMITE if scrutin["solennel"] else PERIMETRES_PROXIMITE[:1]
+        lignes = [(abreviation(g), position) for g, position in scrutin["lignes"].items()]
+        for groupe in scrutin["votants"]:
+            nom = abreviation(groupe)
+            for perimetre in perimetres:
+                cohesion[nom][perimetre][1] += 1
+                cohesion[nom][perimetre][0] += int(groupe in scrutin["lignes"])
+        for i, (a, ligne_a) in enumerate(lignes):
+            for b, ligne_b in lignes[i + 1:]:
+                cle = (a, b) if a < b else (b, a)
+                for perimetre in perimetres:
+                    compte = paires[cle][perimetre]
+                    compte[0] += int(ligne_a == ligne_b)
+                    compte[1] += 1
+        if not lignes:
+            continue
+        for acteur_uid, position, organe_ref in scrutin["votes"]:
+            precedent = dernier_groupe.get(acteur_uid)
+            if organe_ref and (precedent is None or scrutin["jour"] >= precedent[0]):
+                dernier_groupe[acteur_uid] = (scrutin["jour"], abreviation(organe_ref))
+            compteurs = deputes[acteur_uid]
+            for perimetre in perimetres:
+                par_groupe = compteurs[perimetre]
+                for nom, ligne in lignes:
+                    compte = par_groupe[nom]
+                    compte[0] += int(position == ligne)
+                    compte[1] += 1
+
+    return {
+        "deputes": deputes,
+        "groupeDepute": {uid: g for uid, (_, g) in dernier_groupe.items()},
+        "paires": paires,
+        "cohesion": cohesion,
+    }
+
+
+def _proximites_depute(compteurs: dict, couleurs: dict[str, str]) -> list[dict]:
+    """Groupes avec assez de scrutins en commun, sur l'un des deux périmètres."""
+    noms = set()
+    for perimetre in PERIMETRES_PROXIMITE:
+        noms |= {n for n, c in compteurs[perimetre].items() if c[1] >= SCRUTINS_MINIMUM_PROXIMITE}
+    return [
+        {
+            "groupe": nom,
+            "couleur": couleurs.get(nom),
+            **{
+                perimetre: compteurs[perimetre][nom]
+                for perimetre in PERIMETRES_PROXIMITE
+                if compteurs[perimetre].get(nom, [0, 0])[1] >= SCRUTINS_MINIMUM_PROXIMITE
+            },
+        }
+        for nom in sorted(noms)
+    ]
+
+
+def calculer_proximites(
+    db: Any, legislature: int, population: set[str], anciens: set[str] = frozenset()
+) -> tuple[list[dict], list[dict]]:
+    """
+    Proximité de vote de chaque député avec chaque groupe (fiche député), et
+    cohésion et proximité des groupes entre eux (page des groupes), par
+    période. Pour les anciens députés, la législature entière : ils n'ont voté
+    que pendant leur mandat.
+    """
+    non_inscrits = groupes_non_inscrits(db, legislature)
+    libelles = libelles_groupes(db)
+    abreviation = _abreviations(libelles)
+    couleurs = _couleurs_par_abreviation(libelles)
+    scrutins = lire_scrutins_publics(db, legislature, non_inscrits, set(libelles))
+
+    metriques: list[dict] = []
+    groupes: list[dict] = []
+    for periode in PERIODES:
+        depuis = debut_periode(periode, legislature)
+        comptes = compter_proximites([s for s in scrutins if s["jour"] >= depuis], abreviation)
+        cibles = [(uid, periode) for uid in sorted(population)]
+        if periode == "LEGISLATURE":
+            cibles += [(uid, PERIODE_MANDAT) for uid in sorted(anciens)]
+        for acteur_uid, periode_metrique in cibles:
+            if acteur_uid not in comptes["deputes"]:
+                continue
+            metriques.append({
+                "uid": f"{legislature}-{MESURE_PROXIMITE}-{acteur_uid}-{periode_metrique}".upper(),
+                "legislature": legislature,
+                "periode": periode_metrique,
+                "acteurUid": acteur_uid,
+                "mesure": MESURE_PROXIMITE,
+                "unite": "pourcentage",
+                "attribution": "identifiant",
+                "groupeAbrev": comptes["groupeDepute"].get(acteur_uid),
+                "groupes": _proximites_depute(comptes["deputes"][acteur_uid], couleurs),
+            })
+        groupes.append({
+            "uid": f"{legislature}-GROUPES-{periode}".upper(),
+            "legislature": legislature,
+            "periode": periode,
+            "scrutins": {
+                "tous": sum(1 for s in scrutins if s["jour"] >= depuis),
+                "solennels": sum(1 for s in scrutins if s["jour"] >= depuis and s["solennel"]),
+            },
+            "groupes": [
+                {"groupe": nom, "couleur": couleurs.get(nom), **compte}
+                for nom, compte in sorted(comptes["cohesion"].items())
+            ],
+            "paires": [
+                {"groupes": [a, b], **compte}
+                for (a, b), compte in sorted(comptes["paires"].items())
+                if compte["tous"][1] >= SCRUTINS_MINIMUM_PROXIMITE
+            ],
+        })
+    return metriques, groupes
 
 
 # ---------------------------------------------------------------------------
@@ -1767,6 +2256,10 @@ def creer_indexes(db: Any) -> None:
     distributions.create_index([("uid", 1)], unique=True)
     distributions.create_index([("legislature", 1), ("periode", 1)])
 
+    groupes = db[COLLECTION_GROUPES]
+    groupes.create_index([("uid", 1)], unique=True)
+    groupes.create_index([("legislature", 1), ("periode", 1)])
+
 
 # ---------------------------------------------------------------------------
 # Point d'entrée
@@ -1799,6 +2292,8 @@ class Resultat(NamedTuple):
     metriques: list[dict]
     distributions: list[dict]
     resolution: dict
+    # Cohésion des groupes et proximité entre groupes (page /groupes).
+    groupes: list[dict] = []
 
 
 def calculer_tout(db: Any, legislature: int) -> Resultat:
@@ -1818,7 +2313,8 @@ def calculer_tout(db: Any, legislature: int) -> Resultat:
     interventions_commission, rapport_resolution = calculer_interventions_commission(
         db, legislature
     )
-    quotidiennes = (
+    mandats = mandats_assemblee(db, legislature)
+    quotidiennes = pendant_le_mandat(
         calculer_presences_seance_publique(
             db, legislature, calculer_votes_en_personne(db, legislature)
         )
@@ -1827,7 +2323,8 @@ def calculer_tout(db: Any, legislature: int) -> Resultat:
         + interventions_commission
         + calculer_amendements(db, legislature)
         + calculer_documents_publies(db, legislature)
-        + calculer_questions(db, legislature)
+        + calculer_questions(db, legislature),
+        mandats,
     )
 
     hebdomadaires: list[dict] = []
@@ -1838,10 +2335,9 @@ def calculer_tout(db: Any, legislature: int) -> Resultat:
 
     en_exercice = population_actuelle(db, legislature)
     log.info("Classements calculés sur %d députés en exercice", len(en_exercice))
-    metriques, distributions = calculer_metriques(quotidiennes, legislature, en_exercice)
+    metriques, distributions = calculer_metriques(quotidiennes, legislature, en_exercice, mandats)
     # Députés de la législature dont le mandat est achevé : leurs totaux sur la
     # durée du mandat, sans classement.
-    mandats = mandats_assemblee(db, legislature)
     anciens = set(mandats) - en_exercice
     log.info("Totaux sur le mandat de %d députés au mandat achevé", len(anciens))
     metriques += calculer_metriques_mandat(quotidiennes, legislature, mandats, anciens)
@@ -1850,9 +2346,11 @@ def calculer_tout(db: Any, legislature: int) -> Resultat:
     )
     metriques += metriques_votes
     distributions += distributions_votes
+    metriques_proximite, groupes = calculer_proximites(db, legislature, en_exercice, anciens)
+    metriques += metriques_proximite
 
     return Resultat(
-        quotidiennes, hebdomadaires, metriques, distributions, rapport_resolution
+        quotidiennes, hebdomadaires, metriques, distributions, rapport_resolution, groupes
     )
 
 
@@ -1868,6 +2366,7 @@ def calculer_et_stocker(db: Any, legislature: int = 17) -> dict[str, int]:
         COLLECTION_HEBDOMADAIRE: resultat.hebdomadaires,
         COLLECTION_METRIQUES: resultat.metriques,
         COLLECTION_DISTRIBUTIONS: resultat.distributions,
+        COLLECTION_GROUPES: resultat.groupes,
     }
     for documents in collections.values():
         for document in documents:

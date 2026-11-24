@@ -348,11 +348,15 @@ def main() -> int:
     # Les cartes de la fiche député : un total par (mesure, période) et une
     # distribution par mesure, calculés sur les députés en exercice.
     assert resultat.distributions, "aucune distribution calculée"
-    effectifs = {
-        d["effectifReference"] for d in resultat.distributions if d["mesure"] in sp.MESURES
-    }
-    assert len(effectifs) == 1, f"population de référence incohérente : {effectifs}"
-    effectif = effectifs.pop()
+    # Même population pour toutes les mesures d'une période ; elle varie d'une
+    # période à l'autre, les députés arrivés en cours de période n'étant pas
+    # classés (PART_MINIMUM_CLASSEMENT).
+    par_periode: dict[str, set[int]] = {}
+    for d in resultat.distributions:
+        if d["mesure"] in sp.MESURES:
+            par_periode.setdefault(d["periode"], set()).add(d["effectifReference"])
+    assert all(len(e) == 1 for e in par_periode.values()), f"population de référence incohérente : {par_periode}"
+    effectif = par_periode["LEGISLATURE"].pop()
     log.info(
         "%d métriques, %d distributions, sur %d députés en exercice",
         len(resultat.metriques), len(resultat.distributions), effectif,

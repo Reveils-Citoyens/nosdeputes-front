@@ -241,7 +241,7 @@ export const INDICATEURS: Section[] = [
       {
         titre: "Ce qui ne l’est pas",
         paragraphes: [
-          "Les questions au Gouvernement des mardis et mercredis. Leur répartition est décidée par les groupes politiques, selon un contingent hebdomadaire : le chiffre mesurerait un tour de rôle plutôt qu’une initiative personnelle.",
+          "Les questions au Gouvernement des mardis et mercredis. Leur répartition est décidée par les groupes politiques, selon un contingent hebdomadaire : le chiffre mesurerait un tour de rôle plutôt qu’une initiative personnelle. Elles ne sont pas perdues pour autant : leur nombre est indiqué à côté du chiffre (« +4 QAG »), et l’onglet « Questions orales » de la fiche les liste avec les questions orales sans débat.",
         ],
       },
       {
@@ -290,32 +290,59 @@ export const INDICATEURS: Section[] = [
   },
   {
     id: "dissidence",
-    titre: "Votes dissidents",
+    titre: "Votes contre la ligne de son groupe",
     rubriques: [
       {
         titre: "Ce qui est compté",
         paragraphes: [
-          "La part des votes du député, lors des scrutins solennels, qui diffèrent de la position la plus suivie au sein de son groupe politique. Voter contre quand la majorité de son groupe vote pour est une dissidence ; s’abstenir aussi.",
-          "La position de son groupe est établie à partir des votes nominatifs de ses membres. Le champ « position majoritaire » publié par l’Assemblée n’est pas utilisé : il contredit parfois les votes eux-mêmes.",
+          "La part des votes du député, lors des scrutins solennels, qui s’écartent de la ligne de son groupe politique. Voter contre quand son groupe vote pour s’écarte de sa ligne ; s’abstenir aussi.",
+          "Un groupe a une ligne sur un scrutin quand au moins deux tiers de ses membres votants ont voté de la même façon. La position de chacun est lue dans les votes nominatifs : le champ « position majoritaire » publié par l’Assemblée n’est pas utilisé, il contredit parfois les votes eux-mêmes.",
         ],
       },
       {
         titre: "Ce qui ne l’est pas",
         liste: [
-          "Les scrutins où le groupe s’est partagé à égalité : sans majorité, aucun vote ne s’en écarte.",
+          "Les scrutins où le groupe était partagé, faute de deux tiers dans un même sens : sans ligne de groupe, voter autrement qu’une courte majorité n’est pas une dissidence. Cela compte surtout pour les groupes de coalition : sur les scrutins solennels de la 17e législature, LIOT n’a de ligne que dans trois scrutins sur quatre, GDR dans quatre sur cinq, les autres groupes dans plus de neuf sur dix. La part des scrutins où le groupe du député avait une ligne est indiquée sous le chiffre.",
           "Les non-inscrits : ils ne forment pas un groupe politique, voter autrement que d’autres non-inscrits n’est pas une dissidence. L’indicateur ne s’applique pas à eux.",
         ],
       },
       {
         titre: "Comment le lire",
         paragraphes: [
-          "Le chiffre est rapproché de la médiane de l’Assemblée : la valeur atteinte par la moitié des députés membres d’un groupe. Une dissidence n’est ni une qualité ni un défaut : elle peut traduire une conviction personnelle, l’intérêt d’un territoire, ou un vote sur lequel le groupe a laissé à chacun sa liberté.",
+          "Le chiffre est rapproché de la médiane des membres de son propre groupe : un groupe très discipliné et un groupe de coalition ne se comparent pas. Une dissidence n’est ni une qualité ni un défaut : elle peut traduire une conviction personnelle, l’intérêt d’un territoire, ou un vote sur lequel le groupe a laissé à chacun sa liberté.",
+          "En deçà de 10 votes comptés, le taux est affiché mais signalé comme peu significatif, et il n’entre pas dans les médianes : un seul vote suffirait à afficher 100 %.",
         ],
       },
       {
         titre: "Limites",
         paragraphes: [
           "Certains groupes accordent la liberté de vote sur des textes de société (fin de vie, par exemple). Un vote différent de la majorité du groupe y est compté comme dissident, bien qu’aucune consigne n’ait été donnée : l’Assemblée ne publie pas les consignes de vote des groupes.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "proximite",
+    titre: "Proximité de vote avec les groupes",
+    rubriques: [
+      {
+        titre: "Ce qui est compté",
+        paragraphes: [
+          "Pour chaque groupe politique, la part des scrutins où le député a voté comme la ligne de ce groupe : pour, contre ou abstention. Un groupe a une ligne sur un scrutin quand au moins deux tiers de ses membres votants ont voté dans le même sens ; les scrutins où il était partagé ne comptent pas pour lui.",
+          "Seuls les scrutins où le député a voté entrent dans le calcul. Un groupe n’est affiché qu’à partir de 10 scrutins en commun.",
+        ],
+      },
+      {
+        titre: "Tous les scrutins publics, ou les seuls scrutins solennels",
+        paragraphes: [
+          "Par défaut, tous les scrutins publics : plus de 10 000 sur la 17e législature, amendements compris, où se dessinent les convergences de fond. Les scrutins solennels, une centaine, portent surtout sur l’ensemble des textes, où une partie de l’opposition modérée vote avec le Gouvernement : l’ordre des groupes peut s’en trouver inversé.",
+        ],
+      },
+      {
+        titre: "Comment le lire",
+        paragraphes: [
+          "Son propre groupe est affiché en tête, comme repère. Pour un député d’un groupe de coalition (LIOT, GDR), dont la ligne est moins souvent nette, c’est la lecture la plus parlante : de quels groupes ses votes se rapprochent-ils ? Voter pareil n’est pas partager un programme : deux groupes opposés votent ensemble les textes consensuels.",
+          "La page des groupes donne la même mesure de groupe à groupe, et la cohésion de chacun.",
         ],
       },
     ],
@@ -341,6 +368,19 @@ export const INDICATEURS: Section[] = [
         titre: "Avec qui le député est comparé",
         paragraphes: [
           "Avec les {effectif} députés en exercice à la date du calcul, sur la période choisie : toute la législature, les 12 derniers mois ou les 6 derniers mois. Les députés sans aucune activité sur l’indicateur comptent pour zéro : les exclure placerait mécaniquement chacun plus haut qu’il ne l’est.",
+        ],
+      },
+      {
+        titre: "Députés arrivés en cours de période",
+        paragraphes: [
+          "Un député en fonction moins de la moitié de la période — un suppléant, l’élu d’une législative partielle — n’est pas classé sur cette période : face à des députés présents tout du long, il tomberait mécaniquement parmi les moins actifs. Son total est affiché, avec la date depuis laquelle il siège, et il n’entre pas dans le calcul des tranches. La fiche s’ouvre alors sur les 6 derniers mois, où il a le plus de chances d’être comparé.",
+          "Le mandat commence à la prise de fonction, et non à la date de l’élection : pour un suppléant, l’écart peut dépasser deux ans.",
+        ],
+      },
+      {
+        titre: "Seule compte l’activité de député",
+        paragraphes: [
+          "L’activité d’un député est comptée pendant ses mandats seulement. Un député entré au Gouvernement puis revenu siéger ne se voit pas compter ses prises de parole de ministre, ni un ancien Premier ministre les projets de loi qu’il a signés.",
         ],
       },
       {
